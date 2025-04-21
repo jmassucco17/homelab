@@ -20,3 +20,17 @@ services:
       - '--path.rootfs=/host'
     volumes:
       - /:/host:ro,rslave
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+    restart: unless-stopped
+
+volumes:
+  grafana-storage:  # Named volume to persist Grafana data
