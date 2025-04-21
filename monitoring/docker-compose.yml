@@ -2,6 +2,8 @@ services:
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
+    networks:
+      - web
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     command:
@@ -14,6 +16,8 @@ services:
   node-exporter:
     image: prom/node-exporter:latest
     container_name: node-exporter
+    networks:
+      - web
     pid: host
     restart: unless-stopped
     command:
@@ -21,16 +25,84 @@ services:
     volumes:
       - /:/host:ro,rslave
 
+  traefik:
+    image: traefik:v2.10
+    networks:
+      - web
+    command:
+      # - "--api.dashboard=true"  # useful for debug
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--providers.docker=true"
+      - "--certificatesresolvers.cloudflare.acme.dnschallenge=true"
+      - "--certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare"
+      - "--certificatesresolvers.cloudflare.acme.email=jmassucco17@gmail.com"
+      - "--certificatesresolvers.cloudflare.acme.storage=/letsencrypt/acme.json"
+      # - "--log.level=DEBUG"
+      # Log access information
+      - "--accesslog=true"
+      - "--accesslog.filepath=/var/log/traefik-access.log"
+      # Redirect http to https
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.jamesmassucco.com`)"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.tls.certresolver=cloudflare"
+      # Secure with basic auth
+      - "traefik.http.routers.traefik.middlewares=auth"
+      # Define the middleware
+      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
+    environment:
+      - CF_API_EMAIL=${CLOUDFLARE_API_EMAIL}
+      - CF_DNS_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+    ports:
+      # - "8080:8080"  # useful for debug
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+    restart: unless-stopped
+
+  cloudflare-ddns:
+    image: favonia/cloudflare-ddns:latest
+    container_name: cloudflare-ddns
+    restart: unless-stopped
+    network_mode: host
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+      - DOMAINS=${DOMAINS}
+      - PROXIED=${PROXIED}
+      - TZ=${TZ}
+    labels:
+      - "com.example.description=Cloudflare DDNS Updater"
+
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
-    ports:
-      - "3000:3000"
+    networks:
+      - web
     volumes:
       - grafana-storage:/var/lib/grafana
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
       - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.jamesmassucco.com`)" # TODO
+      - "traefik.http.routers.grafana.entrypoints=websecure"
+      - "traefik.http.routers.grafana.tls.certresolver=cloudflare"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
     restart: unless-stopped
+
+networks:
+  web:
+    external: true
 
 volumes:
   grafana-storage:  # Named volume to persist Grafana data

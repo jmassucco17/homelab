@@ -11,6 +11,8 @@ Node exporter handles collecting metrics on the server
 ## Prometheus
 Prometheus collects metrics from node exporter and makes them available for querying.
 
+Access at: [http://ubuntu-server-1.local.:9090](http://ubuntu-server-1.local.:9090)
+
 Example queries:
 ```
 # CPU
@@ -29,4 +31,19 @@ node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpo
 
 # System load
 node_load1
+```
+
+## Grafana
+Grafana provides visualiation of the metrics
+
+Access at: [grafana.jamesmassucco.com](grafana.jamesmassucco.com)
+
+## Traefik
+Traefik provides proxying. It also has a dashboard (turned off by default).
+
+NOTE: Must provide an `.env` file in `monitoring/` that contains:
+```sh
+CF_API_EMAIL=<cloudflare email>
+CF_DNS_API_TOKEN=<cloudflare token with DNS Edit and Zone Read permissions>
+TRAEFIK_BASIC_AUTH=<htpasswd hash>
 ```
