@@ -11,7 +11,7 @@ services:
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--providers.docker=true"
-      # - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.exposedbydefault=false"
       - "--certificatesresolvers.cloudflare.acme.dnschallenge=true"
       - "--certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare"
       - "--certificatesresolvers.cloudflare.acme.email=jmassucco17@gmail.com"
@@ -24,8 +24,8 @@ services:
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
       # Only trust cloudflare IPs
-      # - "--entrypoints.web.forwardedHeaders.trustedIPs=${CLOUDFLARE_TRUSTED_IPS}"
-      # - "--entrypoints.websecure.forwardedHeaders.trustedIPs=${CLOUDFLARE_TRUSTED_IPS}"
+      - "--entrypoints.web.forwardedHeaders.trustedIPs=${CLOUDFLARE_TRUSTED_IPS}"
+      - "--entrypoints.websecure.forwardedHeaders.trustedIPs=${CLOUDFLARE_TRUSTED_IPS}"
       # - "--entrypoints.web.forwardedHeaders.insecure=true"
       # - "--entrypoints.websecure.forwardedHeaders.insecure=true"
     labels:
