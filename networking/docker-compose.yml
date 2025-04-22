@@ -1,0 +1,76 @@
+services:
+
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    networks:
+      - traefik
+    command:
+      # - "--api.enable=true"
+      # - "--api.dashboard=true"
+      # - "--api.insecure=false"  # optional, safer than --api.insecure=true
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--certificatesresolvers.cloudflare.acme.dnschallenge=true"
+      - "--certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare"
+      - "--certificatesresolvers.cloudflare.acme.email=jmassucco17@gmail.com"
+      - "--certificatesresolvers.cloudflare.acme.storage=/letsencrypt/acme.json"
+      # - "--log.level=DEBUG"
+      # Log access information
+      - "--accesslog=true"
+      - "--accesslog.filepath=/var/log/traefik-access.log"
+      # Redirect http to https
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      # Only trust cloudflare IPs
+      # - "--entrypoints.web.forwardedHeaders.trustedIPs=${CLOUDFLARE_TRUSTED_IPS}"
+      - "--entrypoints.websecure.forwardedHeaders.trustedIPs=${CLOUDFLARE_TRUSTED_IPS}"
+      - "--entrypoints.websecure.forwardedHeaders.insecure=true"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.jamesmassucco.com`)"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.tls.certresolver=cloudflare"
+      # Secure with basic auth and rate limiting
+      - "traefik.http.routers.traefik.middlewares=auth,ratelimit"
+      # Define the middleware
+      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
+      # Add rate-limiting to prevent DOS
+      - "traefik.http.middlewares.ratelimit.ratelimit.average=50"
+      - "traefik.http.middlewares.ratelimit.ratelimit.burst=100"
+    environment:
+      - CF_API_EMAIL=${CLOUDFLARE_API_EMAIL}
+      - CF_DNS_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+      - CLOUDFLARE_TRUSTED_IPS="${CLOUDFLARE_TRUSTED_IPS}"
+    ports:
+      # - "8080:8080"  # useful for debug
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+    restart: unless-stopped
+
+  # Automatically update public IP DNS in Cloudflare
+  cloudflare-ddns:
+    image: favonia/cloudflare-ddns:latest
+    container_name: cloudflare-ddns
+    restart: unless-stopped
+    network_mode: host
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+      - DOMAINS=${DOMAINS}
+      - PROXIED=${PROXIED}
+      - TZ=${TZ}
+    labels:
+      - "traefik.enable=false"
+
+networks:
+  traefik:
+    external: true

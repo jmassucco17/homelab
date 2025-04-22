@@ -37,13 +37,3 @@ node_load1
 Grafana provides visualiation of the metrics
 
 Access at: [grafana.jamesmassucco.com](grafana.jamesmassucco.com)
-
-## Traefik
-Traefik provides proxying. It also has a dashboard (turned off by default).
-
-NOTE: Must provide an `.env` file in `monitoring/` that contains:
-```sh
-CF_API_EMAIL=<cloudflare email>
-CF_DNS_API_TOKEN=<cloudflare token with DNS Edit and Zone Read permissions>
-TRAEFIK_BASIC_AUTH=<htpasswd hash>
-```
