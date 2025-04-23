@@ -66,6 +66,18 @@
       color: #8b949e;
       font-size: 0.9rem;
     }
+    a.card {
+      color: inherit;
+      text-decoration: none;
+      display: block;
+    }
+    a.card h3 {
+      color: #58a6ff;
+    }
+
+    a.card p {
+      color: #c9d1d9;
+    }
   </style>
 </head>
 <body>
@@ -83,17 +95,17 @@
       <h2>Projects</h2>
     </div>
     <div class="grid">
-      <div class="card">
-        <h3><a href="#">Building My Home Cluster</a></h3>
-        <p>Setting up a cheap server cluster using Docker and Kubernetes.</p>
+      <div class="card" onclick="location.href='/metrics.html'" style="cursor: pointer;">
+        <h3><a href="#">What's Goin' On</a></h3>
+        <p>See what Mr. Cluster is up to with a live stream of telemetry.</p>
       </div>
+      <a href="https://github.com/jmassucco17/homelab" class="card" style="text-decoration: none;" target="_blank" rel="noopener noreferrer">
+        <h3>Infra as Code</h3>
+        <p>Github, where all the magic (configuration) happens.</p>
+      </a>
       <div class="card">
-        <h3><a href="#">System Architecture</a></h3>
-        <p>Designing a scalable system with microservices.</p>
-      </div>
-      <div class="card">
-        <h3><a href="#">Self-hosting Tools</a></h3>
-        <p>Grafana, Prometheus, Uptime Kuma, and more.</p>
+        <h3><a href="#">Stay Tuned</a></h3>
+        <p>More features, webapps, and more coming soon!</p>
       </div>
     </div>
   </section>
@@ -104,18 +116,14 @@
       <h2>Live Services</h2>
     </div>
     <div class="grid">
-      <div class="card">
-        <h3>Server</h3>
-        <p>Status: <strong>Online</strong></p>
+      <div class="card" onclick="location.href='/metrics.html'" style="cursor: pointer;">
+        <h3>Live Metrics</h3>
+        <p>Status: <strong>✅ Fake</strong></p>
       </div>
-      <div class="card">
-        <h3>Python API</h3>
-        <p>Status: <strong>Online</strong></p>
-      </div>
-      <div class="card">
+      <a href="https://grafana.jamesmassucco.com/d/aejk7jtrgvsw0a/" class="card" style="text-decoration: none;" target="_blank" rel="noopener noreferrer">
         <h3>Grafana</h3>
-        <p>Status: <strong>Online</strong></p>
-      </div>
+        <p>Status: <strong>✅ Online</strong></p>
+      </a>
     </div>
   </section>
 
