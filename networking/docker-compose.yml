@@ -49,12 +49,15 @@ services:
       - CLOUDFLARE_TRUSTED_IPS=${CLOUDFLARE_TRUSTED_IPS}
       - TRAEFIK_BASIC_AUTH=${TRAEFIK_BASIC_AUTH}
     labels:
-      # Enable traefik dashboard
+      # Enable HTTP and HTTPS (traefik seems to need both for some reason)
       - "traefik.enable=true"
       - "traefik.http.routers.traefik.rule=Host(`traefik.jamesmassucco.com`)"
       - "traefik.http.routers.traefik.entrypoints=websecure"
       - "traefik.http.routers.traefik.service=api@internal"
       - "traefik.http.routers.traefik.tls.certresolver=cloudflare"
+      - "traefik.http.routers.traefik-http.rule=Host(`traefik.jamesmassucco.com`)"
+      - "traefik.http.routers.traefik-http.entrypoints=web"
+      - "traefik.http.routers.traefik-http.service=api@internal"
       # Secure with basic auth and rate limiting
       - "traefik.http.routers.traefik.middlewares=auth,ratelimit"
       # Define the middleware
@@ -70,11 +73,11 @@ services:
     networks:
       - web
     labels:
+      # Enable HTTP and HTTPS (traefik seems to need both for some reason)
       - "traefik.enable=true"
       - "traefik.http.routers.whoami-https.rule=Host(`whoami.jamesmassucco.com`)"
       - "traefik.http.routers.whoami-https.entrypoints=websecure"
       - "traefik.http.routers.whoami-https.tls.certresolver=cloudflare"
-
       - "traefik.http.routers.whoami-http.rule=Host(`whoami.jamesmassucco.com`)"
       - "traefik.http.routers.whoami-http.entrypoints=web"
 
