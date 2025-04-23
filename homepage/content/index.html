@@ -4,48 +4,126 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>James Massucco | Home Lab</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
       margin: 0;
-      font-family: "Segoe UI", sans-serif;
-      background: linear-gradient(to right, #1e3c72, #2a5298);
-      color: #fff;
+      font-family: 'Fira Code', monospace;
+      background-color: #0d1117;
+      color: #c9d1d9;
       display: flex;
       flex-direction: column;
-      min-height: 100vh;
       align-items: center;
-      justify-content: center;
-      text-align: center;
+      padding: 2rem;
     }
-    h1 {
-      font-size: 3em;
-      margin-bottom: 0.2em;
+    h1, h2 {
+      color: #58a6ff;
     }
-    p {
-      font-size: 1.2em;
-      max-width: 600px;
+    section {
+      background: #161b22;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      width: 100%;
+      max-width: 800px;
+      box-shadow: 0 0 12px rgba(0, 255, 170, 0.1);
+    }
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.3em;
+      margin-bottom: 1rem;
+    }
+    .grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .card {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      padding: 1rem;
+      transition: transform 0.2s ease;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      border-color: #58a6ff;
     }
     a {
-      margin-top: 2em;
-      color: #ffc107;
+      color: #58a6ff;
       text-decoration: none;
     }
     footer {
-      position: absolute;
-      bottom: 1em;
-      font-size: 0.9em;
-      color: #ccc;
+      margin-top: 4rem;
+      color: #8b949e;
+      font-size: 0.9rem;
     }
   </style>
 </head>
 <body>
-  <h1>Welcome to My Homelab</h1>
-  <p>
-    I’m James, and this is the digital brain of my homelab project. This site will evolve
-    into a full personal site where I document projects, showcase dev setups, and blog about
-    self-hosting and home infrastructure.
-  </p>
-  <a href="mailto:me@jamesmassucco.com">Contact Me</a>
-  <footer>&copy; 2025 James Massucco</footer>
+  <section>
+    <div class="section-title">
+      <span>📄</span>
+      <h2>About Me</h2>
+    </div>
+    <p>Hi, I'm <strong>James Massucco</strong>, an electrical engineer who found a passion for software and infrastructure. This site documents my personal projects, especially my home server journey.</p>
+  </section>
+
+  <section>
+    <div class="section-title">
+      <span>📈</span>
+      <h2>Projects</h2>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h3><a href="#">Building My Home Cluster</a></h3>
+        <p>Setting up a cheap server cluster using Docker and Kubernetes.</p>
+      </div>
+      <div class="card">
+        <h3><a href="#">System Architecture</a></h3>
+        <p>Designing a scalable system with microservices.</p>
+      </div>
+      <div class="card">
+        <h3><a href="#">Self-hosting Tools</a></h3>
+        <p>Grafana, Prometheus, Uptime Kuma, and more.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-title">
+      <span>🚀</span>
+      <h2>Live Services</h2>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h3>Server</h3>
+        <p>Status: <strong>Online</strong></p>
+      </div>
+      <div class="card">
+        <h3>Python API</h3>
+        <p>Status: <strong>Online</strong></p>
+      </div>
+      <div class="card">
+        <h3>Grafana</h3>
+        <p>Status: <strong>Online</strong></p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-title">
+      <span>📧</span>
+      <h2>Contact</h2>
+    </div>
+    <p>Reach out at <a href="mailto:me@jamesmassucco.com">hello@jamesmassucco.com</a></p>
+  </section>
+
+  <footer>&copy; 2025 James Massucco. Built with love and Linux.</footer>
 </body>
 </html>
