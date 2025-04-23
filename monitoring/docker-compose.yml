@@ -52,11 +52,12 @@ services:
     networks:
       - web
     labels:
-      # Enable HTTP and HTTPS (traefik seems to need both for some reason)
+      # Use traefik to provide HTTP endpoint
       - "traefik.enable=true"
       - "traefik.http.routers.grafana.rule=Host(`grafana.jamesmassucco.com`)"
       - "traefik.http.routers.grafana.entrypoints=websecure"
       - "traefik.http.routers.grafana.tls.certresolver=cloudflare"
+      # Dummy HTTP endpoint (weird traefik reasons, to be debugged later
       - "traefik.http.routers.grafana-http.rule=Host(`grafana.jamesmassucco.com`)"
       - "traefik.http.routers.grafana-http.entrypoints=web"
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"

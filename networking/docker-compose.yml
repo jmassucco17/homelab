@@ -1,5 +1,6 @@
 services:
 
+  # Reverse-proxy service
   traefik:
     image: traefik:v2.10
     container_name: traefik
@@ -8,7 +9,6 @@ services:
       - "--log.level=DEBUG"
       - "--accesslog=true"
       - "--accesslog.fields.names.ClientHost=keep"
-      # - "--accesslog.filepath=/var/log/traefik-access.log"
       # Enable dashboard
       - "--api.dashboard=true"
       - "--api.insecure=false"
@@ -20,41 +20,40 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.network=web"
-      # Cloudflare DNS and ACME challenge
+      # Cloudflare DNS settings
       - "--certificatesresolvers.cloudflare.acme.dnschallenge=true"
       - "--certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare"
       - "--certificatesresolvers.cloudflare.acme.email=${CLOUDFLARE_API_EMAIL}"
       - "--certificatesresolvers.cloudflare.acme.storage=/letsencrypt/acme.json"
-      # Redirect to HTTPS
-      # - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-      # - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       # Only allow Cloudflare IPs (requires Cloudflare proxying)
       - "--entrypoints.web.forwardedHeaders.trustedIPs=${CLOUDFLARE_TRUSTED_IPS}"
       - "--entrypoints.web.forwardedHeaders.insecure=true"
       - "--entrypoints.websecure.forwardedHeaders.trustedIPs=${CLOUDFLARE_TRUSTED_IPS}"
       - "--entrypoints.websecure.forwardedHeaders.insecure=true"
+      # Disable HTTPS->HTTPS redirect (CloudFlare is configured to do this instead)
+      # - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      # - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      # Ensure this file has 600 permissions
       - "./acme.json:/letsencrypt/acme.json"
     networks:
       - web
     env_file:
       - .env
     environment:
-      - CF_API_EMAIL=${CLOUDFLARE_API_EMAIL}
       - CF_DNS_API_TOKEN=${CLOUDFLARE_API_TOKEN}
-      - CLOUDFLARE_TRUSTED_IPS=${CLOUDFLARE_TRUSTED_IPS}
-      - TRAEFIK_BASIC_AUTH=${TRAEFIK_BASIC_AUTH}
     labels:
-      # Enable HTTP and HTTPS (traefik seems to need both for some reason)
+      # Use traefik to provide HTTP endpoint
       - "traefik.enable=true"
       - "traefik.http.routers.traefik.rule=Host(`traefik.jamesmassucco.com`)"
       - "traefik.http.routers.traefik.entrypoints=websecure"
       - "traefik.http.routers.traefik.service=api@internal"
       - "traefik.http.routers.traefik.tls.certresolver=cloudflare"
+      # Dummy HTTP endpoint (weird traefik reasons, to be debugged later
       - "traefik.http.routers.traefik-http.rule=Host(`traefik.jamesmassucco.com`)"
       - "traefik.http.routers.traefik-http.entrypoints=web"
       - "traefik.http.routers.traefik-http.service=api@internal"
@@ -67,17 +66,19 @@ services:
       - "traefik.http.middlewares.ratelimit.ratelimit.burst=100"
     restart: unless-stopped
 
+  # Basic whoami service, useful for debugging network configuration
   whoami:
     image: traefik/whoami
     container_name: whoami
     networks:
       - web
     labels:
-      # Enable HTTP and HTTPS (traefik seems to need both for some reason)
+      # Use traefik to provide HTTP endpoint
       - "traefik.enable=true"
       - "traefik.http.routers.whoami-https.rule=Host(`whoami.jamesmassucco.com`)"
       - "traefik.http.routers.whoami-https.entrypoints=websecure"
       - "traefik.http.routers.whoami-https.tls.certresolver=cloudflare"
+      # Dummy HTTP endpoint (weird traefik reasons, to be debugged later
       - "traefik.http.routers.whoami-http.rule=Host(`whoami.jamesmassucco.com`)"
       - "traefik.http.routers.whoami-http.entrypoints=web"
 
