@@ -12,8 +12,8 @@ services:
       - "traefik.http.routers.homepage.tls.certresolver=cloudflare"
       - "traefik.http.services.homepage.loadbalancer.server.port=80"
     networks:
-      - traefik
+      - web
 
 networks:
-  traefik:
+  web:
     external: true

@@ -176,3 +176,4 @@ cython_debug/
 
 # Traefik encryption cache
 letsencrypt/
+acme.json
