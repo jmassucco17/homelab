@@ -6,12 +6,80 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/png" href="assets/icon/favicon-96x96.png" sizes="96x96" />
     <link rel="shortcut icon" href="assets/icon/favicon.ico" />
-    <link rel="stylesheet" href="/styles/main.css" />
+    <link rel="stylesheet" href="styles/main.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      body {
+        background-color: #0d1117;
+        color: #c9d1d9;
+        font-family: 'Fira Code', monospace;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 2rem;
+      }
+      h1 {
+        color: #58a6ff;
+        margin-bottom: 1rem;
+      }
+      .metric-summary {
+        display: flex;
+        gap: 2rem;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-bottom: 3rem;
+      }
+      .summary-box {
+        background: #161b22;
+        border-radius: 12px;
+        padding: 1rem 2rem;
+        text-align: center;
+        border: 1px solid #30363d;
+        box-shadow: 0 0 12px rgba(0, 255, 170, 0.05);
+        width: 180px;
+      }
+      .summary-title {
+        font-size: 1rem;
+        color: #8b949e;
+      }
+      .summary-value {
+        font-size: 1.8rem;
+        color: #58a6ff;
+      }
+      canvas {
+        margin-bottom: 2rem;
+        background: #161b22;
+        border-radius: 8px;
+        padding: 1rem;
+        max-width: 90vw;
+      }
+      .chart-container {
+        width: 100%;
+        max-width: 600px; /* or whatever size feels right */
+        margin-bottom: 2rem;
+      }
+      .site-home-link {
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+        color: #58a6ff;
+        font-size: 1.1rem;
+      }
+
+      .site-logo {
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+      }
+    </style>
   </head>
   <body>
     <a href="/" class="site-home-link">
-      <img src="/assets/favicon-96x96.png" alt="Home" class="site-logo" />
+      <img src="/assets/icon/favicon-96x96.png" alt="Home" class="site-logo" />
       <span>Home</span>
     </a>
     <h1>Live-ish Metrics</h1>
