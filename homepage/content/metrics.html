@@ -1,130 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Live Metrics | jamesmassucco.com</title>
-  <link rel="icon" type="image/png" href="assets/favicon-96x96.png" sizes="96x96" />
-  <link rel="shortcut icon" href="assets/favicon.ico" />
-  <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png" />
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body {
-      background-color: #0d1117;
-      color: #c9d1d9;
-      font-family: 'Fira Code', monospace;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 2rem;
-    }
-    h1 {
-      color: #58a6ff;
-      margin-bottom: 1rem;
-    }
-    .metric-summary {
-      display: flex;
-      gap: 2rem;
-      flex-wrap: wrap;
-      justify-content: center;
-      margin-bottom: 3rem;
-    }
-    .summary-box {
-      background: #161b22;
-      border-radius: 12px;
-      padding: 1rem 2rem;
-      text-align: center;
-      border: 1px solid #30363d;
-      box-shadow: 0 0 12px rgba(0, 255, 170, 0.05);
-      width: 180px;
-    }
-    .summary-title {
-      font-size: 1rem;
-      color: #8b949e;
-    }
-    .summary-value {
-      font-size: 1.8rem;
-      color: #58a6ff;
-    }
-    canvas {
-      margin-bottom: 2rem;
-      background: #161b22;
-      border-radius: 8px;
-      padding: 1rem;
-      max-width: 90vw;
-    }
-    .chart-container {
-      width: 100%;
-      max-width: 600px; /* or whatever size feels right */
-      margin-bottom: 2rem;
-    }
-    .site-home-link {
-        position: absolute;
-        top: 1rem;
-        left: 1rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        text-decoration: none;
-        color: #58a6ff;
-        font-size: 1.1rem;
-        }
-
-        .site-logo {
-        width: 24px;
-        height: 24px;
-        border-radius: 4px;
-        }
-  </style>
-</head>
-<body>
+  <head>
+    <title>Live Metrics | jamesmassucco.com</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="assets/icon/favicon-96x96.png" sizes="96x96" />
+    <link rel="shortcut icon" href="assets/icon/favicon.ico" />
+    <link rel="stylesheet" href="/styles/main.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
     <a href="/" class="site-home-link">
-        <img src="/assets/favicon-96x96.png" alt="Home" class="site-logo" />
-        <span>Home</span>
-      </a>
-  <h1>Live-ish Metrics</h1>
-  <p>This page shows simulated homelab metrics — real Grafana data coming soon!</p>
+      <img src="/assets/favicon-96x96.png" alt="Home" class="site-logo" />
+      <span>Home</span>
+    </a>
+    <h1>Live-ish Metrics</h1>
+    <p>This page shows simulated homelab metrics — real Grafana data coming soon!</p>
 
-  <div class="metric-summary">
-    <div class="summary-box">
-      <div class="summary-title">Docker Containers</div>
-      <div class="summary-value">7</div>
+    <div class="metric-summary">
+      <div class="summary-box">
+        <div class="summary-title">Docker Containers</div>
+        <div class="summary-value">7</div>
+      </div>
+      <div class="summary-box">
+        <div class="summary-title">Cluster Nodes</div>
+        <div class="summary-value">1</div>
+      </div>
+      <div class="summary-box">
+        <div class="summary-title">Days in Work</div>
+        <div class="summary-value" id="daysInWork">--</div>
+      </div>
     </div>
-    <div class="summary-box">
-      <div class="summary-title">Cluster Nodes</div>
-      <div class="summary-value">1</div>
+
+    <div class="chart-container">
+      <canvas id="cpuChart"></canvas>
     </div>
-    <div class="summary-box">
-      <div class="summary-title">Days in Work</div>
-      <div class="summary-value" id="daysInWork">--</div>
+    <div class="chart-container">
+      <canvas id="ramChart"></canvas>
     </div>
-  </div>
 
-  <div class="chart-container">
-    <canvas id="cpuChart"></canvas>
-  </div>
-  <div class="chart-container">
-    <canvas id="ramChart"></canvas>
-  </div>
+    <script>
+      // Calculate days in work since 2025-04-19
+      const startDate = new Date('2025-04-19T00:00:00')
+      const now = new Date()
+      const diffTime = Math.abs(now - startDate)
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+      document.getElementById('daysInWork').textContent = diffDays
 
-  <script>
-    // Calculate days in work since 2025-04-19
-    const startDate = new Date('2025-04-19T00:00:00');
-    const now = new Date();
-    const diffTime = Math.abs(now - startDate);
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    document.getElementById('daysInWork').textContent = diffDays;
+      const maxPoints = 20
+      const timeLabels = () => [...Array(maxPoints)].map(() => '')
 
-    const maxPoints = 20;
-    const timeLabels = () => [...Array(maxPoints)].map(() => '');
-
-    function createChart(ctx, label, color, minY, maxY) {
+      function createChart(ctx, label, color, minY, maxY) {
         return new Chart(ctx, {
-            type: 'line',
-            data: {
+          type: 'line',
+          data: {
             labels: [],
-            datasets: [{
+            datasets: [
+              {
                 label,
                 data: [],
                 borderColor: color,
@@ -132,71 +64,78 @@
                 tension: 0.3,
                 fill: true,
                 pointRadius: 0,
-                borderWidth: 2
-            }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                    ticks: {
-                        color: '#c9d1d9',
-                        font: {
-                        size: 12
-                        }
-                    },
-                    grid: {
-                        color: '#30363d'
-                    }
-                    },
-                    y: {
-                    min: minY,
-                    max: maxY,
-                    ticks: {
-                        color: '#c9d1d9',
-                        font: {
-                        size: 12
-                        }
-                    },
-                    grid: {
-                        color: '#30363d'
-                    }
-                    }
+                borderWidth: 2,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                ticks: {
+                  color: '#c9d1d9',
+                  font: {
+                    size: 12,
+                  },
                 },
-                plugins: {
-                    legend: {
-                    labels: {
-                        color: '#c9d1d9',
-                        font: {
-                        size: 13
-                        }
-                    }
-                    }
-                }
-                }
-        });
-        }
-
-        const cpuChart = createChart(document.getElementById('cpuChart'), 'CPU %', '#58a6ff', 0, 100);
-        const ramChart = createChart(document.getElementById('ramChart'), 'RAM MB', '#f7786b', 0, 18000);
-
-    function updateChart(chart, newValue) {
-      const now = new Date().toLocaleTimeString();
-      const data = chart.data;
-      data.labels.push(now);
-      data.datasets[0].data.push(newValue);
-      if (data.labels.length > maxPoints) {
-        data.labels.shift();
-        data.datasets[0].data.shift();
+                grid: {
+                  color: '#30363d',
+                },
+              },
+              y: {
+                min: minY,
+                max: maxY,
+                ticks: {
+                  color: '#c9d1d9',
+                  font: {
+                    size: 12,
+                  },
+                },
+                grid: {
+                  color: '#30363d',
+                },
+              },
+            },
+            plugins: {
+              legend: {
+                labels: {
+                  color: '#c9d1d9',
+                  font: {
+                    size: 13,
+                  },
+                },
+              },
+            },
+          },
+        })
       }
-      chart.update();
-    }
 
-    setInterval(() => {
-      updateChart(cpuChart, Math.floor(Math.random() * 80) + 10);
-      updateChart(ramChart, Math.floor(Math.random() * (16000 - 2000) + 2000));
-    }, 1000);
-  </script>
-</body>
+      const cpuChart = createChart(document.getElementById('cpuChart'), 'CPU %', '#58a6ff', 0, 100)
+      const ramChart = createChart(
+        document.getElementById('ramChart'),
+        'RAM MB',
+        '#f7786b',
+        0,
+        18000
+      )
+
+      function updateChart(chart, newValue) {
+        const now = new Date().toLocaleTimeString()
+        const data = chart.data
+        data.labels.push(now)
+        data.datasets[0].data.push(newValue)
+        if (data.labels.length > maxPoints) {
+          data.labels.shift()
+          data.datasets[0].data.shift()
+        }
+        chart.update()
+      }
+
+      setInterval(() => {
+        updateChart(cpuChart, Math.floor(Math.random() * 80) + 10)
+        updateChart(ramChart, Math.floor(Math.random() * (16000 - 2000) + 2000))
+      }, 1000)
+    </script>
+  </body>
 </html>

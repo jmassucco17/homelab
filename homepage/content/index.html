@@ -1,140 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>James Massucco | Home Lab</title>
-  <link rel="icon" type="image/png" href="assets/favicon-96x96.png" sizes="96x96" />
-  <link rel="shortcut icon" href="assets/favicon.ico" />
-  <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png" />
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-    body {
-      margin: 0;
-      font-family: 'Fira Code', monospace;
-      background-color: #0d1117;
-      color: #c9d1d9;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 2rem;
-    }
-    h1, h2 {
-      color: #58a6ff;
-    }
-    section {
-      background: #161b22;
-      border-radius: 12px;
-      padding: 1.5rem;
-      margin-bottom: 2rem;
-      width: 100%;
-      max-width: 800px;
-      box-shadow: 0 0 12px rgba(0, 255, 170, 0.1);
-    }
-    .section-title {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 1.3em;
-      margin-bottom: 1rem;
-    }
-    .grid {
-      display: grid;
-      gap: 1rem;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    }
-    .card {
-      background: #0d1117;
-      border: 1px solid #30363d;
-      border-radius: 10px;
-      padding: 1rem;
-      transition: transform 0.2s ease;
-    }
-    .card:hover {
-      transform: translateY(-5px);
-      border-color: #58a6ff;
-    }
-    a {
-      color: #58a6ff;
-      text-decoration: none;
-    }
-    footer {
-      margin-top: 4rem;
-      color: #8b949e;
-      font-size: 0.9rem;
-    }
-    a.card {
-      color: inherit;
-      text-decoration: none;
-      display: block;
-    }
-    a.card h3 {
-      color: #58a6ff;
-    }
-
-    a.card p {
-      color: #c9d1d9;
-    }
-  </style>
-</head>
-<body>
-  <section>
-    <div class="section-title">
-      <span>📄</span>
-      <h2>About Me</h2>
-    </div>
-    <p>Hi, I'm <strong>James Massucco</strong>, an electrical engineer who found a passion for software and infrastructure. This site documents my personal projects, especially my home server journey.</p>
-  </section>
-
-  <section>
-    <div class="section-title">
-      <span>📈</span>
-      <h2>Projects</h2>
-    </div>
-    <div class="grid">
-      <div class="card" onclick="location.href='/metrics.html'" style="cursor: pointer;">
-        <h3><a href="#">What's Goin' On</a></h3>
-        <p>See what Mr. Cluster is up to with a live stream of telemetry.</p>
+  <head>
+    <title>James Massucco | Home Lab</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="assets/icon/favicon-96x96.png" sizes="96x96" />
+    <link rel="shortcut icon" href="assets/icon/favicon.ico" />
+    <link rel="stylesheet" href="/styles/main.css" />
+  </head>
+  <body>
+    <section>
+      <div class="section-title">
+        <span>📄</span>
+        <h2>About Me</h2>
       </div>
-      <a href="https://github.com/jmassucco17/homelab" class="card" style="text-decoration: none;" target="_blank" rel="noopener noreferrer">
-        <h3>Infra as Code</h3>
-        <p>Github, where all the magic (configuration) happens.</p>
-      </a>
-      <div class="card">
-        <h3><a href="#">Stay Tuned</a></h3>
-        <p>More features, webapps, and more coming soon!</p>
+      <p>
+        Hi, I'm <strong>James Massucco</strong>, an electrical engineer who found a passion for
+        software and infrastructure. This site documents my personal projects, especially my home
+        server journey.
+      </p>
+    </section>
+
+    <section>
+      <div class="section-title">
+        <span>📈</span>
+        <h2>Projects</h2>
       </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="section-title">
-      <span>🚀</span>
-      <h2>Live Services</h2>
-    </div>
-    <div class="grid">
-      <div class="card" onclick="location.href='/metrics.html'" style="cursor: pointer;">
-        <h3>Live Metrics</h3>
-        <p>Status: <strong>✅ Fake</strong></p>
+      <div class="grid">
+        <div class="card" onclick="location.href='/metrics.html'" style="cursor: pointer">
+          <h3><a href="#">What's Goin' On</a></h3>
+          <p>See what Mr. Cluster is up to with a live stream of telemetry.</p>
+        </div>
+        <a
+          href="https://github.com/jmassucco17/homelab"
+          class="card"
+          style="text-decoration: none"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <h3>Infra as Code</h3>
+          <p>Github, where all the magic (configuration) happens.</p>
+        </a>
+        <div class="card">
+          <h3><a href="#">Stay Tuned</a></h3>
+          <p>More features, webapps, and more coming soon!</p>
+        </div>
       </div>
-      <a href="https://grafana.jamesmassucco.com/d/aejk7jtrgvsw0a/" class="card" style="text-decoration: none;" target="_blank" rel="noopener noreferrer">
-        <h3>Grafana</h3>
-        <p>Status: <strong>✅ Online</strong></p>
-      </a>
-    </div>
-  </section>
+    </section>
 
-  <section>
-    <div class="section-title">
-      <span>📧</span>
-      <h2>Contact</h2>
-    </div>
-    <p>Reach out at <a href="mailto:me@jamesmassucco.com">me@jamesmassucco.com</a></p>
-  </section>
+    <section>
+      <div class="section-title">
+        <span>🚀</span>
+        <h2>Live Services</h2>
+      </div>
+      <div class="grid">
+        <div class="card" onclick="location.href='/metrics.html'" style="cursor: pointer">
+          <h3>Live Metrics</h3>
+          <p>Status: <strong>✅ Fake</strong></p>
+        </div>
+        <a
+          href="https://grafana.jamesmassucco.com/d/aejk7jtrgvsw0a/"
+          class="card"
+          style="text-decoration: none"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <h3>Grafana</h3>
+          <p>Status: <strong>✅ Online</strong></p>
+        </a>
+      </div>
+    </section>
 
-  <footer>&copy; 2025 James Massucco. Built with love and Linux.</footer>
-</body>
+    <section>
+      <div class="section-title">
+        <span>📧</span>
+        <h2>Contact</h2>
+      </div>
+      <p>Reach out at <a href="mailto:me@jamesmassucco.com">me@jamesmassucco.com</a></p>
+    </section>
+
+    <footer>&copy; 2025 James Massucco. Built with love and Linux.</footer>
+  </body>
 </html>
