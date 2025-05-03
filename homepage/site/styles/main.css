@@ -67,7 +67,23 @@ a.card {
 a.card h3 {
   color: #58a6ff;
 }
-
 a.card p {
   color: #c9d1d9;
+}
+/* Logo and home link */
+.site-home-link {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: #58a6ff;
+  font-size: 1.1rem;
+}
+.site-logo {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
 }
