@@ -1,0 +1,20 @@
+{
+  "scripts": {
+    "lint:css": "stylelint '**/*.css'"
+  },
+  "name": "homelab",
+  "description": "Welcome to my homelab project!",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jmassucco17/homelab.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jmassucco17/homelab/issues"
+  },
+  "homepage": "https://github.com/jmassucco17/homelab#readme"
+}
