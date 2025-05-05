@@ -16,5 +16,10 @@
   "bugs": {
     "url": "https://github.com/jmassucco17/homelab/issues"
   },
-  "homepage": "https://github.com/jmassucco17/homelab#readme"
+  "homepage": "https://github.com/jmassucco17/homelab#readme",
+  "devDependencies": {
+    "prettier": "^3.5.3",
+    "stylelint": "^16.19.1",
+    "stylelint-config-standard": "^38.0.0"
+  }
 }
