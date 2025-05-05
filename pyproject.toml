@@ -1,0 +1,8 @@
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+extend-select = ["I", "E", "F", "UP", "B"]
+fix = true  # Enable auto-fixing
+
+[tool.ruff.lint]
+preview = true
