@@ -1,8 +1,22 @@
 [tool.ruff]
+# Line and indent settings
 line-length = 88
-target-version = "py311"
-extend-select = ["I", "E", "F", "UP", "B"]
-fix = true  # Enable auto-fixing
+indent-width = 4
+
+# Python 3.12
+target-version = "py312"
+
+# Codes to fix
+select = ["I", "E", "F", "UP", "B"]
+fixable = ["ALL"]
+
+[tool.ruff.format]
+# Single quotes and space indents
+quote-style = "single"
+indent-style = "space"
+
+# Respect magic trailing commas
+skip-magic-trailing-comma = false
 
 [tool.ruff.lint]
 preview = true

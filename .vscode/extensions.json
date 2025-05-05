@@ -3,6 +3,7 @@
     "esbenp.prettier-vscode",
     "stylelint.vscode-stylelint",
     "charliermarsh.ruff",
-    "stkb.rewrap"
+    "stkb.rewrap",
+    "tamasfe.even-better-toml"
   ]
 }
