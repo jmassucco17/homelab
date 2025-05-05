@@ -8,7 +8,8 @@ target-version = "py312"
 
 # Codes to fix
 select = ["I", "E", "F", "UP", "B"]
-fixable = ["ALL"]
+# Don't automatically fix unused imports
+unfixable = ["F401"]
 
 [tool.ruff.format]
 # Single quotes and space indents

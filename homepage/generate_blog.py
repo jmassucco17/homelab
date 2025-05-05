@@ -1,4 +1,5 @@
 import pathlib
+import subprocess
 
 import markdown
 
@@ -70,6 +71,9 @@ def main() -> None:
     # Write the final output to blog.html
     with open(HTML_OUTPUT_FILE, 'w', encoding='utf-8') as f:
         f.write(full_page)
+
+    # Format the generated HTML using Prettier
+    subprocess.run(['npx', 'prettier', '--write', str(HTML_OUTPUT_FILE)])
 
 
 if __name__ == '__main__':
