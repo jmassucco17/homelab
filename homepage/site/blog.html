@@ -20,8 +20,109 @@
       <div class="blog-stack">
         <div class="card" href="#">
           <div class="content">
+            <h1>A Real Website</h1>
+            <p>4/21/2025</p>
+            <p>
+              Now that I had something to host (Grafana with metrics for my server), I wanted to
+              have a real web address where anyone could access it. I looked at a few different web
+              domain lease platforms, but ultimately recognized Cloudflare as the best choice
+              because of their great offering of services for DNS routing as well as the wide array
+              of protections for DOS attacks and similar. I purchased
+              <code>jamesmassucco.com</code> for $20/yr.
+            </p>
+            <p>
+              Before allowing traffic to route to my server, I wanted to make sure I understood the
+              security implications, and wanted to ensure that I did everything I could to keep it
+              secure and not put my home network at risk of hacking. I found a great
+              <a
+                href="https://www.reddit.com/r/webhosting/comments/as8f6q/comment/egskkmy/?utm_source=share&amp;utm_medium=web3x&amp;utm_name=web3xcss&amp;utm_term=1&amp;utm_content=share_button"
+                >Reddit comment</a
+              >
+              with a lot of the details I needed. The basic steps were:
+            </p>
+            <ol>
+              <li>
+                Tell Cloudflare to route traffic to your website to your public home IP address
+              </li>
+              <li>
+                Tell Cloudflare to proxy your IP address, so that anyone accessing your site doesn't
+                see your actual home IP address
+              </li>
+              <li>Tell your server to ONLY accept traffic from Cloudlfare IP addresses</li>
+            </ol>
+            <p>
+              To accomplish points 1 and 2, I configured them via Cloudflare's website. I also
+              realized that my home IP address could change, so I added
+              <a href="https://hub.docker.com/r/favonia/cloudflare-ddns">cloudflare-ddns</a> to my
+              setup - this tool automatically checks your public IP address on a regular cadence and
+              then uses a Cloudlfare API token you provide it to tell Cloudflare your new IP address
+              if it has changed.
+            </p>
+            <p>
+              To accomplish point 3, I needed a reverse proxy. A reverse proxy is a lot like a
+              router, in that it directs traffic in both directions based on specific allowed/known
+              routes. A reverse proxy can be configured to receive all the traffic hitting your
+              server, and then direct (or block) that traffic to internal services (e.g. Grafana,
+              your website, etc.). I had heard of <code>nginx</code> before but decided that
+              <code>traefik</code> seemed simpler and better suited for my basic use case. With the
+              help of ChatGPT (yes, I get a lot of help from ChatGPT), I set up a basic
+              docker-compose for <code>traefik</code> and told it to only accept traffic from the
+              Cloudflare IP addresses. Since I wanted to be extra, I also wrote a script that would
+              read the Cloudflare IP addresses using <code>curl</code> and then write them to an
+              <code>.env</code> file used by <code>traefik</code> so that if they ever change (which
+              they almost never do), I could easily update them. Automation for the sake of
+              automation? Probably.
+            </p>
+            <p>
+              Once I had <code>traefik</code> set up, I added labels to the docker-compose entry for
+              Grafana that enabled it as a routable service for <code>traefik</code> and then
+              registered <code>traefik</code> routers for <code>http</code> and
+              <code>https</code> traffic to Grafana. I originally only did <code>https</code>, but
+              couldn't get that to work and during debug found that if I added an
+              <code>http</code> router as well, it would work... I didn't figure out yet why that's
+              required, so for now I just left it in. I registered a sub-domain
+              (<code>grafana.jamesmassucco.com</code>) in Cloudflare and used that as the router
+              source for Grafana traffic, and boom -
+              <a href="https://grafana.jamesmassucco.com/">grafana.jamesmassucco.com</a> was live!
+            </p>
+            <h3>Note on Docker Deployments</h3>
+            <p>
+              At this point, I decided I had too much going on to just have a single
+              <code>docker-compose.yml</code> file, so I decided to a bit of housekeeping
+              organization. I setup a <code>networking/</code> directory for
+              <code>traefik</code> and <code>cloudflare-ddns</code>, and a
+              <code>monitoring/</code> directory for Grafana and Prometheus. Each directory got a
+              separate <code>docker-compose.yml</code> file and it's own
+              <code>start.sh</code> script. The start script is really a "restart" script, because
+              it does the following things:
+            </p>
+            <ol>
+              <li>Change to current director (<code>cd "$(dirname "$0")"</code>)</li>
+              <li>Shut down containers (<code>sudo docker compose down</code>)</li>
+              <li>
+                Update container images from the docker repo (<code>sudo docker compose pull</code>)
+              </li>
+              <li>Start up containers (<code>sudo docker compose up -d</code>)</li>
+            </ol>
+            <p>
+              The <code>docker compose</code> command only looks at containers managed by the local
+              <code>docker-compose.yml</code> file, so by having separate
+              <code>start.sh</code> scripts in each directory, I can separately restart the services
+              relevant to that aspect of the server. I also set up a top-level
+              <code>start_all.sh</code> that just calls each of the <code>start.sh</code> scripts
+              from the subdirectories, so I can easily redeploy all of the services if needed.
+            </p>
+            <p>
+              Next up is a deeper dive into security to make triple sure I'm doing everything I can
+              to prevent getting hacked!
+            </p>
+          </div>
+        </div>
+
+        <div class="card" href="#">
+          <div class="content">
             <h1>Provisioning Server + Metrics Monitoring</h1>
-            <p>4/21/25</p>
+            <p>4/20/25</p>
             <h2>Hardware</h2>
             <p>
               To start the project, I wanted a cheap mini-PC to experiment with. I chose the
