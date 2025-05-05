@@ -1,9 +1,12 @@
 services:
   homepage:
-    image: nginx:alpine
     container_name: homepage
-    volumes:
-      - ./site:/usr/share/nginx/html:ro
+    # Use custom dockerfile (imports from nginx:alpine)
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Copy files from temp directory (established by dockerfile) to live directory at container start
+    entrypoint: /bin/sh -c "cp -r /tmp/site/* /usr/share/nginx/html && nginx -g 'daemon off;'"
     labels:
       # Use traefik to provide HTTP endpoint
       - 'traefik.enable=true'
