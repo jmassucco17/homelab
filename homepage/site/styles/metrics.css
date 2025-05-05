@@ -5,6 +5,7 @@ canvas {
   padding: 1rem;
   max-width: 90vw;
 }
+
 .chart-container {
   width: 100%;
   max-width: 600px; /* or whatever size feels right */
