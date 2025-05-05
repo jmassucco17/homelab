@@ -7,6 +7,7 @@
     <link rel="icon" type="image/png" href="assets/icon/favicon-96x96.png" sizes="96x96" />
     <link rel="shortcut icon" href="assets/icon/favicon.ico" />
     <link rel="stylesheet" href="styles/main.css" />
+    <link rel="stylesheet" href="styles/blog.css" />
   </head>
   <body>
     <a href="/" class="site-home-link">
@@ -16,7 +17,99 @@
 
     <h1>Blog</h1>
     <section>
-      <div class="grid">
+      <div class="blog-stack">
+        <div class="card" href="#">
+          <div class="content">
+            <h1>Provisioning Server + Metrics Monitoring</h1>
+            <p>4/21/25</p>
+            <h2>Hardware</h2>
+            <p>
+              To start the project, I wanted a cheap mini-PC to experiment with. I chose the
+              <a href="https://www.amazon.com/dp/B0DQBMRTJ2">Beelink S13</a> because it was on sale
+              ($200) and has reasonable specs (Intel N150, 16GB RAM, 1TB SSD). The Beelink brand
+              seemed reasonably well-liked based on reviews and some listicles I checked out. In any
+              case, my intention is to add more compute nodes later to form a cluster, so all I
+              really needed was something I could get started with.
+            </p>
+            <h2>Provisioning</h2>
+            <p>
+              When I received the server, it had Windows 11 on it. Windows is... not my favorite
+              environment to work in, and not that well-suited to software development, so I decided
+              to install Ubuntu Server instead. Specifically, I went with Ubuntu Server 22.04.2, the
+              latest Long-Term Support (LTS) version available. I followed this
+              <a href="https://ubuntu.com/tutorials/create-a-usb-stick-on-macos">guide</a> to create
+              a bootable USB stick, plugged it into the Beelink, and rebooted while holding down a
+              specific key on the keyboard that let me choose what drive too boot from, and then
+              after a few minutes of playing "answer the prompts", I had Ubuntu Server running!
+            </p>
+            <p>
+              My first goal was to be able to remotely adminster the server from my laptop over SSH,
+              so I set about figuring out the network setup. I plugged the Beelink into my router
+              but couldn't get a network connection, until I realized I needed to activate the
+              ethernet interface. Turns out these servers require a lot of explicit instruction on
+              what you want them to do! Once I got the port enabled, I was able to do a basic
+              connectivity test (<code>ping 8.8.8.8</code>, which is Google's DNS server). After
+              that, I had to install ssh and then allow ssh access on port 22. While I was doing
+              this, I went down a tangent reading Ubuntu's
+              <a
+                href="https://documentation.ubuntu.com/server/explanation/intro-to/security/index.html"
+                >guide to security</a
+              >
+              and got a little more familiar with the Universal Firewall (<code>ufw</code>). After I
+              satisfied my curiousity, I checked the server's IP address with <code>ip a</code> and
+              then on my laptop I ran <code>ssh jmassucco@&lt;ip_address&gt;</code> and I was in! To
+              make things a little easier, I assigned the Beelink a hostname
+              (<code>ubuntu-server-1</code>) and after a little experimenting, figured that I could
+              access that from my laptop at <code>ssh jmassucco@ubuntu-server-1.local</code>. Now
+              that I could reliably access the server, I disconnected it from my monitor and stowed
+              it in a nondescript back corner of my desk.
+            </p>
+            <h2>Monitoring</h2>
+            <p>
+              The first real project I wanted to do was to setup self-health monitoring of the
+              server. I was already familiar with Prometheus (at least in concept) and have used
+              Grafana quite a bit, so decided to go with that combo. I knew from the beginning that
+              I wanted to use Docker to manage containers for each of the services running on my
+              server, so with the help of ChatGPT, I got a simple docker-compose file written to
+              deploy Prometheus and node-exporter.
+            </p>
+            <p>
+              Prometheus is basically a data scraper and database system which is optimized for
+              collecting metrics. So, by itself it doesn't measure anything. But the Prometheus
+              project provides a service called <code>node-exporter</code> which records standard
+              metrics like CPU and RAM usage and makes them available to Prometheus. So with the two
+              of those deployed together, I was able to view metrics on my cluster in Prometheus at
+              http://ubuntu-server-1.local.:9090/. But I wanted nice plots that I could save and
+              view together, and for that I needed Grafana.
+            </p>
+            <p>
+              Grafana is a data visualization tool that can be connected to any number of backing
+              databases. You can then write queries to those databases and save them in Grafana
+              Panels. Put a bunch of panels together, and you've got a Dashboard which provides a
+              fixed set of queries plotted as graphs to visualize a wide array of data in a simple
+              and familiar view. You can change the time range and the panels automatically query
+              the database(s) for the right data, and you can also set auto-refresh so that you can
+              view live data as it comes in. Grafana also has a huge library of publically saved
+              dashboards that can be easily imported to your instance, so it was a total breeze to
+              set up Grafana (docker-compose by ChatGPT) and then import a few public dashboards
+              built for Prometheus + node-exporter and pick my favorite one, and I was viewing live
+              metrics on my cluster in beautiful graph plots!
+            </p>
+            <p>
+              After I got the metrics set up, I realized I also wanted to see metrics oriented
+              around my Docker containers, and I found the Google open-source cadvisor (short for
+              Container Advisor) that aggregates docker container resource utilization stats and
+              makes them available to Prometheus. After a quick docker-compose update and redeploy,
+              and another public dashboard import to Grafana, I was viewing these metrics as well!
+            </p>
+            <p>
+              At this point, I was very happy with my setup. I decided that my next step was to make
+              what I'd built so far available on a public website (jamesmassucco.com). But I was out
+              of daylight, so decided it was a project for another day.
+            </p>
+          </div>
+        </div>
+
         <div class="card" href="#">
           <div class="content">
             <h1>Starting a homelab</h1>
