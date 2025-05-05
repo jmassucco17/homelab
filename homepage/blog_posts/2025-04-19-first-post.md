@@ -1,0 +1,18 @@
+# Starting a homelab
+
+4/19/25
+
+This is the first of (hopefully) many posts I'll make to document the process of building my home server! I started this project because I want to be able to work on fun software infrastructure things without it always having to be for work. I've historically been very much a workaholic, and though I'm an Electrical Engineer by schooling, I am lately working on more and more software and less and less hardware. My girlfriend recently quoted a coworker as saying "hobbies... I've always meant to get some of those" and it was a bit of a wake up call for me. So here I am, getting a hobby!
+
+My primary goal with this project, as inspired by [r/homelab](https://www.reddit.com/r/homelab/wiki/introduction/), is to learn! I'm also interested in reinforcing my skills in software, in case I pursue an even more software-focused career path in the future.
+
+I'm starting this project with a few learning goals:
+
+1. Basic network and security, so I don't get my home network hacked
+2. Domains and DNS, so I can host a website from my home server
+3. Docker, because it seems useful
+4. Kubernetes, so I can build a cheap cluster of hardware (and also because it seems like a "hot" thing to know for SW infra jobs)
+5. HTML/CSS (and more advanced web stuff) so that I can build some cool webapps (purpose TBD other than that I like making stuff)
+6. LLMs, so I can make my webapps "powered by AI" lol
+
+I'm receiving my (first) server today, and will post details of my learning and setup as soon as I get started!
