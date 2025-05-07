@@ -1,4 +1,5 @@
 # Monitoring
+
 We use Prometheus to collect monitoring metrics on the servers in the cluster.
 
 To start monitoring, run `~/devel/homelab/monitoring/prometheus/start.sh`
@@ -6,14 +7,17 @@ To start monitoring, run `~/devel/homelab/monitoring/prometheus/start.sh`
 See https://chatgpt.com/share/6805952e-091c-8003-8a0a-6d829164ada2 for more details
 
 ## Node Exporter
+
 Node exporter handles collecting metrics on the server
 
 ## Prometheus
+
 Prometheus collects metrics from node exporter and makes them available for querying.
 
 Access at: [http://ubuntu-server-1.local.:9090](http://ubuntu-server-1.local.:9090)
 
 Example queries:
+
 ```
 # CPU
 rate(node_cpu_seconds_total{mode="user"}[1m])
@@ -34,6 +38,7 @@ node_load1
 ```
 
 ## Grafana
+
 Grafana provides visualiation of the metrics
 
 Access at: [grafana.jamesmassucco.com](grafana.jamesmassucco.com)
