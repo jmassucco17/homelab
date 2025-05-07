@@ -20,7 +20,7 @@
       <div class="blog-stack">
         <div class="card" href="#">
           <div class="content">
-            <h1>Building the Website</h1>
+            <h1 id="building-the-website">Building the Website</h1>
             <p>4/23/2025</p>
             <p>
               With my server running and reasonably secure, it was time to set up a proper homepage!
@@ -47,7 +47,7 @@
               IFrames, and so I opted instead to generate some fake metrics, both static ones and a
               bit of JavaScript to make some dynamic plots.
             </p>
-            <h2>Repo Quality of Life</h2>
+            <h2 id="repo-quality-of-life">Repo Quality of Life</h2>
             <p>
               Since the website came together more quickly than I'd expected, I decided to spent a
               bit of time on repo quality of life items. First, I setup a
@@ -73,7 +73,7 @@
 
         <div class="card" href="#">
           <div class="content">
-            <h1>Security</h1>
+            <h1 id="security">Security</h1>
             <p>4/22/2025</p>
             <p>
               As I started to set up my home server, I couldn't shake the feeling that I was going
@@ -129,43 +129,67 @@
             <details>
               <summary>Click here to see my full `ufw` configuration</summary>
 
-              ```sh jmassucco@ubuntu-server-1:~/devel/homelab$ sudo ufw status numbered Status:
-              active To Action From -- ------ ---- [ 1] 80/tcp ALLOW IN 173.245.48.0/20 # cloudflare
-              [ 2] 443/tcp ALLOW IN 173.245.48.0/20 # cloudflare [ 3] 80/tcp ALLOW IN
-              103.21.244.0/22 # cloudflare [ 4] 443/tcp ALLOW IN 103.21.244.0/22 # cloudflare [ 5]
-              80/tcp ALLOW IN 103.22.200.0/22 # cloudflare [ 6] 443/tcp ALLOW IN 103.22.200.0/22 #
-              cloudflare [ 7] 80/tcp ALLOW IN 103.31.4.0/22 # cloudflare [ 8] 443/tcp ALLOW IN
-              103.31.4.0/22 # cloudflare [ 9] 80/tcp ALLOW IN 141.101.64.0/18 # cloudflare [10]
-              443/tcp ALLOW IN 141.101.64.0/18 # cloudflare [11] 80/tcp ALLOW IN 108.162.192.0/18 #
-              cloudflare [12] 443/tcp ALLOW IN 108.162.192.0/18 # cloudflare [13] 80/tcp ALLOW IN
-              190.93.240.0/20 # cloudflare [14] 443/tcp ALLOW IN 190.93.240.0/20 # cloudflare [15]
-              80/tcp ALLOW IN 188.114.96.0/20 # cloudflare [16] 443/tcp ALLOW IN 188.114.96.0/20 #
-              cloudflare [17] 80/tcp ALLOW IN 197.234.240.0/22 # cloudflare [18] 443/tcp ALLOW IN
-              197.234.240.0/22 # cloudflare [19] 80/tcp ALLOW IN 198.41.128.0/17 # cloudflare [20]
-              443/tcp ALLOW IN 198.41.128.0/17 # cloudflare [21] 80/tcp ALLOW IN 162.158.0.0/15 #
-              cloudflare [22] 443/tcp ALLOW IN 162.158.0.0/15 # cloudflare [23] 80/tcp ALLOW IN
-              104.16.0.0/13 # cloudflare [24] 443/tcp ALLOW IN 104.16.0.0/13 # cloudflare [25]
-              80/tcp ALLOW IN 104.24.0.0/14 # cloudflare [26] 443/tcp ALLOW IN 104.24.0.0/14 #
-              cloudflare [27] 80/tcp ALLOW IN 172.64.0.0/13 # cloudflare [28] 443/tcp ALLOW IN
-              172.64.0.0/13 # cloudflare [29] 80/tcp ALLOW IN 131.0.72.0/22 # cloudflare [30]
-              443/tcp ALLOW IN 131.0.72.0/22 # cloudflare [31] 22/tcp ALLOW IN 10.0.0.0/24 # local
-              ssh [32] 22/tcp ALLOW IN 100.64.0.0/10 # Tailscale ssh [33] 80/tcp ALLOW IN
-              2400:cb00::/32 # cloudflare [34] 443/tcp ALLOW IN 2400:cb00::/32 # cloudflare [35]
-              80/tcp ALLOW IN 2405:8100::/32 # cloudflare [36] 443/tcp ALLOW IN 2405:8100::/32 #
-              cloudflare [37] 80/tcp ALLOW IN 2405:b500::/32 # cloudflare [38] 443/tcp ALLOW IN
-              2405:b500::/32 # cloudflare [39] 80/tcp ALLOW IN 2606:4700::/32 # cloudflare [40]
-              443/tcp ALLOW IN 2606:4700::/32 # cloudflare [41] 80/tcp ALLOW IN 2803:f800::/32 #
-              cloudflare [42] 443/tcp ALLOW IN 2803:f800::/32 # cloudflare [43] 80/tcp ALLOW IN
-              2a06:98c0::/29 # cloudflare [44] 443/tcp ALLOW IN 2a06:98c0::/29 # cloudflare [45]
-              80/tcp ALLOW IN 2c0f:f248::/32 # cloudflare [46] 443/tcp ALLOW IN 2c0f:f248::/32 #
-              cloudflare ```
+              <pre
+                class="codehilite"
+              ><code class="language-sh">jmassucco@ubuntu-server-1:~/devel/homelab$ sudo ufw status numbered
+Status: active
+
+     To                         Action      From
+     --                         ------      ----
+[ 1] 80/tcp                     ALLOW IN    173.245.48.0/20            # cloudflare
+[ 2] 443/tcp                    ALLOW IN    173.245.48.0/20            # cloudflare
+[ 3] 80/tcp                     ALLOW IN    103.21.244.0/22            # cloudflare
+[ 4] 443/tcp                    ALLOW IN    103.21.244.0/22            # cloudflare
+[ 5] 80/tcp                     ALLOW IN    103.22.200.0/22            # cloudflare
+[ 6] 443/tcp                    ALLOW IN    103.22.200.0/22            # cloudflare
+[ 7] 80/tcp                     ALLOW IN    103.31.4.0/22              # cloudflare
+[ 8] 443/tcp                    ALLOW IN    103.31.4.0/22              # cloudflare
+[ 9] 80/tcp                     ALLOW IN    141.101.64.0/18            # cloudflare
+[10] 443/tcp                    ALLOW IN    141.101.64.0/18            # cloudflare
+[11] 80/tcp                     ALLOW IN    108.162.192.0/18           # cloudflare
+[12] 443/tcp                    ALLOW IN    108.162.192.0/18           # cloudflare
+[13] 80/tcp                     ALLOW IN    190.93.240.0/20            # cloudflare
+[14] 443/tcp                    ALLOW IN    190.93.240.0/20            # cloudflare
+[15] 80/tcp                     ALLOW IN    188.114.96.0/20            # cloudflare
+[16] 443/tcp                    ALLOW IN    188.114.96.0/20            # cloudflare
+[17] 80/tcp                     ALLOW IN    197.234.240.0/22           # cloudflare
+[18] 443/tcp                    ALLOW IN    197.234.240.0/22           # cloudflare
+[19] 80/tcp                     ALLOW IN    198.41.128.0/17            # cloudflare
+[20] 443/tcp                    ALLOW IN    198.41.128.0/17            # cloudflare
+[21] 80/tcp                     ALLOW IN    162.158.0.0/15             # cloudflare
+[22] 443/tcp                    ALLOW IN    162.158.0.0/15             # cloudflare
+[23] 80/tcp                     ALLOW IN    104.16.0.0/13              # cloudflare
+[24] 443/tcp                    ALLOW IN    104.16.0.0/13              # cloudflare
+[25] 80/tcp                     ALLOW IN    104.24.0.0/14              # cloudflare
+[26] 443/tcp                    ALLOW IN    104.24.0.0/14              # cloudflare
+[27] 80/tcp                     ALLOW IN    172.64.0.0/13              # cloudflare
+[28] 443/tcp                    ALLOW IN    172.64.0.0/13              # cloudflare
+[29] 80/tcp                     ALLOW IN    131.0.72.0/22              # cloudflare
+[30] 443/tcp                    ALLOW IN    131.0.72.0/22              # cloudflare
+[31] 22/tcp                     ALLOW IN    10.0.0.0/24                # local ssh
+[32] 22/tcp                     ALLOW IN    100.64.0.0/10              # Tailscale ssh
+[33] 80/tcp                     ALLOW IN    2400:cb00::/32             # cloudflare
+[34] 443/tcp                    ALLOW IN    2400:cb00::/32             # cloudflare
+[35] 80/tcp                     ALLOW IN    2405:8100::/32             # cloudflare
+[36] 443/tcp                    ALLOW IN    2405:8100::/32             # cloudflare
+[37] 80/tcp                     ALLOW IN    2405:b500::/32             # cloudflare
+[38] 443/tcp                    ALLOW IN    2405:b500::/32             # cloudflare
+[39] 80/tcp                     ALLOW IN    2606:4700::/32             # cloudflare
+[40] 443/tcp                    ALLOW IN    2606:4700::/32             # cloudflare
+[41] 80/tcp                     ALLOW IN    2803:f800::/32             # cloudflare
+[42] 443/tcp                    ALLOW IN    2803:f800::/32             # cloudflare
+[43] 80/tcp                     ALLOW IN    2a06:98c0::/29             # cloudflare
+[44] 443/tcp                    ALLOW IN    2a06:98c0::/29             # cloudflare
+[45] 80/tcp                     ALLOW IN    2c0f:f248::/32             # cloudflare
+[46] 443/tcp                    ALLOW IN    2c0f:f248::/32             # cloudflare
+</code></pre>
             </details>
           </div>
         </div>
 
         <div class="card" href="#">
           <div class="content">
-            <h1>A Real Website</h1>
+            <h1 id="a-real-website">A Real Website</h1>
             <p>4/21/2025</p>
             <p>
               Now that I had something to host (Grafana with metrics for my server), I wanted to
@@ -230,7 +254,7 @@
               source for Grafana traffic, and boom -
               <a href="https://grafana.jamesmassucco.com/">grafana.jamesmassucco.com</a> was live!
             </p>
-            <h2>Note on Docker Deployments</h2>
+            <h2 id="note-on-docker-deployments">Note on Docker Deployments</h2>
             <p>
               At this point, I decided I had too much going on to just have a single
               <code>docker-compose.yml</code> file, so I decided to a bit of housekeeping
@@ -266,9 +290,11 @@
 
         <div class="card" href="#">
           <div class="content">
-            <h1>Provisioning Server + Metrics Monitoring</h1>
+            <h1 id="provisioning-server-metrics-monitoring">
+              Provisioning Server + Metrics Monitoring
+            </h1>
             <p>4/20/25</p>
-            <h2>Hardware</h2>
+            <h2 id="hardware">Hardware</h2>
             <p>
               To start the project, I wanted a cheap mini-PC to experiment with. I chose the
               <a href="https://www.amazon.com/dp/B0DQBMRTJ2">Beelink S13</a> because it was on sale
@@ -277,7 +303,7 @@
               case, my intention is to add more compute nodes later to form a cluster, so all I
               really needed was something I could get started with.
             </p>
-            <h2>Provisioning</h2>
+            <h2 id="provisioning">Provisioning</h2>
             <p>
               When I received the server, it had Windows 11 on it. Windows is... not my favorite
               environment to work in, and not that well-suited to software development, so I decided
@@ -310,7 +336,7 @@
               that I could reliably access the server, I disconnected it from my monitor and stowed
               it in a nondescript back corner of my desk.
             </p>
-            <h2>Monitoring</h2>
+            <h2 id="monitoring">Monitoring</h2>
             <p>
               The first real project I wanted to do was to setup self-health monitoring of the
               server. I was already familiar with Prometheus (at least in concept) and have used
@@ -358,7 +384,7 @@
 
         <div class="card" href="#">
           <div class="content">
-            <h1>Starting a homelab</h1>
+            <h1 id="starting-a-homelab">Starting a homelab</h1>
             <p>4/19/25</p>
             <p>
               This is the first of (hopefully) many posts I'll make to document the process of

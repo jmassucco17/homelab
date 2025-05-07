@@ -23,7 +23,9 @@ def generate_blog_post_html(mardown_path: pathlib.Path) -> str:
     # Read markdown file to HTML
     with open(mardown_path, encoding='utf-8') as f:
         md_content = f.read()
-    html_content = markdown.markdown(md_content)
+    html_content = markdown.markdown(
+        md_content, extensions=['fenced_code', 'codehilite', 'tables', 'toc']
+    )
 
     # Format the post using the HTML template
     post_html = POST_TEMPLATE.format(content=html_content)
