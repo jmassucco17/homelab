@@ -178,3 +178,8 @@ cython_debug/
 # Traefik encryption cache
 letsencrypt/
 acme.json
+
+# Custom hashes for local environment
+.venv-requirements.hash
+.npm-lock.hash
+.pre-commit-config.hash
