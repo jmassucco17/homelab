@@ -1,3 +1,5 @@
+import time
+
 import fastapi
 import prometheus_api_client
 from fastapi import responses, staticfiles, templating
@@ -67,3 +69,27 @@ def get_network_rx(request: fastapi.Request):
         query='rate(node_network_receive_bytes_total{device="eth0"}[1m])'
     )
     return render_widget(request, 'Network RX', result, unit=' bytes/sec')
+
+
+@app.get('/api/cpu-timeseries')
+def get_cpu_timeseries():
+    result = prom.custom_query(
+        query='100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[1m])) * 100)'  # noqa: E501
+    )
+    if result:
+        value = float(result[0]['value'][1])
+    else:
+        value = 0.0
+    return {'timestamp': time.time(), 'value': value}
+
+
+@app.get('/api/memory-timeseries')
+def get_memory_timeseries():
+    result = prom.custom_query(
+        query='(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100'  # noqa: E501
+    )
+    if result:
+        value = float(result[0]['value'][1])
+    else:
+        value = 0.0
+    return {'timestamp': time.time(), 'value': value}
