@@ -1,0 +1,13 @@
+body {
+  font-family: sans-serif;
+  padding: 2rem;
+  background: #f0f0f0;
+}
+
+div {
+  background: white;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 0 5px rgb(0 0 0 / 10%);
+}

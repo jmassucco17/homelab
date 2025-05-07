@@ -11,3 +11,9 @@ services:
       # Dummy HTTP endpoint (weird traefik reasons, to be debugged later
       - 'traefik.http.routers.dashboard-http.rule=Host(`dashboard.jamesmassucco.com`)'
       - 'traefik.http.routers.dashboard-http.entrypoints=web'
+    networks:
+      - web
+
+networks:
+  web:
+    external: true
