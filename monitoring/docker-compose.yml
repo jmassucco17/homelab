@@ -17,6 +17,15 @@ services:
       - '9090:9090'
     depends_on:
       - node-exporter
+    labels:
+      # Use traefik to provide HTTP endpoint
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.prometheus.rule=Host(`prometheus.jamesmassucco.com`)'
+      - 'traefik.http.routers.prometheus.entrypoints=websecure'
+      - 'traefik.http.routers.prometheus.tls.certresolver=cloudflare'
+      # Dummy HTTP endpoint (weird traefik reasons, to be debugged later
+      - 'traefik.http.routers.prometheus-http.rule=Host(`prometheus.jamesmassucco.com`)'
+      - 'traefik.http.routers.prometheus-http.entrypoints=web'
 
   # Export system metrics like disk/RAM/CPU/network
   node-exporter:

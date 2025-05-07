@@ -1,6 +1,17 @@
 {% extends "base.html" %} {% block content %}
 <h1>Home Dashboard</h1>
-<div id="uptime" hx-get="/widgets/uptime" hx-swap="outerHTML" hx-trigger="load, every 10s"></div>
-<div id="cpu" hx-get="/widgets/cpu" hx-swap="outerHTML" hx-trigger="load, every 5s"></div>
-<div id="memory" hx-get="/widgets/memory" hx-swap="outerHTML" hx-trigger="load, every 5s"></div>
+<div id="widget-cpu" hx-get="/widgets/cpu" hx-swap="outerHTML" hx-trigger="load, every 5s"></div>
+<div
+  id="widget-memory"
+  hx-get="/widgets/memory"
+  hx-swap="outerHTML"
+  hx-trigger="load, every 5s"
+></div>
+<div id="widget-disk" hx-get="/widgets/disk" hx-swap="outerHTML" hx-trigger="load, every 10s"></div>
+<div
+  id="widget-network-rx"
+  hx-get="/widgets/network-rx"
+  hx-swap="outerHTML"
+  hx-trigger="load, every 10s"
+></div>
 {% endblock %}
