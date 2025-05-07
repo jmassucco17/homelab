@@ -40,7 +40,7 @@ def home(request: fastapi.Request):
 @app.get('/widgets/cpu', response_class=fastapi.responses.HTMLResponse)
 def get_cpu(request: fastapi.Request):
     result = prom.custom_query(
-        query='100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[1m])) * 100)'
+        query='100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[1m])) * 100)'  # noqa: E501
     )
     return render_widget(request, 'CPU Usage', result)
 
@@ -48,7 +48,7 @@ def get_cpu(request: fastapi.Request):
 @app.get('/widgets/memory', response_class=fastapi.responses.HTMLResponse)
 def get_memory(request: fastapi.Request):
     result = prom.custom_query(
-        query='(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100'
+        query='(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100'  # noqa: E501
     )
     return render_widget(request, 'Memory Usage', result)
 
@@ -56,7 +56,7 @@ def get_memory(request: fastapi.Request):
 @app.get('/widgets/disk', response_class=fastapi.responses.HTMLResponse)
 def get_disk(request: fastapi.Request):
     result = prom.custom_query(
-        query='100 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} * 100)'
+        query='100 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} * 100)'  # noqa: E501
     )
     return render_widget(request, 'Disk Usage', result)
 
