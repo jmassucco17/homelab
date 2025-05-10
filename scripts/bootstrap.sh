@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "$0")"/..
 
 main() {
     echo "🔧 Bootstrapping project environment..."
@@ -73,7 +73,7 @@ install_python_deps() {
 
 setup_docker_services() {
     echo "🚢 Setting up docker systemd services..."
-    sudo python3 setup_services.py
+    sudo python3 scripts/setup_services.py
     echo "📦 Done setting up docker systemd services"
 }
 

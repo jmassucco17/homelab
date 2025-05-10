@@ -3,7 +3,7 @@ import pathlib
 import subprocess
 
 MANAGED_SERVICES = ['dashboard', 'homepage', 'networking', 'monitoring']
-PARENT_DIR = pathlib.Path(__file__).parent
+PARENT_DIR = pathlib.Path(__file__).parent.parent
 DOCKER_BIN = '/usr/bin/docker'
 SYSTEMD_DIR = pathlib.Path('/etc/systemd/system')
 
