@@ -7,6 +7,7 @@ main() {
     install_python
     setup_virtualenv
     install_python_deps
+    setup_docker_services
     setup_pre_commit
     install_node_deps
     echo "✅ Bootstrap complete."
@@ -68,6 +69,12 @@ install_python_deps() {
     python3 -m pip install -r requirements.txt --quiet
 
     echo "$current_hash" > "$hash_file"
+}
+
+setup_docker_services() {
+    echo "🚢 Setting up docker systemd services..."
+    sudo python3 setup_services.py
+    echo "📦 Done setting up docker systemd services"
 }
 
 setup_pre_commit() {
