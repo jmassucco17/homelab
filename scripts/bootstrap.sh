@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
+
+# Run at repo root (one level up from this directory)
 cd "$(dirname "$0")"/..
 
 main() {

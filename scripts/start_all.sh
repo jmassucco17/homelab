@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+
+# Run at repo root (one level up from this directory)
 cd "$(dirname "$0")"/..
 
 PROJECTS=("networking" "monitoring" "homepage" "dashboard")
