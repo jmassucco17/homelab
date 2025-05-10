@@ -8,7 +8,7 @@ DOCKER_BIN = '/usr/bin/docker'
 SYSTEMD_DIR = pathlib.Path('/etc/systemd/system')
 
 
-# Template for
+# Template for systemctl service config for each docker compose file
 TEMPLATE = """
 [Unit]
 Description={name} Docker Compose Service
@@ -17,9 +17,9 @@ After=docker.service
 
 [Service]
 WorkingDirectory={working_dir}
-ExecStart={docker_bin} compose up -d
-ExecStop={docker_bin} compose down
-Restart=always
+ExecStart={service}/start.sh
+ExecStop={docker_bin} compose stop
+Restart=on-failure
 TimeoutStartSec=0
 
 [Install]
@@ -53,6 +53,7 @@ def is_enabled(service_name: str) -> bool:
     result = subprocess.run(
         ['systemctl', 'is-enabled', service_name], capture_output=True, text=True
     )
+    print(result)
     return result.returncode == 0 and result.stdout.strip() == 'enabled'
 
 
@@ -61,6 +62,7 @@ def is_active(service_name: str) -> bool:
     result = subprocess.run(
         ['systemctl', 'is-active', service_name], capture_output=True, text=True
     )
+    print(result)
     return result.returncode == 0 and result.stdout.strip() == 'active'
 
 
@@ -84,6 +86,7 @@ def main():
         service_name = f'{service}.service'
         service_path = SYSTEMD_DIR / service_name
         service_content = TEMPLATE.format(
+            service=service,
             name=service_dir.name,
             working_dir=service_dir.resolve(),
             docker_bin=DOCKER_BIN,
