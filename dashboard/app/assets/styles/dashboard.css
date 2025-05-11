@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code&display=swap');
+
+:root {
+  --card-bg: #1a1d29;
+  --primary: #58a6ff;
+  --border: #2a2e3a;
+}
+
+.container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+canvas {
+  width: 100% !important;
+  display: block;
+}
+
+.label {
+  font-size: 0.9rem;
+  color: #aaa;
+}
+
+.value {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.api-docs {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: #58a6ff;
+  font-size: 1.1rem;
+}

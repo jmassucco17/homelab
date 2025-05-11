@@ -9,7 +9,10 @@ QUERIES = config_schema.load_queries_config().queries
 
 
 # Base FastAPI application
-app = fastapi.FastAPI()
+app = fastapi.FastAPI(
+    title='Home Lab Dashboard',
+    description='Prometheus-powered dashboard for system stats, containers, and more.',
+)
 templates = templating.Jinja2Templates(directory='app/templates')
 app.mount('/assets', staticfiles.StaticFiles(directory='app/assets'), name='assets')
 
@@ -18,6 +21,7 @@ PROM_URL = 'http://prometheus:9090'
 prom = prometheus_api_client.PrometheusConnect(url=PROM_URL, disable_ssl=True)
 
 
+# Main site definition
 @app.get('/', response_class=responses.HTMLResponse)
 def home(request: fastapi.Request):
     return templates.TemplateResponse(

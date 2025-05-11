@@ -7,6 +7,7 @@
     <link rel="icon" type="image/png" href="assets/icon/favicon-96x96.png" sizes="96x96" />
     <link rel="shortcut icon" href="assets/icon/favicon.ico" />
     <link rel="stylesheet" href="/assets/styles/main.css" />
+    <link rel="stylesheet" href="/assets/styles/dashboard.css?v=1.8" />
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
@@ -15,70 +16,91 @@
       <img src="/assets/icon/favicon-96x96.png" alt="Home" class="site-logo" />
       <span>Home</span>
     </a>
-    <main class="container">
+    <a href="/docs" target="_blank" rel="noopener" class="api-docs">
+      <span>API Docs</span>
+    </a>
+    <div class="header">
       <h1>Home Dashboard</h1>
+    </div>
 
-      {% for widget in widgets %}
-      <div
-        id="widget-{{ widget.name }}"
-        hx-get="/widgets/{{ widget.name }}"
-        hx-swap="innerHTML"
-        hx-trigger="load, every 2s"
-      >
-      Loading...
+    <section>
+      <div class="section-title">
+        <span>📊</span>
+        <h2>Latest Metrics</h2>
       </div>
-      {% endfor %}
-      
-      {% for chart in charts %}
-      <div class="card">
-        <h2>{{ chart.label }}</h2>
-        <canvas id="{{ chart.name }}-chart" width="400" height="100"></canvas>
-      </div>
-      {% endfor %}
-
-      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-      <script>
-        {% for chart in charts %}
-          const ctx{{ loop.index }} = document.getElementById('{{ chart.name }}-chart').getContext('2d')
-          const data{{ loop.index }} = {
-            labels: [],
-            datasets: [{
-              label: '{{ chart.label }}',
-              data: [],
-              borderColor: 'rgba(75, 192, 192, 1)',
-              fill: false,
-              tension: 0.1,
-            }]
-          }
-          const chart{{ loop.index }} = new Chart(ctx{{ loop.index }}, {
-            type: 'line',
-            data: data{{ loop.index }},
-            options: {
-              scales: {
-                x: { display: false },
-                y: { min: 0, max: 100 },
-              }
-            }
-          })
-
-          function updateChart{{ loop.index }}() {
-            fetch('/api/{{ chart.name }}-timeseries')
-              .then(res => res.json())
-              .then(({ timestamp, value }) => {
-                const time = new Date(timestamp * 1000).toLocaleTimeString()
-                data{{ loop.index }}.labels.push(time)
-                data{{ loop.index }}.datasets[0].data.push(value)
-                if (data{{ loop.index }}.labels.length > 20) {
-                  data{{ loop.index }}.labels.shift()
-                  data{{ loop.index }}.datasets[0].data.shift()
-                }
-                chart{{ loop.index }}.update()
-              })
-          }
-
-          setInterval(updateChart{{ loop.index }}, 1000)
+      <p>The latest value of key server metrics are queried from Prometheus and rendered with HTTPX using FastAPI. They refresh automatically every 2 seconds.</p>
+      <div class="grid">
+        {% for widget in widgets %}
+          <div id="widget-{{ widget.name }}"
+              hx-get="/widgets/{{ widget.name }}"
+              hx-swap="innerHTML"
+              hx-trigger="load, every 2s">
+            Loading...
+          </div>
         {% endfor %}
-      </script>
-    </main>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title">
+        <span>📈</span>
+        <h2>Live Charts</h2>
+      </div>
+      <p>The historical values of server metrics since you opened this page are queried from Prometheus, delivered with FastAPI, and rendered with Chart.JS.</p>
+      <div class="grid">
+        {% for chart in charts %}
+        <div class="card">
+          <h2>{{ chart.label }}</h2>
+          <canvas id="{{ chart.name }}-chart" width="400" height="100"></canvas>
+        </div>
+      {% endfor %}
+      </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      {% for chart in charts %}
+        const ctx{{ loop.index }} = document.getElementById('{{ chart.name }}-chart').getContext('2d')
+        const data{{ loop.index }} = {
+          labels: [],
+          datasets: [{
+            label: '{{ chart.label }}',
+            data: [],
+            borderColor: 'rgba(0, 122, 255, 0.5)',
+            fill: false,
+            tension: 0.1,
+          }]
+        }
+        const chart{{ loop.index }} = new Chart(ctx{{ loop.index }}, {
+          type: 'line',
+          data: data{{ loop.index }},
+          options: {
+            maintainAspectRatio: true,
+            aspectRatio: 2.5,
+            scales: {
+              x: { display: false },
+              y: { min: 0, max: 100 },
+            }
+          }
+        })
+
+        function updateChart{{ loop.index }}() {
+          fetch('/api/{{ chart.name }}-timeseries')
+            .then(res => res.json())
+            .then(({ timestamp, value }) => {
+              const time = new Date(timestamp * 1000).toLocaleTimeString()
+              data{{ loop.index }}.labels.push(time)
+              data{{ loop.index }}.datasets[0].data.push(value)
+              if (data{{ loop.index }}.labels.length > 20) {
+                data{{ loop.index }}.labels.shift()
+                data{{ loop.index }}.datasets[0].data.shift()
+              }
+              chart{{ loop.index }}.update()
+            })
+        }
+
+        setInterval(updateChart{{ loop.index }}, 1000)
+      {% endfor %}
+    </script>
   </body>
 </html>

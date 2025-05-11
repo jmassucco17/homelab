@@ -15,8 +15,10 @@ queries:
     label: Disk Usage
     query: 100 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} * 100)
     unit: '%'
+    types: ['widget', 'chart']
 
   - name: network-rx
     label: Network RX
     query: rate(node_network_receive_bytes_total{device="eth0"}[1m])
     unit: 'bytes/sec'
+    types: ['widget', 'chart']
