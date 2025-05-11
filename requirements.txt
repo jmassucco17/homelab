@@ -1,8 +1,12 @@
 markdown
 ruff
 pre-commit
+ipython
+
 # dashboard
 fastapi
 uvicorn
 jinja2
 prometheus-api-client
+pyyaml
+pydantic

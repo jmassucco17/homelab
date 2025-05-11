@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>James Massucco | Dashboard</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="assets/icon/favicon-96x96.png" sizes="96x96" />
+    <link rel="shortcut icon" href="assets/icon/favicon.ico" />
+    <link rel="stylesheet" href="/assets/styles/main.css" />
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <a href="/" class="site-home-link">
+      <img src="/assets/icon/favicon-96x96.png" alt="Home" class="site-logo" />
+      <span>Home</span>
+    </a>
+    <main class="container">
+      <h1>Home Dashboard</h1>
+
+      {% for widget in widgets %}
+      <div
+        id="widget-{{ widget.name }}"
+        hx-get="/widgets/{{ widget.name }}"
+        hx-swap="innerHTML"
+        hx-trigger="load, every 2s"
+      >
+      Loading...
+      </div>
+      {% endfor %}
+      
+      {% for chart in charts %}
+      <div class="card">
+        <h2>{{ chart.label }}</h2>
+        <canvas id="{{ chart.name }}-chart" width="400" height="100"></canvas>
+      </div>
+      {% endfor %}
+
+      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+      <script>
+        {% for chart in charts %}
+          const ctx{{ loop.index }} = document.getElementById('{{ chart.name }}-chart').getContext('2d')
+          const data{{ loop.index }} = {
+            labels: [],
+            datasets: [{
+              label: '{{ chart.label }}',
+              data: [],
+              borderColor: 'rgba(75, 192, 192, 1)',
+              fill: false,
+              tension: 0.1,
+            }]
+          }
+          const chart{{ loop.index }} = new Chart(ctx{{ loop.index }}, {
+            type: 'line',
+            data: data{{ loop.index }},
+            options: {
+              scales: {
+                x: { display: false },
+                y: { min: 0, max: 100 },
+              }
+            }
+          })
+
+          function updateChart{{ loop.index }}() {
+            fetch('/api/{{ chart.name }}-timeseries')
+              .then(res => res.json())
+              .then(({ timestamp, value }) => {
+                const time = new Date(timestamp * 1000).toLocaleTimeString()
+                data{{ loop.index }}.labels.push(time)
+                data{{ loop.index }}.datasets[0].data.push(value)
+                if (data{{ loop.index }}.labels.length > 20) {
+                  data{{ loop.index }}.labels.shift()
+                  data{{ loop.index }}.datasets[0].data.shift()
+                }
+                chart{{ loop.index }}.update()
+              })
+          }
+
+          setInterval(updateChart{{ loop.index }}, 1000)
+        {% endfor %}
+      </script>
+    </main>
+  </body>
+</html>

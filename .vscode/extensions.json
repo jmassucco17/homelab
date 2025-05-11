@@ -5,6 +5,7 @@
     "charliermarsh.ruff",
     "stkb.rewrap",
     "tamasfe.even-better-toml",
-    "redhat.vscode-yaml"
+    "redhat.vscode-yaml",
+    "samuelcolvin.jinjahtml"
   ]
 }

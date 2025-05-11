@@ -1,0 +1,22 @@
+queries:
+  - name: cpu
+    label: CPU Usage
+    query: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[1m])) * 100)
+    unit: '%'
+    types: ['widget', 'chart']
+
+  - name: memory
+    label: Memory Usage
+    query: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100
+    unit: '%'
+    types: ['widget', 'chart']
+
+  - name: disk
+    label: Disk Usage
+    query: 100 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} * 100)
+    unit: '%'
+
+  - name: network-rx
+    label: Network RX
+    query: rate(node_network_receive_bytes_total{device="eth0"}[1m])
+    unit: 'bytes/sec'
