@@ -3,7 +3,7 @@
 # Run at repo root (one level up from this directory)
 cd "$(dirname "$0")"/..
 
-PROJECTS=("networking" "monitoring" "homepage" "dashboard")
+PROJECTS=("networking" "monitoring" "homepage" "blog" "dashboard")
 
 for project in "${PROJECTS[@]}"; do
   echo "Starting $project..."

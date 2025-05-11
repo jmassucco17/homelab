@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>James Massucco | Blog</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="assets/icon/favicon-96x96.png" sizes="96x96" />
+    <link rel="shortcut icon" href="assets/icon/favicon.ico" />
+    <link rel="stylesheet" href="assets/styles/main.css" />
+    <link rel="stylesheet" href="assets/styles/blog.css" />
+  </head>
+  <body>
+    <a href="https://jamesmassucco.com" class="site-home-link">
+      <img src="/assets/icon/favicon-96x96.png" alt="Home" class="site-logo" />
+      <span>Home</span>
+    </a>
+
+    <h1>Blog</h1>
+    <section>
+      <div class="blog-stack">
+        <div class="card" href="#">
+          <div class="content">
+            <h1 id="building-the-website">Building the Website</h1>
+            <p>4/23/2025</p>
+            <p>
+              With my server running and reasonably secure, it was time to set up a proper homepage!
+              I already had Grafana exposed at <code>grafana.jamesmassucco.com</code> but I didn't
+              have a proper root site at <code>jamesmassucco.com</code>. Again, I relied on ChatGPT
+              to get started. I told it I wanted a sleak and simple website for showcasing my
+              coding, and it rendered a terminal-style website, and then generated some CSS and HTML
+              to make it real! It honestly did a phenomal job, and all I really had to do was edit
+              the content it had populated to align with what I wanted to say.
+            </p>
+            <p>
+              To serve it up, I added a new <code>docker-compose.yml</code> under the new top-level
+              director <code>homepage/</code> to create an <code>nginx</code> container with a my
+              <code>homepage/site/</code> directory mapped into the
+              <code>/usr/share/nginx/html</code> directory of the container. After that, all I need
+              to do was add my desired top-level directory to my <code>cloudflare-ddns</code> setup
+              and it was automatically registered to Cloudflare, and boom - I was able to access my
+              website!
+            </p>
+            <p>
+              Once I had a homepage, I wanted to add a bit more content, so I (agin with help from
+              ChatGPT) cooked up a Metrics page! I initially wanted to embed Grafana directly in the
+              page to show metrics, but this raised some security red flags due to the use of
+              IFrames, and so I opted instead to generate some fake metrics, both static ones and a
+              bit of JavaScript to make some dynamic plots.
+            </p>
+            <h2 id="repo-quality-of-life">Repo Quality of Life</h2>
+            <p>
+              Since the website came together more quickly than I'd expected, I decided to spent a
+              bit of time on repo quality of life items. First, I setup a
+              <code>.vscode/</code> directory with <code>settings.json</code> and
+              <code>extensions.json</code> files so that default settings get automatically applied
+              in any VSCode session accessing the repo, and so that the required extensions are
+              automatically suggested.
+            </p>
+            <p>
+              Next, I added linters: Prettier (HTML/CSS/Markdown), Stylelint (CSS), and Ruff
+              (Python). I made sure to update the VSCode extensions to include them all, and set up
+              configuration files for them in the root of the repo using some basic settings.
+            </p>
+            <p>
+              Finally, I setup a <code>bootstrap.sh</code> script to provision a fresh install of
+              the repo with the required dependencies. There's still some work to be done there,
+              because it does a lot of unnecessary work and has some error messages, but it's enough
+              for now. This will be helpful when I start to expand my cluster to multiple pieces of
+              hardware and want to provision the repo on each of them during initial configuration.
+            </p>
+          </div>
+        </div>
+
+        <div class="card" href="#">
+          <div class="content">
+            <h1 id="security">Security</h1>
+            <p>4/22/2025</p>
+            <p>
+              As I started to set up my home server, I couldn't shake the feeling that I was going
+              to do something stupid and leave my home network open to hacking. So I did a deep dive
+              (with ChatGPT) about what to look into to improve my security. It had some great
+              advice:
+            </p>
+            <ol>
+              <li>Configure firewall to only allow traffic from Cloudflare</li>
+              <li>
+                Use <a href="https://www.grc.com/x/ne.dll?bh0bkyd2">ShieldsUP!</a> to scan my
+                network for any vulnerabilities
+              </li>
+              <li>
+                Add OAuth for Grafana and other admin-only services, or require a VPN to access them
+              </li>
+              <li>
+                Get a router with VLAN capabilities to completely separate my server from the rest
+                of my home network
+              </li>
+              <li>
+                Add rate-limiting configuration to <code>traefik</code> to prevent excessive access
+              </li>
+              <li>Add Captcha or 2FA with something like Authelia or Authentik</li>
+              <li>
+                Add logging and alerts about attacks with <code>ufw</code> logs or
+                <code>fail2ban</code>
+              </li>
+              <li>Regularly update everything</li>
+            </ol>
+            <p>
+              I accomplished Step 1 pretty easily by extending the (arguably unnecessary) script I
+              wrote early to update <code>traefik</code> allowed IPs from Cloudflare to also update
+              my <code>ufw</code> rules to default deny all traffic on ports 80 and 443 and only
+              allow it from Cloudlfare IPs. For convenience, I also added a comment (<code
+                ># Cloudflare</code
+              >) to all of these automated rules so that my script could easily purge them and
+              re-enter them without affecting other firewall rules I configured myself. Parts 2 and
+              5 were also a breeze. And I purchased a lightly used
+              <a href="https://www.amazon.com/dp/B0BQ417K47">ASUS RT-AX86U</a> router so that I
+              could work on Step 4.
+            </p>
+            <p>I decided to defer Steps 3/6/7/8 to a future development session.</p>
+            <p>
+              But the suggestion of a VPN did get me thinking that I wanted to be able to develop on
+              my server even when away from home. ChatGPT suggested
+              <a href="https://tailscale.com/">Tailscale</a> which was astoundingly easy to setup.
+              Within a few minutes, I was able to access my server with my laptop on a hotspot. And
+              because it's a VPN, the access is very secure; I have to login to the same Tailscale
+              account on both machines (which is secured with Google OAuth) and I only have to allow
+              access on <code>ufw</code> for the Tailscale IP range (<code>100.64.0.0/10</code>).
+            </p>
+            <details>
+              <summary>Click here to see my full `ufw` configuration</summary>
+
+              <div class="codehilite">
+                <pre><span></span><code>jmassucco@ubuntu-server-1:~/devel/homelab$<span class="w"> </span>sudo<span class="w"> </span>ufw<span class="w"> </span>status<span class="w"> </span>numbered
+Status:<span class="w"> </span>active
+
+<span class="w">     </span>To<span class="w">                         </span>Action<span class="w">      </span>From
+<span class="w">     </span>--<span class="w">                         </span>------<span class="w">      </span>----
+<span class="o">[</span><span class="w"> </span><span class="m">1</span><span class="o">]</span><span class="w"> </span><span class="m">80</span>/tcp<span class="w">                     </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">173</span>.245.48.0/20<span class="w">            </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="w"> </span><span class="m">2</span><span class="o">]</span><span class="w"> </span><span class="m">443</span>/tcp<span class="w">                    </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">173</span>.245.48.0/20<span class="w">            </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="w"> </span><span class="m">3</span><span class="o">]</span><span class="w"> </span><span class="m">80</span>/tcp<span class="w">                     </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">103</span>.21.244.0/22<span class="w">            </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="w"> </span><span class="m">4</span><span class="o">]</span><span class="w"> </span><span class="m">443</span>/tcp<span class="w">                    </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">103</span>.21.244.0/22<span class="w">            </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="w"> </span><span class="m">5</span><span class="o">]</span><span class="w"> </span><span class="m">80</span>/tcp<span class="w">                     </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">103</span>.22.200.0/22<span class="w">            </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="w"> </span><span class="m">6</span><span class="o">]</span><span class="w"> </span><span class="m">443</span>/tcp<span class="w">                    </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">103</span>.22.200.0/22<span class="w">            </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="w"> </span><span class="m">7</span><span class="o">]</span><span class="w"> </span><span class="m">80</span>/tcp<span class="w">                     </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">103</span>.31.4.0/22<span class="w">              </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="w"> </span><span class="m">8</span><span class="o">]</span><span class="w"> </span><span class="m">443</span>/tcp<span class="w">                    </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">103</span>.31.4.0/22<span class="w">              </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="w"> </span><span class="m">9</span><span class="o">]</span><span class="w"> </span><span class="m">80</span>/tcp<span class="w">                     </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">141</span>.101.64.0/18<span class="w">            </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">10</span><span class="o">]</span><span class="w"> </span><span class="m">443</span>/tcp<span class="w">                    </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">141</span>.101.64.0/18<span class="w">            </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">11</span><span class="o">]</span><span class="w"> </span><span class="m">80</span>/tcp<span class="w">                     </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">108</span>.162.192.0/18<span class="w">           </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">12</span><span class="o">]</span><span class="w"> </span><span class="m">443</span>/tcp<span class="w">                    </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">108</span>.162.192.0/18<span class="w">           </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">13</span><span class="o">]</span><span class="w"> </span><span class="m">80</span>/tcp<span class="w">                     </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">190</span>.93.240.0/20<span class="w">            </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">14</span><span class="o">]</span><span class="w"> </span><span class="m">443</span>/tcp<span class="w">                    </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">190</span>.93.240.0/20<span class="w">            </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">15</span><span class="o">]</span><span class="w"> </span><span class="m">80</span>/tcp<span class="w">                     </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">188</span>.114.96.0/20<span class="w">            </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">16</span><span class="o">]</span><span class="w"> </span><span class="m">443</span>/tcp<span class="w">                    </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">188</span>.114.96.0/20<span class="w">            </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">17</span><span class="o">]</span><span class="w"> </span><span class="m">80</span>/tcp<span class="w">                     </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">197</span>.234.240.0/22<span class="w">           </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">18</span><span class="o">]</span><span class="w"> </span><span class="m">443</span>/tcp<span class="w">                    </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">197</span>.234.240.0/22<span class="w">           </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">19</span><span class="o">]</span><span class="w"> </span><span class="m">80</span>/tcp<span class="w">                     </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">198</span>.41.128.0/17<span class="w">            </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">20</span><span class="o">]</span><span class="w"> </span><span class="m">443</span>/tcp<span class="w">                    </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">198</span>.41.128.0/17<span class="w">            </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">21</span><span class="o">]</span><span class="w"> </span><span class="m">80</span>/tcp<span class="w">                     </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">162</span>.158.0.0/15<span class="w">             </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">22</span><span class="o">]</span><span class="w"> </span><span class="m">443</span>/tcp<span class="w">                    </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">162</span>.158.0.0/15<span class="w">             </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">23</span><span class="o">]</span><span class="w"> </span><span class="m">80</span>/tcp<span class="w">                     </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">104</span>.16.0.0/13<span class="w">              </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">24</span><span class="o">]</span><span class="w"> </span><span class="m">443</span>/tcp<span class="w">                    </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">104</span>.16.0.0/13<span class="w">              </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">25</span><span class="o">]</span><span class="w"> </span><span class="m">80</span>/tcp<span class="w">                     </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">104</span>.24.0.0/14<span class="w">              </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">26</span><span class="o">]</span><span class="w"> </span><span class="m">443</span>/tcp<span class="w">                    </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">104</span>.24.0.0/14<span class="w">              </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">27</span><span class="o">]</span><span class="w"> </span><span class="m">80</span>/tcp<span class="w">                     </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">172</span>.64.0.0/13<span class="w">              </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">28</span><span class="o">]</span><span class="w"> </span><span class="m">443</span>/tcp<span class="w">                    </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">172</span>.64.0.0/13<span class="w">              </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">29</span><span class="o">]</span><span class="w"> </span><span class="m">80</span>/tcp<span class="w">                     </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">131</span>.0.72.0/22<span class="w">              </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">30</span><span class="o">]</span><span class="w"> </span><span class="m">443</span>/tcp<span class="w">                    </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">131</span>.0.72.0/22<span class="w">              </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">31</span><span class="o">]</span><span class="w"> </span><span class="m">22</span>/tcp<span class="w">                     </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">10</span>.0.0.0/24<span class="w">                </span><span class="c1"># local ssh</span>
+<span class="o">[</span><span class="m">32</span><span class="o">]</span><span class="w"> </span><span class="m">22</span>/tcp<span class="w">                     </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">100</span>.64.0.0/10<span class="w">              </span><span class="c1"># Tailscale ssh</span>
+<span class="o">[</span><span class="m">33</span><span class="o">]</span><span class="w"> </span><span class="m">80</span>/tcp<span class="w">                     </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">2400</span>:cb00::/32<span class="w">             </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">34</span><span class="o">]</span><span class="w"> </span><span class="m">443</span>/tcp<span class="w">                    </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">2400</span>:cb00::/32<span class="w">             </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">35</span><span class="o">]</span><span class="w"> </span><span class="m">80</span>/tcp<span class="w">                     </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">2405</span>:8100::/32<span class="w">             </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">36</span><span class="o">]</span><span class="w"> </span><span class="m">443</span>/tcp<span class="w">                    </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">2405</span>:8100::/32<span class="w">             </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">37</span><span class="o">]</span><span class="w"> </span><span class="m">80</span>/tcp<span class="w">                     </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">2405</span>:b500::/32<span class="w">             </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">38</span><span class="o">]</span><span class="w"> </span><span class="m">443</span>/tcp<span class="w">                    </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">2405</span>:b500::/32<span class="w">             </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">39</span><span class="o">]</span><span class="w"> </span><span class="m">80</span>/tcp<span class="w">                     </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">2606</span>:4700::/32<span class="w">             </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">40</span><span class="o">]</span><span class="w"> </span><span class="m">443</span>/tcp<span class="w">                    </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">2606</span>:4700::/32<span class="w">             </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">41</span><span class="o">]</span><span class="w"> </span><span class="m">80</span>/tcp<span class="w">                     </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">2803</span>:f800::/32<span class="w">             </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">42</span><span class="o">]</span><span class="w"> </span><span class="m">443</span>/tcp<span class="w">                    </span>ALLOW<span class="w"> </span>IN<span class="w">    </span><span class="m">2803</span>:f800::/32<span class="w">             </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">43</span><span class="o">]</span><span class="w"> </span><span class="m">80</span>/tcp<span class="w">                     </span>ALLOW<span class="w"> </span>IN<span class="w">    </span>2a06:98c0::/29<span class="w">             </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">44</span><span class="o">]</span><span class="w"> </span><span class="m">443</span>/tcp<span class="w">                    </span>ALLOW<span class="w"> </span>IN<span class="w">    </span>2a06:98c0::/29<span class="w">             </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">45</span><span class="o">]</span><span class="w"> </span><span class="m">80</span>/tcp<span class="w">                     </span>ALLOW<span class="w"> </span>IN<span class="w">    </span>2c0f:f248::/32<span class="w">             </span><span class="c1"># cloudflare</span>
+<span class="o">[</span><span class="m">46</span><span class="o">]</span><span class="w"> </span><span class="m">443</span>/tcp<span class="w">                    </span>ALLOW<span class="w"> </span>IN<span class="w">    </span>2c0f:f248::/32<span class="w">             </span><span class="c1"># cloudflare</span>
+</code></pre>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <div class="card" href="#">
+          <div class="content">
+            <h1 id="a-real-website">A Real Website</h1>
+            <p>4/21/2025</p>
+            <p>
+              Now that I had something to host (Grafana with metrics for my server), I wanted to
+              have a real web address where anyone could access it. I looked at a few different web
+              domain lease platforms, but ultimately recognized Cloudflare as the best choice
+              because of their great offering of services for DNS routing as well as the wide array
+              of protections for DOS attacks and similar. I purchased
+              <code>jamesmassucco.com</code> for $20/yr.
+            </p>
+            <p>
+              Before allowing traffic to route to my server, I wanted to make sure I understood the
+              security implications, and wanted to ensure that I did everything I could to keep it
+              secure and not put my home network at risk of hacking. I found a great
+              <a
+                href="https://www.reddit.com/r/webhosting/comments/as8f6q/comment/egskkmy/?utm_source=share&amp;utm_medium=web3x&amp;utm_name=web3xcss&amp;utm_term=1&amp;utm_content=share_button"
+                >Reddit comment</a
+              >
+              with a lot of the details I needed. The basic steps were:
+            </p>
+            <ol>
+              <li>
+                Tell Cloudflare to route traffic to your website to your public home IP address
+              </li>
+              <li>
+                Tell Cloudflare to proxy your IP address, so that anyone accessing your site doesn't
+                see your actual home IP address
+              </li>
+              <li>Tell your server to ONLY accept traffic from Cloudlfare IP addresses</li>
+            </ol>
+            <p>
+              To accomplish points 1 and 2, I configured them via Cloudflare's website. I also
+              realized that my home IP address could change, so I added
+              <a href="https://hub.docker.com/r/favonia/cloudflare-ddns">cloudflare-ddns</a> to my
+              setup - this tool automatically checks your public IP address on a regular cadence and
+              then uses a Cloudlfare API token you provide it to tell Cloudflare your new IP address
+              if it has changed.
+            </p>
+            <p>
+              To accomplish point 3, I needed a reverse proxy. A reverse proxy is a lot like a
+              router, in that it directs traffic in both directions based on specific allowed/known
+              routes. A reverse proxy can be configured to receive all the traffic hitting your
+              server, and then direct (or block) that traffic to internal services (e.g. Grafana,
+              your website, etc.). I had heard of <code>nginx</code> before but decided that
+              <code>traefik</code> seemed simpler and better suited for my basic use case. With the
+              help of ChatGPT (yes, I get a lot of help from ChatGPT), I set up a basic
+              docker-compose for <code>traefik</code> and told it to only accept traffic from the
+              Cloudflare IP addresses. Since I wanted to be extra, I also wrote a script that would
+              read the Cloudflare IP addresses using <code>curl</code> and then write them to an
+              <code>.env</code> file used by <code>traefik</code> so that if they ever change (which
+              they almost never do), I could easily update them. Automation for the sake of
+              automation? Probably.
+            </p>
+            <p>
+              Once I had <code>traefik</code> set up, I added labels to the docker-compose entry for
+              Grafana that enabled it as a routable service for <code>traefik</code> and then
+              registered <code>traefik</code> routers for <code>http</code> and
+              <code>https</code> traffic to Grafana. I originally only did <code>https</code>, but
+              couldn't get that to work and during debug found that if I added an
+              <code>http</code> router as well, it would work... I didn't figure out yet why that's
+              required, so for now I just left it in. I registered a sub-domain
+              (<code>grafana.jamesmassucco.com</code>) in Cloudflare and used that as the router
+              source for Grafana traffic, and boom -
+              <a href="https://grafana.jamesmassucco.com/">grafana.jamesmassucco.com</a> was live!
+            </p>
+            <h2 id="note-on-docker-deployments">Note on Docker Deployments</h2>
+            <p>
+              At this point, I decided I had too much going on to just have a single
+              <code>docker-compose.yml</code> file, so I decided to a bit of housekeeping
+              organization. I setup a <code>networking/</code> directory for
+              <code>traefik</code> and <code>cloudflare-ddns</code>, and a
+              <code>monitoring/</code> directory for Grafana and Prometheus. Each directory got a
+              separate <code>docker-compose.yml</code> file and it's own
+              <code>start.sh</code> script. The start script is really a "restart" script, because
+              it does the following things:
+            </p>
+            <ol>
+              <li>Change to current director (<code>cd "$(dirname "$0")"</code>)</li>
+              <li>Shut down containers (<code>sudo docker compose down</code>)</li>
+              <li>
+                Update container images from the docker repo (<code>sudo docker compose pull</code>)
+              </li>
+              <li>Start up containers (<code>sudo docker compose up -d</code>)</li>
+            </ol>
+            <p>
+              The <code>docker compose</code> command only looks at containers managed by the local
+              <code>docker-compose.yml</code> file, so by having separate
+              <code>start.sh</code> scripts in each directory, I can separately restart the services
+              relevant to that aspect of the server. I also set up a top-level
+              <code>start_all.sh</code> that just calls each of the <code>start.sh</code> scripts
+              from the subdirectories, so I can easily redeploy all of the services if needed.
+            </p>
+            <p>
+              Next up is a deeper dive into security to make triple sure I'm doing everything I can
+              to prevent getting hacked!
+            </p>
+          </div>
+        </div>
+
+        <div class="card" href="#">
+          <div class="content">
+            <h1 id="provisioning-server-metrics-monitoring">
+              Provisioning Server + Metrics Monitoring
+            </h1>
+            <p>4/20/25</p>
+            <h2 id="hardware">Hardware</h2>
+            <p>
+              To start the project, I wanted a cheap mini-PC to experiment with. I chose the
+              <a href="https://www.amazon.com/dp/B0DQBMRTJ2">Beelink S13</a> because it was on sale
+              ($200) and has reasonable specs (Intel N150, 16GB RAM, 1TB SSD). The Beelink brand
+              seemed reasonably well-liked based on reviews and some listicles I checked out. In any
+              case, my intention is to add more compute nodes later to form a cluster, so all I
+              really needed was something I could get started with.
+            </p>
+            <h2 id="provisioning">Provisioning</h2>
+            <p>
+              When I received the server, it had Windows 11 on it. Windows is... not my favorite
+              environment to work in, and not that well-suited to software development, so I decided
+              to install Ubuntu Server instead. Specifically, I went with Ubuntu Server 22.04.2, the
+              latest Long-Term Support (LTS) version available. I followed this
+              <a href="https://ubuntu.com/tutorials/create-a-usb-stick-on-macos">guide</a> to create
+              a bootable USB stick, plugged it into the Beelink, and rebooted while holding down a
+              specific key on the keyboard that let me choose what drive too boot from, and then
+              after a few minutes of playing "answer the prompts", I had Ubuntu Server running!
+            </p>
+            <p>
+              My first goal was to be able to remotely adminster the server from my laptop over SSH,
+              so I set about figuring out the network setup. I plugged the Beelink into my router
+              but couldn't get a network connection, until I realized I needed to activate the
+              ethernet interface. Turns out these servers require a lot of explicit instruction on
+              what you want them to do! Once I got the port enabled, I was able to do a basic
+              connectivity test (<code>ping 8.8.8.8</code>, which is Google's DNS server). After
+              that, I had to install ssh and then allow ssh access on port 22. While I was doing
+              this, I went down a tangent reading Ubuntu's
+              <a
+                href="https://documentation.ubuntu.com/server/explanation/intro-to/security/index.html"
+                >guide to security</a
+              >
+              and got a little more familiar with the Universal Firewall (<code>ufw</code>). After I
+              satisfied my curiousity, I checked the server's IP address with <code>ip a</code> and
+              then on my laptop I ran <code>ssh jmassucco@&lt;ip_address&gt;</code> and I was in! To
+              make things a little easier, I assigned the Beelink a hostname
+              (<code>ubuntu-server-1</code>) and after a little experimenting, figured that I could
+              access that from my laptop at <code>ssh jmassucco@ubuntu-server-1.local</code>. Now
+              that I could reliably access the server, I disconnected it from my monitor and stowed
+              it in a nondescript back corner of my desk.
+            </p>
+            <h2 id="monitoring">Monitoring</h2>
+            <p>
+              The first real project I wanted to do was to setup self-health monitoring of the
+              server. I was already familiar with Prometheus (at least in concept) and have used
+              Grafana quite a bit, so decided to go with that combo. I knew from the beginning that
+              I wanted to use Docker to manage containers for each of the services running on my
+              server, so with the help of ChatGPT, I got a simple docker-compose file written to
+              deploy Prometheus and node-exporter.
+            </p>
+            <p>
+              Prometheus is basically a data scraper and database system which is optimized for
+              collecting metrics. So, by itself it doesn't measure anything. But the Prometheus
+              project provides a service called <code>node-exporter</code> which records standard
+              metrics like CPU and RAM usage and makes them available to Prometheus. So with the two
+              of those deployed together, I was able to view metrics on my cluster in Prometheus at
+              http://ubuntu-server-1.local.:9090/. But I wanted nice plots that I could save and
+              view together, and for that I needed Grafana.
+            </p>
+            <p>
+              Grafana is a data visualization tool that can be connected to any number of backing
+              databases. You can then write queries to those databases and save them in Grafana
+              Panels. Put a bunch of panels together, and you've got a Dashboard which provides a
+              fixed set of queries plotted as graphs to visualize a wide array of data in a simple
+              and familiar view. You can change the time range and the panels automatically query
+              the database(s) for the right data, and you can also set auto-refresh so that you can
+              view live data as it comes in. Grafana also has a huge library of publically saved
+              dashboards that can be easily imported to your instance, so it was a total breeze to
+              set up Grafana (docker-compose by ChatGPT) and then import a few public dashboards
+              built for Prometheus + node-exporter and pick my favorite one, and I was viewing live
+              metrics on my cluster in beautiful graph plots!
+            </p>
+            <p>
+              After I got the metrics set up, I realized I also wanted to see metrics oriented
+              around my Docker containers, and I found the Google open-source cadvisor (short for
+              Container Advisor) that aggregates docker container resource utilization stats and
+              makes them available to Prometheus. After a quick docker-compose update and redeploy,
+              and another public dashboard import to Grafana, I was viewing these metrics as well!
+            </p>
+            <p>
+              At this point, I was very happy with my setup. I decided that my next step was to make
+              what I'd built so far available on a public website (jamesmassucco.com). But I was out
+              of daylight, so decided it was a project for another day.
+            </p>
+          </div>
+        </div>
+
+        <div class="card" href="#">
+          <div class="content">
+            <h1 id="starting-a-homelab">Starting a homelab</h1>
+            <p>4/19/25</p>
+            <p>
+              This is the first of (hopefully) many posts I'll make to document the process of
+              building my home server! I started this project because I want to be able to work on
+              fun software infrastructure things without it always having to be for work. I've
+              historically been very much a workaholic, and though I'm an Electrical Engineer by
+              schooling, I am lately working on more and more software and less and less hardware.
+              My girlfriend recently quoted a coworker as saying "hobbies... I've always meant to
+              get some of those" and it was a bit of a wake up call for me. So here I am, getting a
+              hobby!
+            </p>
+            <p>
+              My primary goal with this project, as inspired by
+              <a href="https://www.reddit.com/r/homelab/wiki/introduction/">r/homelab</a>, is to
+              learn! I'm also interested in reinforcing my skills in software, in case I pursue an
+              even more software-focused career path in the future.
+            </p>
+            <p>I'm starting this project with a few learning goals:</p>
+            <ol>
+              <li>Basic network and security, so I don't get my home network hacked</li>
+              <li>Domains and DNS, so I can host a website from my home server</li>
+              <li>Docker, because it seems useful</li>
+              <li>
+                Kubernetes, so I can build a cheap cluster of hardware (and also because it seems
+                like a "hot" thing to know for SW infra jobs)
+              </li>
+              <li>
+                HTML/CSS (and more advanced web stuff) so that I can build some cool webapps
+                (purpose TBD other than that I like making stuff)
+              </li>
+              <li>LLMs, so I can make my webapps "powered by AI" lol</li>
+            </ol>
+            <p>
+              I'm receiving my (first) server today, and will post details of my learning and setup
+              as soon as I get started!
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>© 2025 James Massucco</footer>
+  </body>
+</html>

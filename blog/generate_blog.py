@@ -5,7 +5,7 @@ import markdown
 
 SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
 MARKDOWN_POSTS_DIR = SCRIPT_DIR / 'blog_posts'
-HTML_OUTPUT_FILE = SCRIPT_DIR / 'site/blog.html'
+HTML_OUTPUT_FILE = SCRIPT_DIR / 'site/index.html'
 HTML_TEMPLATE_FILE = SCRIPT_DIR / 'blog_template.html.jinja2'
 
 # Template for each individual blog post rendered as a card
@@ -34,7 +34,7 @@ def generate_blog_post_html(mardown_path: pathlib.Path) -> str:
 
 
 def main() -> None:
-    """Generate a blog.html page by converting all markdown posts to HTML cards this."""
+    """Generate a blog index.html page by converting all markdown posts to HTML cards"""
     posts: list[str] = []
 
     # Process each markdown file in the blog directory. Filenames are assumed to be
@@ -48,7 +48,7 @@ def main() -> None:
         template: str = f.read()
     full_page: str = template.replace('{{ posts }}', '\n'.join(posts))
 
-    # Write the final output to blog.html and format
+    # Write the final output to index.html and format
     with open(HTML_OUTPUT_FILE, 'w', encoding='utf-8') as f:
         f.write(full_page)
     subprocess.run(['npx', 'prettier', '--write', str(HTML_OUTPUT_FILE)])
