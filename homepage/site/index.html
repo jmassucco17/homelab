@@ -9,22 +9,28 @@
     <link rel="stylesheet" href="assets/styles/main.css" />
   </head>
   <body>
+    <a href="/" class="site-home-link">
+      <img src="/assets/icon/favicon-96x96.png" alt="Logo" class="site-logo" />
+      Home
+    </a>
+
+    <h1>My Homelab Project</h1>
     <section>
       <div class="section-title">
-        <span>📄</span>
+        <span>👨🏻‍💻</span>
         <h2>About Me</h2>
       </div>
       <p>
         Hi, I'm <strong>James Massucco</strong>, an electrical engineer who found a passion for
-        software and infrastructure. This site documents my personal projects, especially my home
-        server journey.
+        software and infrastructure. This site documents my learning and developing journey of
+        building a homelab server and running microservices on it (including this website).
       </p>
     </section>
 
     <section>
       <div class="section-title">
-        <span>📈</span>
-        <h2>Projects</h2>
+        <span>💸</span>
+        <h2>Content</h2>
       </div>
       <div class="grid">
         <div class="card" onclick="location.href='/blog.html'" style="cursor: pointer">
@@ -41,32 +47,58 @@
           <h3>Infra as Code</h3>
           <p>Github, where all the magic (configuration) happens.</p>
         </a>
-        <div class="card">
-          <h3><a href="#">Stay Tuned</a></h3>
-          <p>More features, webapps, and more coming soon!</p>
-        </div>
+        <a href="https://dashboard.jamesmassucco.com" class="card" style="text-decoration: none">
+          <h3>Server Metrics</h3>
+          <p>Live dashboard using FastAPI.</p>
+        </a>
       </div>
     </section>
 
     <section>
       <div class="section-title">
         <span>🚀</span>
-        <h2>Live Services</h2>
+        <h2>Services</h2>
       </div>
       <div class="grid">
-        <div class="card" onclick="location.href='/metrics.html'" style="cursor: pointer">
-          <h3>Live Metrics</h3>
-          <p>Status: <strong>✅ Fake</strong></p>
-        </div>
         <a
-          href="https://grafana.jamesmassucco.com/d/aejk7jtrgvsw0a/"
+          href="https://grafana.jamesmassucco.com/"
           class="card"
           style="text-decoration: none"
           target="_blank"
           rel="noopener noreferrer"
         >
           <h3>Grafana</h3>
-          <p>Status: <strong>✅ Online</strong></p>
+          <p>Metrics visualization</p>
+        </a>
+        <a
+          href="https://traefik.jamesmassucco.com/dashboard/#/"
+          class="card"
+          style="text-decoration: none"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <h3>Traefik</h3>
+          <p>Reverse proxy</p>
+        </a>
+        <a
+          href="https://prometheus.jamesmassucco.com/query"
+          class="card"
+          style="text-decoration: none"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <h3>Prometheus</h3>
+          <p>Database for server metrics</p>
+        </a>
+        <a
+          href="https://whoami.jamesmassucco.com/"
+          class="card"
+          style="text-decoration: none"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <h3>Whoami</h3>
+          <p>HTTP reflection service</p>
         </a>
       </div>
     </section>

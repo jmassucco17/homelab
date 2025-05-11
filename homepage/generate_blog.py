@@ -6,7 +6,7 @@ import markdown
 SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
 MARKDOWN_POSTS_DIR = SCRIPT_DIR / 'blog_posts'
 HTML_OUTPUT_FILE = SCRIPT_DIR / 'site/blog.html'
-HTML_TEMPLATE_FILE = SCRIPT_DIR / 'blog_template.html'
+HTML_TEMPLATE_FILE = SCRIPT_DIR / 'blog_template.html.jinja2'
 
 # Template for each individual blog post rendered as a card
 POST_TEMPLATE: str = """
