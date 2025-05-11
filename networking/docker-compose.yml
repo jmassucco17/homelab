@@ -91,12 +91,17 @@ services:
     security_opt:
       - no-new-privileges:true
     environment:
-      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
-      - DOMAINS=${DOMAINS}
-      - PROXIED=${PROXIED}
-      - TZ=${TZ}
-      # # Disable IPv6
-      # - IP6_PROVIDER=none
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN}
+      DOMAINS: >
+        jamesmassucco.com,
+        dashboard.jamesmassucco.com,
+        blog.jamesmassucco.com,
+        grafana.jamesmassucco.com,
+        traefik.jamesmassucco.com,
+        whoami.jamesmassucco.com,
+        prometheus.jamesmassucco.com
+      PROXIED: true
+      TZ: America/Los_Angeles
     labels:
       - 'traefik.enable=false'
 
