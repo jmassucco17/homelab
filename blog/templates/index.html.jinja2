@@ -27,6 +27,7 @@
     </a>
 
     <h1>Blog</h1>
+    
     <section>
       <div class="grid">
         {% for post in posts %}
@@ -34,13 +35,6 @@
             <h3>{{ post.metadata.title }}</h3>
             <p class="date">{{ post.metadata.dt | datefmt }}</p>
             <p>{{ post.metadata.summary }}</p>
-            {# {% if post.metadata.tags %}
-              <p class="tags">
-                {% for tag in post.metadata.tags %}
-                  <span class="tag">{{ tag }}</span>
-                {% endfor %}
-              </p>
-            {% endif %} #}
           </a>
         {% endfor %}
       </div>
