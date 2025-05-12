@@ -24,6 +24,11 @@ RSS_OUTPUT_FILE = SITE_DIR / 'rss.xml'
 
 
 class BlogPost:
+    """Represents a single blog post
+
+    Provides convenience properties to convert to markdown-html and read metadata
+    """
+
     md_path: pathlib.Path
     _post: frontmatter.Post | None
 
@@ -33,7 +38,7 @@ class BlogPost:
 
     @property
     def post(self) -> frontmatter.Post:
-        """Returns post, loading and caching if necessary"""
+        """Returns frontmatter-parsed post, loading and caching if necessary"""
         if self._post is None:
             self._post = frontmatter.load(self.md_path)
         return self._post
@@ -52,14 +57,17 @@ class BlogPost:
 
 
 class BlogPostMetadata(pydantic.BaseModel):
+    """Metadata specification for blog posts"""
+
     title: str
-    date: str  # XXX should be a date?
+    date: str
     tags: list[str]
     summary: str
     slug: str
 
     @property
     def dt(self) -> datetime.datetime:
+        """Parses date into datetime object"""
         return datetime.datetime.fromisoformat(self.date)
 
 
@@ -71,7 +79,6 @@ def write_and_format_html(html: str, path: pathlib.Path) -> None:
 
 
 def main() -> None:
-    """Generate a blog index.html page by converting all markdown posts to HTML cards"""
     # Load jinja templates
     env = jinja2.Environment(loader=jinja2.FileSystemLoader(TEMPLATES_DIR))
     env.filters['datefmt'] = lambda value, fmt='%B %d, %Y': value.strftime(fmt)
@@ -82,6 +89,18 @@ def main() -> None:
     # Load posts
     posts = [BlogPost(path) for path in MARKDOWN_POSTS_DIR.glob('*.md')]
     posts = sorted(posts, key=lambda p: p.metadata.dt, reverse=True)
+
+    # Ensure no duplicate slugs
+    slugs = [p.metadata.slug for p in posts]
+    seen: list[str] = []
+    duplicates: list[str] = []
+    for slug in slugs:
+        if slug in seen:
+            duplicates.append(slug)
+            continue
+        seen.append(slug)
+    if duplicates:
+        raise ValueError(f'Duplicate slugs: {duplicates}')
 
     # Generate index
     index_page = index_template.render(posts=posts)
