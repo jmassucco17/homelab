@@ -4,31 +4,67 @@
   box-sizing: border-box;
 }
 
+:root {
+  /* Text */
+  --title-text: #58a6ff;
+  --text: #c9d1d9;
+  --footer-text: #8b949e;
+
+  /* Object Colors */
+  --page-bg: #0d1117;
+  --section-bg: #161b22;
+  --section-border: rgb(0 255 170 / 10%);
+  --card-bg: var(--page-bg);
+  --card-border: #30363d;
+}
+
+/* Logo and Home Link */
+.site-home-link {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: var(--title-text);
+  font-size: 1.1rem;
+}
+
+.site-logo {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+}
+
+/* Main Body style */
 body {
   margin: 0;
   font-family: 'Fira Code', monospace;
-  background-color: #0d1117;
-  color: #c9d1d9;
+  color: var(--page-text);
+  background-color: var(--page-bg);
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 2rem;
 }
 
+/* Headings */
 h1,
 h2 {
-  color: #58a6ff;
+  color: var(--title-text);
   margin-bottom: 1rem;
 }
 
+/* Section and Section Title */
 section {
-  background: #161b22;
+  background: var(--section-bg);
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 2rem;
   width: 100%;
   max-width: 800px;
-  box-shadow: 0 0 12px rgb(0 255 170 / 10%);
+  box-shadow: 0 0 12px var(--section-border);
 }
 
 .section-title {
@@ -39,6 +75,7 @@ section {
   margin-bottom: 1rem;
 }
 
+/* Grid and cards */
 .grid {
   display: grid;
   gap: 1rem;
@@ -46,8 +83,8 @@ section {
 }
 
 .card {
-  background: #0d1117;
-  border: 1px solid #30363d;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 10px;
   padding: 1rem;
   transition: transform 0.2s ease;
@@ -55,18 +92,12 @@ section {
 
 .card:hover {
   transform: translateY(-5px);
-  border-color: #58a6ff;
+  border-color: var(--title-text);
 }
 
 a {
-  color: #58a6ff;
+  color: var(--title-text);
   text-decoration: none;
-}
-
-footer {
-  margin-top: 4rem;
-  color: #8b949e;
-  font-size: 0.9rem;
 }
 
 a.card {
@@ -76,28 +107,15 @@ a.card {
 }
 
 a.card h3 {
-  color: #58a6ff;
+  color: var(--title-text);
 }
 
 a.card p {
-  color: #c9d1d9;
+  color: var(--text);
 }
 
-/* Logo and home link */
-.site-home-link {
-  position: absolute;
-  top: 1rem;
-  left: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  text-decoration: none;
-  color: #58a6ff;
-  font-size: 1.1rem;
-}
-
-.site-logo {
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
+footer {
+  margin-top: 4rem;
+  color: var(--footer-text);
+  font-size: 0.9rem;
 }
