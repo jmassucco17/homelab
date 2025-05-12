@@ -1,17 +1,29 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script>
+      ;(function () {
+        const cookieTheme = document.cookie
+          .split('; ')
+          .find((row) => row.startsWith('theme='))
+          ?.split('=')[1]
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+        const theme = cookieTheme || (prefersDark ? 'dark' : 'light')
+        document.documentElement.setAttribute('data-theme', theme)
+      })()
+    </script>
     <title>James Massucco | Dashboard</title>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/png" href="assets/icon/favicon-96x96.png" sizes="96x96" />
     <link rel="shortcut icon" href="assets/icon/favicon.ico" />
     <link rel="stylesheet" href="/assets/styles/main.css" />
-    <link rel="stylesheet" href="/assets/styles/dashboard.css?v=1.8" />
+    <link rel="stylesheet" href="/assets/styles/dashboard.css?v=1.10" />
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
   <body>
+    <div id="theme-toggle-container"></div>
     <a href="https://jamesmassucco.com" class="site-home-link">
       <img src="/assets/icon/favicon-96x96.png" alt="Home" class="site-logo" />
       <span>Home</span>
@@ -101,6 +113,13 @@
 
         setInterval(updateChart{{ loop.index }}, 1000)
       {% endfor %}
+    </script>
+    <footer>&copy; 2025 James Massucco. Built with love and Linux.</footer>
+    <script type="module">
+      import { insertThemeToggle } from '/assets/scripts/theme-toggle.js?v=1.2'
+      window.addEventListener('DOMContentLoaded', () => {
+        insertThemeToggle() // Will look for #theme-toggle-container
+      })
     </script>
   </body>
 </html>

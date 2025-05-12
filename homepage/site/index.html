@@ -1,14 +1,27 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script>
+      ;(function () {
+        const cookieTheme = document.cookie
+          .split('; ')
+          .find((row) => row.startsWith('theme='))
+          ?.split('=')[1]
+
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+        const theme = cookieTheme || (prefersDark ? 'dark' : 'light')
+        document.documentElement.setAttribute('data-theme', theme)
+      })()
+    </script>
     <title>James Massucco | Home Lab</title>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/png" href="assets/icon/favicon-96x96.png" sizes="96x96" />
     <link rel="shortcut icon" href="assets/icon/favicon.ico" />
-    <link rel="stylesheet" href="assets/styles/main.css" />
+    <link rel="stylesheet" href="assets/styles/main.css?v=1.11" />
   </head>
   <body>
+    <div id="theme-toggle-container"></div>
     <a href="/" class="site-home-link">
       <img src="/assets/icon/favicon-96x96.png" alt="Logo" class="site-logo" />
       Home
@@ -33,21 +46,20 @@
         <h2>Content</h2>
       </div>
       <div class="grid">
-        <a href="https://blog.jamesmassucco.com" class="card" style="text-decoration: none">
+        <a href="https://blog.jamesmassucco.com" class="card">
           <h3>Blog</h3>
           <p>Read about my journey of creating a home server.</p>
         </a>
         <a
           href="https://github.com/jmassucco17/homelab"
           class="card"
-          style="text-decoration: none"
           target="_blank"
           rel="noopener noreferrer"
         >
           <h3>Infra as Code</h3>
           <p>Github, where all the magic (configuration) happens.</p>
         </a>
-        <a href="https://dashboard.jamesmassucco.com" class="card" style="text-decoration: none">
+        <a href="https://dashboard.jamesmassucco.com" class="card">
           <h3>Server Metrics</h3>
           <p>Live dashboard using FastAPI.</p>
         </a>
@@ -63,7 +75,6 @@
         <a
           href="https://grafana.jamesmassucco.com/"
           class="card"
-          style="text-decoration: none"
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -73,7 +84,6 @@
         <a
           href="https://traefik.jamesmassucco.com/dashboard/#/"
           class="card"
-          style="text-decoration: none"
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -83,7 +93,6 @@
         <a
           href="https://prometheus.jamesmassucco.com/query"
           class="card"
-          style="text-decoration: none"
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -93,7 +102,6 @@
         <a
           href="https://whoami.jamesmassucco.com/"
           class="card"
-          style="text-decoration: none"
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -112,5 +120,11 @@
     </section>
 
     <footer>&copy; 2025 James Massucco. Built with love and Linux.</footer>
+    <script type="module">
+      import { insertThemeToggle } from '/assets/scripts/theme-toggle.js?v=1.2'
+      window.addEventListener('DOMContentLoaded', () => {
+        insertThemeToggle() // Will look for #theme-toggle-container
+      })
+    </script>
   </body>
 </html>

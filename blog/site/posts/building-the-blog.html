@@ -1,14 +1,26 @@
 <!doctype html>
 <html>
   <head>
+    <script>
+      ;(function () {
+        const cookieTheme = document.cookie
+          .split('; ')
+          .find((row) => row.startsWith('theme='))
+          ?.split('=')[1]
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+        const theme = cookieTheme || (prefersDark ? 'dark' : 'light')
+        document.documentElement.setAttribute('data-theme', theme)
+      })()
+    </script>
     <title>| JM Homelab</title>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/png" href="/assets/icon/favicon-96x96.png" sizes="96x96" />
     <link rel="shortcut icon" href="/assets/icon/favicon.ico" />
-    <link rel="stylesheet" href="/assets/styles/main.css?v=1.8" />
+    <link rel="stylesheet" href="/assets/styles/main.css?v=1.11" />
   </head>
   <body>
+    <div id="theme-toggle-container"></div>
     <a href="/" class="site-home-link">
       <img src="/assets/icon/favicon-96x96.png" alt="Blog Home" class="site-logo" />
       <span>Blog Home</span>
@@ -59,5 +71,13 @@
         </article>
       </div>
     </section>
+
+    <footer>&copy; 2025 James Massucco. Built with love and Linux.</footer>
+    <script type="module">
+      import { insertThemeToggle } from '/assets/scripts/theme-toggle.js?v=1.2'
+      window.addEventListener('DOMContentLoaded', () => {
+        insertThemeToggle() // Will look for #theme-toggle-container
+      })
+    </script>
   </body>
 </html>
