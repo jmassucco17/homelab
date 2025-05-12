@@ -5,7 +5,7 @@
 }
 
 :root {
-  /* Text */
+  /* Text Colors */
   --title-text: #58a6ff;
   --text: #c9d1d9;
   --footer-text: #8b949e;
@@ -16,6 +16,10 @@
   --section-border: rgb(0 255 170 / 10%);
   --card-bg: var(--page-bg);
   --card-border: #30363d;
+
+  /* Other Colors */
+  --red: #c54233;
+  --yellow: #ec9a29;
 }
 
 /* Logo and Home Link */
@@ -41,7 +45,7 @@
 body {
   margin: 0;
   font-family: 'Fira Code', monospace;
-  color: var(--page-text);
+  color: var(--text);
   background-color: var(--page-bg);
   display: flex;
   flex-direction: column;
@@ -114,6 +118,13 @@ a.card p {
   color: var(--text);
 }
 
+/* Dates (for blog posts) */
+a.card .date {
+  color: var(--yellow);
+  text-decoration: none;
+}
+
+/* Footer */
 footer {
   margin-top: 4rem;
   color: var(--footer-text);
