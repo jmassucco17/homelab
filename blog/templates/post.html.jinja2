@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ post.title }} | JM Homelab</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="/assets/icon/favicon-96x96.png" sizes="96x96" />
+    <link rel="shortcut icon" href="/assets/icon/favicon.ico" />
+    <link rel="stylesheet" href="/assets/styles/main.css?v=1.2" />
+    <link rel="stylesheet" href="/assets/styles/blog.css" />
+</head>
+<body>
+  <a href="/" class="site-home-link">
+    <img src="/assets/icon/favicon-96x96.png" alt="Blog Home" class="site-logo" />
+    <span>Blog Home</span>
+  </a>
+
+  <h1>{{ post.metadata.title }}</h1>
+
+  <section>
+    <div class="grid">
+      <article class="post">
+        <p class="meta">{{ post.metadata.dt | datefmt }}</p>
+        {# {% if post.metadata.tags %}
+          <p class="tags">
+            {% for tag in post.metadata.tags %}
+              <span class="tag">{{ tag }}</span>
+            {% endfor %}
+          </p>
+        {% endif %} #}
+        <div class="content">{{ post.content | safe }}</div>
+      </article>
+    </div>
+  </section>
+</body>
+</html>

@@ -2,6 +2,7 @@ markdown
 ruff
 pre-commit
 ipython
+python-frontmatter
 
 # dashboard
 fastapi

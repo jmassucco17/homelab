@@ -1,0 +1,43 @@
+<rss version="2.0">
+  <channel>
+    <title>James Massucco Blog</title>
+    <link>https://blog.jamesmassucco.com</link>
+    <description>Updates from my homelab and engineering work</description>
+    
+    <item>
+      <title>Building the Homepage</title>
+      <link>https://blog.jamesmassucco.com/building-the-homepage.html</link>
+      <pubDate>Wed, 23 Apr 2025 00:00:00 +0000</pubDate>
+      <description>How I built a simple homepage. Plus, some repo quality-of-life setup</description>
+    </item>
+    
+    <item>
+      <title>Security</title>
+      <link>https://blog.jamesmassucco.com/security.html</link>
+      <pubDate>Tue, 22 Apr 2025 00:00:00 +0000</pubDate>
+      <description>Reviewing the security of my setup to ensure my home network is not exposed to hackers</description>
+    </item>
+    
+    <item>
+      <title>A Real Website</title>
+      <link>https://blog.jamesmassucco.com/a-real-website.html</link>
+      <pubDate>Mon, 21 Apr 2025 00:00:00 +0000</pubDate>
+      <description>Exposing Grafana externally. Plus, some notes about docker deployments</description>
+    </item>
+    
+    <item>
+      <title>Provisioning Server + Metrics Monitoring</title>
+      <link>https://blog.jamesmassucco.com/provisioning-server-metrics-monitoring.html</link>
+      <pubDate>Sun, 20 Apr 2025 00:00:00 +0000</pubDate>
+      <description>Initial server unboxing, OS install, networking, and basic metrics with Prometheus and Grafana</description>
+    </item>
+    
+    <item>
+      <title>Starting a Homelab</title>
+      <link>https://blog.jamesmassucco.com/starting-a-homelab.html</link>
+      <pubDate>Sat, 19 Apr 2025 00:00:00 +0000</pubDate>
+      <description>Introduction to my homelab project, why I chose to do it, and where I drew inspiration from</description>
+    </item>
+    
+  </channel>
+</rss>
