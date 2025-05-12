@@ -5,6 +5,27 @@
     <description>Updates from my homelab and engineering work</description>
     
     <item>
+      <title>Leveling Up My Blog</title>
+      <link>https://blog.jamesmassucco.com/blog-levelup.html</link>
+      <pubDate>Sun, 11 May 2025 00:00:00 +0000</pubDate>
+      <description>Turning my blog into a dedicated app with a page for each post</description>
+    </item>
+    
+    <item>
+      <title>Building a Metrics Dashboard</title>
+      <link>https://blog.jamesmassucco.com/metrics-dashboard.html</link>
+      <pubDate>Sat, 10 May 2025 00:00:00 +0000</pubDate>
+      <description>FastAPI, htmx, chart.js, and prometheus - oh my!</description>
+    </item>
+    
+    <item>
+      <title>Starting a Blog</title>
+      <link>https://blog.jamesmassucco.com/building-the-blog.html</link>
+      <pubDate>Thu, 01 May 2025 00:00:00 +0000</pubDate>
+      <description>How I turned these markdown posts into a static HTML blog</description>
+    </item>
+    
+    <item>
       <title>Building the Homepage</title>
       <link>https://blog.jamesmassucco.com/building-the-homepage.html</link>
       <pubDate>Wed, 23 Apr 2025 00:00:00 +0000</pubDate>
