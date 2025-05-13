@@ -12,6 +12,10 @@ services:
       - '--api.dashboard=true'
       - '--api.insecure=false'
       - '--api.debug=true'
+      # Expose metrics to Prometheus
+      - '--metrics.prometheus=true'
+      - '--metrics.prometheus.entrypoint=metrics'
+      - '--entrypoints.metrics.address=:8082'
       # HTTPS only
       - '--entrypoints.websecure.address=:443'
       # Enable for docker but only if they have the right labels
@@ -28,6 +32,8 @@ services:
       - '--entrypoints.websecure.forwardedHeaders.insecure=true'
     ports:
       - '443:443'
+      # Expose metrics
+      - '8082:8082'
     volumes:
       - '/var/run/docker.sock:/var/run/docker.sock:ro'
       # Ensure this file has 600 permissions
