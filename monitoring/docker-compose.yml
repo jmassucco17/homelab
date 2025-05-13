@@ -66,6 +66,9 @@ services:
       - 'traefik.http.services.grafana.loadbalancer.server.port=3000'
     volumes:
       - grafana-storage:/var/lib/grafana
+    environment:
+      - GF_SERVER_ROOT_URL=https://grafana.jamesmassucco.com
+      - GF_SERVER_DOMAIN=grafana.jamesmassucco.com
     restart: unless-stopped
 
 networks:
