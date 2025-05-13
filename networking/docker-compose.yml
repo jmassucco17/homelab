@@ -24,13 +24,8 @@ services:
       - '--certificatesresolvers.cloudflare.acme.email=${CLOUDFLARE_API_EMAIL}'
       - '--certificatesresolvers.cloudflare.acme.storage=/letsencrypt/acme.json'
       # Only allow Cloudflare IPs (requires Cloudflare proxying)
-      - '--entrypoints.web.forwardedHeaders.trustedIPs=${CLOUDFLARE_TRUSTED_IPS}'
-      - '--entrypoints.web.forwardedHeaders.insecure=true'
       - '--entrypoints.websecure.forwardedHeaders.trustedIPs=${CLOUDFLARE_TRUSTED_IPS}'
       - '--entrypoints.websecure.forwardedHeaders.insecure=true'
-      # Disable HTTPS->HTTPS redirect (CloudFlare is configured to do this instead)
-      # - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-      # - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
     ports:
       - '443:443'
     volumes:
