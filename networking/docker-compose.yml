@@ -12,8 +12,7 @@ services:
       - '--api.dashboard=true'
       - '--api.insecure=false'
       - '--api.debug=true'
-      # HTTP(80) and HTTPS(443)
-      - '--entrypoints.web.address=:80'
+      # HTTPS only
       - '--entrypoints.websecure.address=:443'
       # Enable for docker but only if they have the right labels
       - '--providers.docker=true'
@@ -33,7 +32,6 @@ services:
       # - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       # - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
     ports:
-      - '80:80'
       - '443:443'
     volumes:
       - '/var/run/docker.sock:/var/run/docker.sock:ro'
@@ -46,16 +44,12 @@ services:
     environment:
       - CF_DNS_API_TOKEN=${CLOUDFLARE_API_TOKEN}
     labels:
-      # Use traefik to provide HTTP endpoint
+      # Use traefik to provide HTTPS endpoint
       - 'traefik.enable=true'
       - 'traefik.http.routers.traefik.rule=Host(`traefik.jamesmassucco.com`)'
       - 'traefik.http.routers.traefik.entrypoints=websecure'
       - 'traefik.http.routers.traefik.service=api@internal'
       - 'traefik.http.routers.traefik.tls.certresolver=cloudflare'
-      # Dummy HTTP endpoint (weird traefik reasons, to be debugged later
-      - 'traefik.http.routers.traefik-http.rule=Host(`traefik.jamesmassucco.com`)'
-      - 'traefik.http.routers.traefik-http.entrypoints=web'
-      - 'traefik.http.routers.traefik-http.service=api@internal'
       # Secure with basic auth and rate limiting
       - 'traefik.http.routers.traefik.middlewares=auth,ratelimit'
       # Define the middleware
@@ -72,14 +66,11 @@ services:
     networks:
       - web
     labels:
-      # Use traefik to provide HTTP endpoint
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.whoami-https.rule=Host(`whoami.jamesmassucco.com`)'
-      - 'traefik.http.routers.whoami-https.entrypoints=websecure'
-      - 'traefik.http.routers.whoami-https.tls.certresolver=cloudflare'
-      # Dummy HTTP endpoint (weird traefik reasons, to be debugged later
-      - 'traefik.http.routers.whoami-http.rule=Host(`whoami.jamesmassucco.com`)'
-      - 'traefik.http.routers.whoami-http.entrypoints=web'
+      # Use traefik to provide HTTPS endpoint
+      - traefik.enable=true
+      - traefik.http.routers.whoami.rule=Host(`whoami.jamesmassucco.com`)
+      - traefik.http.routers.whoami.entrypoints=websecure
+      - traefik.http.routers.whoami.tls.certresolver=cloudflare
 
   # Automatically updates public IP DNS in Cloudflare
   cloudflare-ddns:

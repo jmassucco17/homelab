@@ -23,9 +23,6 @@ services:
       - 'traefik.http.routers.prometheus.rule=Host(`prometheus.jamesmassucco.com`)'
       - 'traefik.http.routers.prometheus.entrypoints=websecure'
       - 'traefik.http.routers.prometheus.tls.certresolver=cloudflare'
-      # Dummy HTTP endpoint (weird traefik reasons, to be debugged later
-      - 'traefik.http.routers.prometheus-http.rule=Host(`prometheus.jamesmassucco.com`)'
-      - 'traefik.http.routers.prometheus-http.entrypoints=web'
 
   # Export system metrics like disk/RAM/CPU/network
   node-exporter:
@@ -61,14 +58,11 @@ services:
     networks:
       - web
     labels:
-      # Use traefik to provide HTTP endpoint
+      # Use traefik to provide HTTPS endpoint
       - 'traefik.enable=true'
       - 'traefik.http.routers.grafana.rule=Host(`grafana.jamesmassucco.com`)'
       - 'traefik.http.routers.grafana.entrypoints=websecure'
       - 'traefik.http.routers.grafana.tls.certresolver=cloudflare'
-      # Dummy HTTP endpoint (weird traefik reasons, to be debugged later
-      - 'traefik.http.routers.grafana-http.rule=Host(`grafana.jamesmassucco.com`)'
-      - 'traefik.http.routers.grafana-http.entrypoints=web'
       - 'traefik.http.services.grafana.loadbalancer.server.port=3000'
     volumes:
       - grafana-storage:/var/lib/grafana

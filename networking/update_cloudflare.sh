@@ -45,7 +45,6 @@ echo "Updating firewall rules..."
 if [[ ${#IPS_TO_REMOVE[@]} -gt 0 ]]; then
     echo "Removing outdated Cloudflare rules..."
     for ip in "${IPS_TO_REMOVE[@]}"; do
-        sudo ufw delete allow from "$ip" to any port 80 proto tcp || true
         sudo ufw delete allow from "$ip" to any port 443 proto tcp || true
     done
 else
@@ -57,7 +56,6 @@ if [[ ${#IPS_TO_ADD[@]} -gt 0 ]]; then
     echo "Adding new Cloudflare rules..."
     for ip in "${IPS_TO_ADD[@]}"; do
         echo "$ip"
-        sudo ufw allow from "$ip" to any port 80 proto tcp comment 'cloudflare'
         sudo ufw allow from "$ip" to any port 443 proto tcp comment 'cloudflare'
     done
 else

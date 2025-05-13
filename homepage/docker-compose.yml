@@ -15,9 +15,6 @@ services:
       - 'traefik.http.routers.homepage.tls=true'
       - 'traefik.http.routers.homepage.tls.certresolver=cloudflare'
       - 'traefik.http.services.homepage.loadbalancer.server.port=80'
-      # Dummy HTTP endpoint (weird traefik reasons, to be debugged later
-      - 'traefik.http.routers.homepage-http.rule=Host(`jamesmassucco.com`)'
-      - 'traefik.http.routers.homepage-http.entrypoints=web'
     networks:
       - web
 
