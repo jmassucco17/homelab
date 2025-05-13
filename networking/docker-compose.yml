@@ -51,14 +51,53 @@ services:
       - 'traefik.http.routers.traefik.entrypoints=websecure'
       - 'traefik.http.routers.traefik.service=api@internal'
       - 'traefik.http.routers.traefik.tls.certresolver=cloudflare'
-      # Secure with basic auth and rate limiting
-      - 'traefik.http.routers.traefik.middlewares=auth,ratelimit'
-      # Define the middleware
-      - 'traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_BASIC_AUTH}'
-      # Add rate-limiting to prevent DOS
+      # Setup middlewares
+      - 'traefik.http.routers.traefik.middlewares=oauth2-auth,ratelimit'
+      # Rate limit settings
       - 'traefik.http.middlewares.ratelimit.ratelimit.average=50'
       - 'traefik.http.middlewares.ratelimit.ratelimit.burst=100'
+      # OAuth2 settings
+      - 'traefik.http.middlewares.oauth2-auth.forwardauth.address=https://oauth.jamesmassucco.com/oauth2/auth'
+      - 'traefik.http.middlewares.oauth2-auth.forwardauth.trustForwardHeader=true'
+      - 'traefik.http.middlewares.oauth2-auth.forwardauth.authResponseHeaders=X-Auth-Request-User,X-Auth-Request-Email'
     restart: unless-stopped
+
+  # Google OAuth for traefik
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+    container_name: oauth2-proxy
+    command:
+      - --cookie-domain=.jamesmassucco.com
+    environment:
+      OAUTH2_PROXY_PROVIDER: google
+      # XXX update these env var names
+      OAUTH2_PROXY_CLIENT_ID: ${TRAEFIK_OAUTH2_CLIENT_ID}
+      OAUTH2_PROXY_CLIENT_SECRET: ${TRAEFIK_OAUTH2_CLIENT_SECRET}
+      OAUTH2_PROXY_COOKIE_SECRET: ${TRAEFIK_OAUTH2_COOKIE_SECRET}
+      OAUTH2_PROXY_SESSION_STORE_TYPE: cookie
+      # OAUTH2_PROXY_SKIP_AUTH_ROUTER: false
+      OAUTH2_PROXY_SKIP_AUTH_STRIP_HEADERS: false
+      OAUTH2_PROXY_COOKIE_DOMAIN: .jamesmassucco.com
+      OAUTH2_PROXY_SIGN_IN_PAGE: auto
+      OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: true
+      OAUTH2_PROXY_COOKIE_SECURE: true
+      OAUTH2_PROXY_COOKIE_SAMESITE: lax
+      OAUTH2_PROXY_EMAIL_DOMAINS: '*'
+      OAUTH2_PROXY_REDIRECT_URL: https://oauth.jamesmassucco.com/oauth2/callback
+      OAUTH2_PROXY_UPSTREAMS: static://200
+      OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
+      OAUTH2_PROXY_WHITELIST_DOMAIN: .jamesmassucco.com
+      OAUTH2_PROXY_SET_XAUTHREQUEST: true
+      OAUTH2_PROXY_REVERSE_PROXY: true
+      OAUTH2_PROXY_LOGGING_LEVEL: debug
+    networks:
+      - web
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.oauth2.rule=Host(`oauth.jamesmassucco.com`)'
+      - 'traefik.http.routers.oauth2.entrypoints=websecure'
+      - 'traefik.http.routers.oauth2.tls.certresolver=cloudflare'
+      - 'traefik.http.services.oauth2.loadbalancer.server.port=4180'
 
   # Basic whoami service, useful for debugging network configuration
   whoami:
@@ -88,6 +127,7 @@ services:
         jamesmassucco.com,
         dashboard.jamesmassucco.com,
         blog.jamesmassucco.com,
+        oauth.jamesmassucco.com,
         grafana.jamesmassucco.com,
         traefik.jamesmassucco.com,
         whoami.jamesmassucco.com,
