@@ -26,6 +26,7 @@ services:
       - 'traefik.http.routers.prometheus.tls.certresolver=cloudflare'
       # Use rate-limiting and OAuth
       - traefik.http.routers.prometheus.middlewares=oauth-auth,ratelimit
+    restart: unless-stopped
 
   # Export system metrics like disk/RAM/CPU/network
   node-exporter:
@@ -34,17 +35,16 @@ services:
     networks:
       - internal_metrics
     pid: host
-    restart: unless-stopped
     command:
       - '--path.rootfs=/host'
     volumes:
       - /:/host:ro,rslave
+    restart: unless-stopped
 
   # Export docker container metrics
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
     container_name: cadvisor
-    restart: unless-stopped
     networks:
       - internal_metrics
     volumes:
@@ -53,8 +53,41 @@ services:
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
+    restart: unless-stopped
 
-  # Serve up dashboards for metrics
+  # Store and index logs
+  loki:
+    image: grafana/loki:latest
+    # XXX debug
+    container_name: loki
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - '3100:3100'
+    networks:
+      - internal_metrics
+    restart: unless-stopped
+
+  # Collect and ship logs to Loki
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    volumes:
+      - /var/log:/var/log
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /etc/machine-id:/etc/machine-id
+      - /etc/hostname:/etc/hostname
+      - /etc/promtail:/etc/promtail
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./promtail-config.yaml:/etc/config/promtail-config.yaml
+    command: -config.file=/etc/config/promtail-config.yaml
+    networks:
+      - internal_metrics
+    restart: unless-stopped
+
+  # Serve up dashboards for metrics and log viewing
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
@@ -84,3 +117,4 @@ networks:
 volumes:
   grafana-storage:
   prometheus-data:
+  loki-data:
