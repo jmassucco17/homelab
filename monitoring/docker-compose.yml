@@ -23,6 +23,8 @@ services:
       - 'traefik.http.routers.prometheus.rule=Host(`prometheus.jamesmassucco.com`)'
       - 'traefik.http.routers.prometheus.entrypoints=websecure'
       - 'traefik.http.routers.prometheus.tls.certresolver=cloudflare'
+      # Use rate-limiting and OAuth
+      - traefik.http.routers.prometheus.middlewares=oauth-auth,ratelimit
 
   # Export system metrics like disk/RAM/CPU/network
   node-exporter:

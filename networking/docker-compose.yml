@@ -45,7 +45,7 @@ services:
     environment:
       - CF_DNS_API_TOKEN=${CLOUDFLARE_API_TOKEN}
     labels:
-      # Use traefik to provide HTTPS endpoint
+      # Use traefik to provide HTTPS endpoint for dashboard
       - traefik.enable=true
       - traefik.http.routers.traefik.rule=Host(`traefik.jamesmassucco.com`)
       - traefik.http.routers.traefik.entrypoints=websecure
@@ -56,25 +56,24 @@ services:
       # Rate limit settings
       - traefik.http.middlewares.ratelimit.ratelimit.average=50
       - traefik.http.middlewares.ratelimit.ratelimit.burst=100
-      # OAuth2 settings
+      # Configure provider for OAuth
       - traefik.http.middlewares.oauth-auth.forwardauth.address=https://oauth.jamesmassucco.com/
       - traefik.http.middlewares.oauth-auth.forwardauth.trustForwardHeader=true
       - traefik.http.middlewares.oauth-auth.forwardauth.authResponseHeaders=X-Auth-Request-User,X-Auth-Request-Email
     restart: unless-stopped
 
-  # Google OAuth for traefik
+  # Provide Google OAuth services for other containers
   oauth2-proxy:
     image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
     container_name: oauth2-proxy
     command:
       - --cookie-domain=.jamesmassucco.com
     environment:
-      OAUTH2_PROXY_LOG_LEVEL: debug
       OAUTH2_PROXY_PROVIDER: google
       # XXX update these env var names
-      OAUTH2_PROXY_CLIENT_ID: ${TRAEFIK_OAUTH2_CLIENT_ID}
-      OAUTH2_PROXY_CLIENT_SECRET: ${TRAEFIK_OAUTH2_CLIENT_SECRET}
-      OAUTH2_PROXY_COOKIE_SECRET: ${TRAEFIK_OAUTH2_COOKIE_SECRET}
+      OAUTH2_PROXY_CLIENT_ID: ${GOOGLE_OAUTH2_CLIENT_ID}
+      OAUTH2_PROXY_CLIENT_SECRET: ${GOOGLE_OAUTH2_CLIENT_SECRET}
+      OAUTH2_PROXY_COOKIE_SECRET: ${GOOGLE_OAUTH2_COOKIE_SECRET}
       OAUTH2_PROXY_SESSION_STORE_TYPE: cookie
       # OAUTH2_PROXY_SKIP_AUTH_ROUTER: false
       OAUTH2_PROXY_SKIP_AUTH_STRIP_HEADERS: false
@@ -112,6 +111,8 @@ services:
       - traefik.http.routers.whoami.rule=Host(`whoami.jamesmassucco.com`)
       - traefik.http.routers.whoami.entrypoints=websecure
       - traefik.http.routers.whoami.tls.certresolver=cloudflare
+      # Use rate-limiting and OAuth
+      - traefik.http.routers.whoami.middlewares=oauth-auth,ratelimit
 
   # Automatically updates public IP DNS in Cloudflare
   cloudflare-ddns:
