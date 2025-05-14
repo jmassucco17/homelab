@@ -2,23 +2,11 @@
 
 ## Traefik
 
-Traefik provides reverse proxying. It also has a dashboard (turned off by default).
+Traefik provides reverse proxying. It also has a dashboard ([traefik.jamesmassucco.com](https://traefik.jamesmassucco.com/dashboard/#/)).
 
-NOTE: Must provide an `.env` file in `reverse-proxy/` that contains:
+## OAuth2-Proxy
 
-```sh
-# Cloudflare Auth
-CLOUDFLARE_API_EMAIL=<email>
-CLOUDFLARE_API_TOKEN=<token>
-
-# DDNS Config
-DOMAINS=grafana.jamesmassucco.com,traefik.jamesmassucco.com
-PROXIED=false
-TZ=America/Los_Angeles
-
-# Traefik Auth
-TRAEFIK_BASIC_AUTH=<htpasswd hash>
-```
+OAuth2-Proxy is configured as an authentication middleware for traefik. Multiple services (including the traefik dashboard) utilize Google OAuth using this method. The primary purpose is to enable some manner of user traffic and maintain the ability to ban any detected abusers.
 
 ## Cloudflare DDNS
 
