@@ -69,27 +69,28 @@ services:
     command:
       - --cookie-domain=.jamesmassucco.com
     environment:
+      # Provider (Google) settings
       OAUTH2_PROXY_PROVIDER: google
-      # XXX update these env var names
       OAUTH2_PROXY_CLIENT_ID: ${GOOGLE_OAUTH2_CLIENT_ID}
       OAUTH2_PROXY_CLIENT_SECRET: ${GOOGLE_OAUTH2_CLIENT_SECRET}
-      OAUTH2_PROXY_COOKIE_SECRET: ${GOOGLE_OAUTH2_COOKIE_SECRET}
-      OAUTH2_PROXY_SESSION_STORE_TYPE: cookie
-      # OAUTH2_PROXY_SKIP_AUTH_ROUTER: false
-      OAUTH2_PROXY_SKIP_AUTH_STRIP_HEADERS: false
-      OAUTH2_PROXY_COOKIE_DOMAIN: .jamesmassucco.com
-      OAUTH2_PROXY_WHITELIST_DOMAINS: .jamesmassucco.com
-      OAUTH2_PROXY_SIGN_IN_PAGE: auto
-      OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: true
-      OAUTH2_PROXY_COOKIE_SECURE: true
-      OAUTH2_PROXY_COOKIE_SAMESITE: lax
       OAUTH2_PROXY_EMAIL_DOMAINS: '*'
       OAUTH2_PROXY_REDIRECT_URL: https://oauth.jamesmassucco.com/oauth2/callback
-      OAUTH2_PROXY_UPSTREAMS: static://200
-      OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
+      # Cookie / session settings
+      OAUTH2_PROXY_COOKIE_SECRET: ${GOOGLE_OAUTH2_COOKIE_SECRET}
+      OAUTH2_PROXY_COOKIE_DOMAIN: .jamesmassucco.com
+      OAUTH2_PROXY_COOKIE_SECURE: true
+      OAUTH2_PROXY_COOKIE_SAMESITE: lax
+      # Login flow
+      OAUTH2_PROXY_SIGN_IN_PAGE: auto
+      OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: true
+      OAUTH2_PROXY_WHITELIST_DOMAINS: .jamesmassucco.com
+      # Headers and forwarding
       OAUTH2_PROXY_SET_XAUTHREQUEST: true
       OAUTH2_PROXY_REVERSE_PROXY: true
-      OAUTH2_PROXY_LOGGING_LEVEL: debug
+      # Networking
+      OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
+      # Upstream target
+      OAUTH2_PROXY_UPSTREAMS: static://200
     networks:
       - web
     labels:
