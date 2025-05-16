@@ -1,20 +1,20 @@
 /* ========= GLOBAL TYPOGRAPHY ========= */
 
-/* Use a readable serif font for post body text */
+/* Use readable serif for post body text */
 .content {
   font-family: Merriweather, Georgia, serif;
   font-size: 1.1rem;
   line-height: 1.6;
-  color: #e0e0e0;
+  color: var(--color-text);
 }
 
-/* Headings: Strong sans-serif with spacing */
+/* Headings: strong sans-serif with theme-based colors */
 h1 {
   font-family: Inter, sans-serif;
   font-size: 2.25rem;
   font-weight: 700;
   margin-bottom: 1rem;
-  color: #fff;
+  color: var(--color-title-text);
 }
 
 .content h2,
@@ -23,71 +23,57 @@ h1 {
   font-weight: 600;
   margin-top: 2rem;
   margin-bottom: 1rem;
-  color: #fff;
+  color: var(--color-title-text);
 }
 
 /* ========= DATE STYLE ========= */
 
-/* Style the post date with a subtle highlight bar */
 .date {
   font-size: 0.9rem;
-  color: #999;
-  border-left: 4px solid #3498db;
+  color: var(--color-footer-text);
+  border-left: 4px solid var(--color-title-text);
   padding-left: 0.75rem;
   margin-bottom: 1.5rem;
 }
 
 /* ========= TEXT ENHANCEMENTS ========= */
 
-/* Drop cap for the first paragraph in the article */
-
-/* article p:first-of-type::first-letter {
-  float: left;
-  font-size: 3rem;
-  line-height: 1;
-  padding-right: 0.1em;
-  font-weight: bold;
-  color: #3498db;
-} */
-
-/* Stylize inline links */
+/* Stylize links with hover underline */
 .content a {
-  color: #1e88e5;
+  color: var(--color-title-text);
   text-decoration: none;
   border-bottom: 1px dotted currentcolor;
   transition: all 0.2s ease;
 }
 
 .content a:hover {
-  color: #0d47a1;
   border-bottom-style: solid;
 }
 
 /* ========= BLOCKQUOTE STYLE ========= */
 
 .content blockquote {
-  border-left: 4px solid #888;
+  border-left: 4px solid var(--color-section-border);
   padding-left: 1rem;
-  color: #ccc;
+  color: var(--color-text);
   font-style: italic;
   margin: 1.5rem 0;
 }
 
 /* ========= CODE HIGHLIGHTING ========= */
 
-/* Inline code style */
 .content code {
-  background: #2c2c2c;
+  background: color-mix(in srgb, var(--color-card-border) 85%, transparent);
   padding: 0.2rem 0.4rem;
   border-radius: 4px;
   font-family: monospace;
-  color: #ffcb6b;
+  color: var(--color-yellow);
 }
 
-/* Optional: highlight.js theme override (requires JS too) */
+/* Optional: highlight.js override */
 .content pre code {
-  background: #1e1e1e;
-  color: #e8e8e8;
+  background: color-mix(in srgb, var(--color-section-bg) 90%, black);
+  color: var(--color-text);
   padding: 0.75rem;
   display: block;
   border-radius: 6px;
@@ -97,9 +83,8 @@ h1 {
 
 /* ========= ANIMATION ========= */
 
-/* Fade in the article smoothly */
 article {
-  animation: fadeIn 0.6s ease-out both;
+  animation: fade-in 0.6s ease-out both;
 }
 
 @keyframes fade-in {
