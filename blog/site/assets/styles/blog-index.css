@@ -58,13 +58,8 @@ h1 {
   margin-bottom: 1rem;
 }
 
-/* ===== SUMMARY TEXT ===== */
-
-/* 
-.card p {
-  font-family: Merriweather, serif;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  color: var(--color-text);
-  flex-grow: 1;
-} */
+.rss-link {
+  display: inline-block;
+  margin-bottom: 1rem;
+  font-weight: bold;
+}

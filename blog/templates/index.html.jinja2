@@ -18,7 +18,8 @@
     <link rel="icon" type="image/png" href="/assets/icon/favicon-96x96.png" sizes="96x96" />
     <link rel="shortcut icon" href="/assets/icon/favicon.ico" />
     <link rel="stylesheet" href="/assets/styles/main.css?v=1.14" />
-    <link rel="stylesheet" href="/assets/styles/blog-index.css?v=1.2" />
+    <link rel="stylesheet" href="/assets/styles/blog-index.css?v=1.5" />
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed" href="/rss.xml">
   </head>
   <body>
     <div id="theme-toggle-container"></div>
@@ -26,9 +27,14 @@
       <img src="/assets/icon/favicon-96x96.png" alt="Home" class="site-logo" />
       <span>Home</span>
     </a>
-
-    <h1>Blog</h1>
     
+
+    <h1 style="margin-bottom: 1rem">Blog</h1>
+
+    <a class="rss-link" href="/rss.xml" target="_blank" rel="noopener noreferrer">
+      📡 RSS Feed
+    </a>
+
     <section>
       <div class="grid">
         {% for post in posts %}
