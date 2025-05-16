@@ -1,0 +1,70 @@
+/* ===== PAGE TITLE ===== */
+
+h1 {
+  text-align: center;
+  font-size: 2.5rem;
+  margin-bottom: 2rem;
+  color: var(--color-title-text);
+}
+
+/* ===== BLOG GRID LAYOUT ===== */
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr; /* One column per row */
+  gap: 1.5rem;
+  padding: 0 1.5rem;
+  max-width: 768px; /* Optional: constrain content width */
+  margin: 0 auto; /* Center the column */
+}
+
+/* ===== BLOG CARD ===== */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background-color: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  border-radius: 12px;
+  padding: 1.5rem 2rem;
+  text-decoration: none;
+  color: inherit;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  height: 100%;
+}
+
+/* Hover effect for interactivity */
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 20%);
+}
+
+/* ===== CARD TITLE ===== */
+
+.card h3 {
+  font-size: 1.25rem;
+  color: var(--color-title-text);
+  margin: 0 0 0.5rem;
+}
+
+/* ===== DATE ===== */
+
+.card .date {
+  font-size: 0.9rem;
+  color: var(--color-yellow);
+  margin-bottom: 1rem;
+}
+
+/* ===== SUMMARY TEXT ===== */
+
+/* 
+.card p {
+  font-family: Merriweather, serif;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--color-text);
+  flex-grow: 1;
+} */

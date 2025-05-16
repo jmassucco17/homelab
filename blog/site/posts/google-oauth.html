@@ -17,7 +17,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/png" href="/assets/icon/favicon-96x96.png" sizes="96x96" />
     <link rel="shortcut icon" href="/assets/icon/favicon.ico" />
-    <link rel="stylesheet" href="/assets/styles/main.css?v=1.11" />
+    <link rel="stylesheet" href="/assets/styles/main.css?v=1.12" />
+    <link rel="stylesheet" href="/assets/styles/blog-post.css?v=1.0" />
+    <link
+      rel="stylesheet"
+      href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css"
+    />
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script>
+      hljs.highlightAll()
+    </script>
   </head>
   <body>
     <div id="theme-toggle-container"></div>
@@ -26,88 +35,84 @@
       <span>Blog Home</span>
     </a>
 
-    <h1>Google OAuth</h1>
-
     <section>
-      <div class="grid">
-        <article>
-          <p class="date">May 13, 2025</p>
-          <div class="content">
-            <p>
-              I spent the past few days wrestling to get Google OAuth working (and it finally
-              does!!).
-            </p>
-            <p>
-              I want to expose as much of what I'm doing on this project as possible to my friends,
-              coworkers, and anyone else who wants to look. But I recognize that things like Grafana
-              or Prometheus have high abuse potential in the wrong hands. So I decided a reasonable
-              short-term compromise would be to allow open access while requiring some basic user
-              authentication. This should rule out any bots (or at least any simplistic ones), and
-              also gives me the ability to track who is logging in to these applications (at least
-              in theory).
-            </p>
-            <p>
-              I started with Grafana, because it has built-in Google OAuth integration. I created a
-              new OAuth Client in the
-              <a href="https://console.cloud.google.com/">Google Cloud Console</a>, dropped the info
-              into Grafana, and gave it a spin in a new private tab. It went through the correct
-              redirect flow at first - I went to
-              <a href="https://grafana.jamesmassucco.com">grafana.jamesmassucco.com</a> and was
-              redirected to login with Google. But since it was a private tab, it didn't remember my
-              username, so I had the brilliant idea to go back to my main tab, LOG OUT of Grafana,
-              and then go through the auth flow. The first issue emerged, which was that instead of
-              redirecting back to grafana.jamesmassucco.com after successful auth, it took me to
-              localhost:3000 - and just like that, I was locked out of Grafana. Thankfully, the
-              solution was simple. I just needed to add <code>GF_SERVER_ROOT_URL</code> to my
-              Grafana environment variables and restart the container, and I was in.
-            </p>
-            <p>
-              But once I was in, a second issue emerged - I was no longer logged in as
-              <code>admin</code>, I was logged in as <code>James Massucco</code>, who was just a
-              regular "Viewer" user. I couldn't do administrative functions anymore on my own
-              instance! To correct this, I had to get a bit more creative. With the help of ChatGPT,
-              I installed sqlite and then probed the live Grafana DB (the one where it stores all
-              its settings) and found my user account. Once I was in there, it was fairly simple to
-              modify the DB to grant myself admin priveleges. And from there, I elevated the rest of
-              my priveleges within the Grafana UI. Crisis averted!
-            </p>
-            <p>
-              The next stage of the saga was much longer and more drawn out. It's honestly a bit
-              painful to think of how many hours I spent SO CLOSE to the final solution without
-              getting it. But I'm getting ahead of myself. What was I even doing for those hours?
-              Well, for applications like Prometheus and Traefik, which are more simplistic
-              dashboards, there was no built-in support for Google OAuth, so I had to go a different
-              route. I found an application called <code>oauth2-proxy</code> which can server a
-              dual-role, either as a dedicated reverse-proxy with authentication, or as a so-called
-              "middleware" that provides authentication services to another reverse-proxy (like
-              <code>nginx</code> or, in my case, <code>traefik</code>). I decided to start with just
-              putting the Traefik dashboard behind oauth and got to work with a basic config, with
-              help from ChatGPT. It didn't work, so I tried again. That didn't work either, so I
-              tried again... Fast forward to, like, 10 hours later when I'm still just not getting
-              it. Why was it so hard? Well, not really for any technical reason. It's just that the
-              documentation was dense and hard to parse. I mostly ended up relying on examples from
-              <code>oauth2-proxy</code>, but they were written in a totally different config style
-              than I was using (they used a traefik yaml config, whereas I'm using docker-compose to
-              define the traefik config). I even tried switching to the traefik.yaml style just so I
-              could more easily copy-paste their example, but that broke too because the environment
-              variables I was passing to Traefik for Cloudflare API access didn't work once I tried
-              to move those configs to the YAML...
-            </p>
-            <p>
-              Anyways, there really aren't too many useful insights in here, I just spent a lot of
-              time flailing and needed a little bit of the catharsis that comes from ranting about a
-              frustrating experience. I did finally get it working, and it felt a little extra sweet
-              because I did most of the heavy lifting without any help from ChatGPT (mostly because
-              it was clear ChatGPT did not know how to use <code>oauth2-proxy</code> very well - but
-              still). And the one cool thing was that once I got the auth working for
-              <code>traefik</code>, it literally took like 30 seconds to get it working for
-              <code>whoami</code> and <code>prometheus</code>. Just like that, I had authentication!
-              Check out how I configured it in the <code>networking/docker-compose.yml</code> if
-              you're curious what the fruits of that labor look like!
-            </p>
-          </div>
-        </article>
-      </div>
+      <h1>Google OAuth</h1>
+      <article>
+        <p class="date">May 13, 2025</p>
+        <div class="content">
+          <p>
+            I spent the past few days wrestling to get Google OAuth working (and it finally does!!).
+          </p>
+          <p>
+            I want to expose as much of what I'm doing on this project as possible to my friends,
+            coworkers, and anyone else who wants to look. But I recognize that things like Grafana
+            or Prometheus have high abuse potential in the wrong hands. So I decided a reasonable
+            short-term compromise would be to allow open access while requiring some basic user
+            authentication. This should rule out any bots (or at least any simplistic ones), and
+            also gives me the ability to track who is logging in to these applications (at least in
+            theory).
+          </p>
+          <p>
+            I started with Grafana, because it has built-in Google OAuth integration. I created a
+            new OAuth Client in the
+            <a href="https://console.cloud.google.com/">Google Cloud Console</a>, dropped the info
+            into Grafana, and gave it a spin in a new private tab. It went through the correct
+            redirect flow at first - I went to
+            <a href="https://grafana.jamesmassucco.com">grafana.jamesmassucco.com</a> and was
+            redirected to login with Google. But since it was a private tab, it didn't remember my
+            username, so I had the brilliant idea to go back to my main tab, LOG OUT of Grafana, and
+            then go through the auth flow. The first issue emerged, which was that instead of
+            redirecting back to grafana.jamesmassucco.com after successful auth, it took me to
+            localhost:3000 - and just like that, I was locked out of Grafana. Thankfully, the
+            solution was simple. I just needed to add <code>GF_SERVER_ROOT_URL</code> to my Grafana
+            environment variables and restart the container, and I was in.
+          </p>
+          <p>
+            But once I was in, a second issue emerged - I was no longer logged in as
+            <code>admin</code>, I was logged in as <code>James Massucco</code>, who was just a
+            regular "Viewer" user. I couldn't do administrative functions anymore on my own
+            instance! To correct this, I had to get a bit more creative. With the help of ChatGPT, I
+            installed sqlite and then probed the live Grafana DB (the one where it stores all its
+            settings) and found my user account. Once I was in there, it was fairly simple to modify
+            the DB to grant myself admin priveleges. And from there, I elevated the rest of my
+            priveleges within the Grafana UI. Crisis averted!
+          </p>
+          <p>
+            The next stage of the saga was much longer and more drawn out. It's honestly a bit
+            painful to think of how many hours I spent SO CLOSE to the final solution without
+            getting it. But I'm getting ahead of myself. What was I even doing for those hours?
+            Well, for applications like Prometheus and Traefik, which are more simplistic
+            dashboards, there was no built-in support for Google OAuth, so I had to go a different
+            route. I found an application called <code>oauth2-proxy</code> which can server a
+            dual-role, either as a dedicated reverse-proxy with authentication, or as a so-called
+            "middleware" that provides authentication services to another reverse-proxy (like
+            <code>nginx</code> or, in my case, <code>traefik</code>). I decided to start with just
+            putting the Traefik dashboard behind oauth and got to work with a basic config, with
+            help from ChatGPT. It didn't work, so I tried again. That didn't work either, so I tried
+            again... Fast forward to, like, 10 hours later when I'm still just not getting it. Why
+            was it so hard? Well, not really for any technical reason. It's just that the
+            documentation was dense and hard to parse. I mostly ended up relying on examples from
+            <code>oauth2-proxy</code>, but they were written in a totally different config style
+            than I was using (they used a traefik yaml config, whereas I'm using docker-compose to
+            define the traefik config). I even tried switching to the traefik.yaml style just so I
+            could more easily copy-paste their example, but that broke too because the environment
+            variables I was passing to Traefik for Cloudflare API access didn't work once I tried to
+            move those configs to the YAML...
+          </p>
+          <p>
+            Anyways, there really aren't too many useful insights in here, I just spent a lot of
+            time flailing and needed a little bit of the catharsis that comes from ranting about a
+            frustrating experience. I did finally get it working, and it felt a little extra sweet
+            because I did most of the heavy lifting without any help from ChatGPT (mostly because it
+            was clear ChatGPT did not know how to use <code>oauth2-proxy</code> very well - but
+            still). And the one cool thing was that once I got the auth working for
+            <code>traefik</code>, it literally took like 30 seconds to get it working for
+            <code>whoami</code> and <code>prometheus</code>. Just like that, I had authentication!
+            Check out how I configured it in the <code>networking/docker-compose.yml</code> if
+            you're curious what the fruits of that labor look like!
+          </p>
+        </div>
+      </article>
     </section>
 
     <footer>&copy; 2025 James Massucco. Built with love and Linux.</footer>

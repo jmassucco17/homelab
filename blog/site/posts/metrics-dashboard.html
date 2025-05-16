@@ -17,7 +17,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/png" href="/assets/icon/favicon-96x96.png" sizes="96x96" />
     <link rel="shortcut icon" href="/assets/icon/favicon.ico" />
-    <link rel="stylesheet" href="/assets/styles/main.css?v=1.11" />
+    <link rel="stylesheet" href="/assets/styles/main.css?v=1.12" />
+    <link rel="stylesheet" href="/assets/styles/blog-post.css?v=1.0" />
+    <link
+      rel="stylesheet"
+      href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css"
+    />
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script>
+      hljs.highlightAll()
+    </script>
   </head>
   <body>
     <div id="theme-toggle-container"></div>
@@ -26,70 +35,67 @@
       <span>Blog Home</span>
     </a>
 
-    <h1>Building a Metrics Dashboard</h1>
-
     <section>
-      <div class="grid">
-        <article>
-          <p class="date">May 10, 2025</p>
-          <div class="content">
-            <p>
-              When I first created my homepage a few weeks ago, I wanted to display some server
-              metrics on the site, but it was a bit too big of a project for me to bite off at that
-              point. But this week, I was ready to take a proper swing at it. I had heard of
-              <code>FastAPI</code> as a simple and powerful Python module for HTTP APIs, so I
-              decided to use that to make Prometheus query results available to my webpage. I also
-              found out about <code>htmx</code> in my reading, which is a javascript library that
-              extends html and makes it possible to have individual elements of a page complete
-              recurring GET requests (i.e. "auto-refresh" of queries). And I also selected Chart.JS
-              for rendering chart-view metrics, as opposed to just simple single-value metrics.
-            </p>
-            <p>
-              For the first cut of the page, I picked a few basic metrics for CPU and Memory Usage,
-              Disk Space, and Network Rx. I copied the queries for these from my Grafana dashboard.
-              The first piece of the puzzle was to make the Prometheus queries available to HTML (or
-              htmx, in my case). That's where FastAPI came in. I built a simple app with endpoints
-              like <code>/queries/cpu</code> and <code>/queries/memory</code>. The definition for
-              each endpoint was to query data from prometheus, and then return it. Originally, I
-              thought that I could just return the raw data and then render it in higher-level html,
-              but it turns out that for htmx queries, it expects the response to already be an HTML
-              document, not just a raw value, so I added a simple template to help render the value
-              of each endpoint into a "widget". Once I had the widgets defined, I also needed a
-              top-level html page (at <code>/</code>) that displayed the widgets and automatically
-              refreshed their values. I had ChatGPT cook up a simple template, but realized that I
-              wanted to pull in the same CSS I was using for my homepage site.
-            </p>
-            <p>
-              Since I was building the dashboard as it's own top-level directory and application, it
-              was a little complicated to have shared CSS with my main homepage. I originally hoped
-              to just symlink the files, but that doesn't work with docker very well. So I moved the
-              common files (<code>main.css</code> as well as the icon files for the site) into a
-              top-level <code>shared-assets</code> directory and then built a simple
-              <code>sync_assets.sh</code> script that copies those files from the shared directory
-              into all child directories (right now, just <code>homepage/</code> and
-              <code>dashboard/</code>). I figure this will be useful in the future when I build more
-              top-level apps that want to use the same style as my other pages.
-            </p>
-            <p>
-              With this, I had the first iteration of my dashboard built! It was pretty cool, but
-              kinda boring with just singular numbers for each metric. So I had ChatGPT help me
-              build some charts based on the same metrics using Chart.JS. The rendering is a bit
-              clunky and I definitely need to do some more reading because I'm a total JS noob, but
-              I at least got them in and working which was cool! After some more tweaking of the
-              look and feel of the site, I was happy enough with it that I connected it into my main
-              homepage, replacing (and deleting) the old "fake metrics" page I had put together as a
-              placeholder lol.
-            </p>
-            <p>
-              While I was in there, I also added links to all of my services that host their own
-              dashboards: in addition to Grafana (which was already there), I added in
-              <code>traefik</code>, <code>prometheus</code>, and <code>whoami</code>. I'm really
-              happy with how the page is coming together, and I think I'm almost ready to share it
-              more publicly (LinkedIn, resumé, etc).
-            </p>
-          </div>
-        </article>
-      </div>
+      <h1>Building a Metrics Dashboard</h1>
+      <article>
+        <p class="date">May 10, 2025</p>
+        <div class="content">
+          <p>
+            When I first created my homepage a few weeks ago, I wanted to display some server
+            metrics on the site, but it was a bit too big of a project for me to bite off at that
+            point. But this week, I was ready to take a proper swing at it. I had heard of
+            <code>FastAPI</code> as a simple and powerful Python module for HTTP APIs, so I decided
+            to use that to make Prometheus query results available to my webpage. I also found out
+            about <code>htmx</code> in my reading, which is a javascript library that extends html
+            and makes it possible to have individual elements of a page complete recurring GET
+            requests (i.e. "auto-refresh" of queries). And I also selected Chart.JS for rendering
+            chart-view metrics, as opposed to just simple single-value metrics.
+          </p>
+          <p>
+            For the first cut of the page, I picked a few basic metrics for CPU and Memory Usage,
+            Disk Space, and Network Rx. I copied the queries for these from my Grafana dashboard.
+            The first piece of the puzzle was to make the Prometheus queries available to HTML (or
+            htmx, in my case). That's where FastAPI came in. I built a simple app with endpoints
+            like <code>/queries/cpu</code> and <code>/queries/memory</code>. The definition for each
+            endpoint was to query data from prometheus, and then return it. Originally, I thought
+            that I could just return the raw data and then render it in higher-level html, but it
+            turns out that for htmx queries, it expects the response to already be an HTML document,
+            not just a raw value, so I added a simple template to help render the value of each
+            endpoint into a "widget". Once I had the widgets defined, I also needed a top-level html
+            page (at <code>/</code>) that displayed the widgets and automatically refreshed their
+            values. I had ChatGPT cook up a simple template, but realized that I wanted to pull in
+            the same CSS I was using for my homepage site.
+          </p>
+          <p>
+            Since I was building the dashboard as it's own top-level directory and application, it
+            was a little complicated to have shared CSS with my main homepage. I originally hoped to
+            just symlink the files, but that doesn't work with docker very well. So I moved the
+            common files (<code>main.css</code> as well as the icon files for the site) into a
+            top-level <code>shared-assets</code> directory and then built a simple
+            <code>sync_assets.sh</code> script that copies those files from the shared directory
+            into all child directories (right now, just <code>homepage/</code> and
+            <code>dashboard/</code>). I figure this will be useful in the future when I build more
+            top-level apps that want to use the same style as my other pages.
+          </p>
+          <p>
+            With this, I had the first iteration of my dashboard built! It was pretty cool, but
+            kinda boring with just singular numbers for each metric. So I had ChatGPT help me build
+            some charts based on the same metrics using Chart.JS. The rendering is a bit clunky and
+            I definitely need to do some more reading because I'm a total JS noob, but I at least
+            got them in and working which was cool! After some more tweaking of the look and feel of
+            the site, I was happy enough with it that I connected it into my main homepage,
+            replacing (and deleting) the old "fake metrics" page I had put together as a placeholder
+            lol.
+          </p>
+          <p>
+            While I was in there, I also added links to all of my services that host their own
+            dashboards: in addition to Grafana (which was already there), I added in
+            <code>traefik</code>, <code>prometheus</code>, and <code>whoami</code>. I'm really happy
+            with how the page is coming together, and I think I'm almost ready to share it more
+            publicly (LinkedIn, resumé, etc).
+          </p>
+        </div>
+      </article>
     </section>
 
     <footer>&copy; 2025 James Massucco. Built with love and Linux.</footer>

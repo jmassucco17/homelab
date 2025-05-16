@@ -8,21 +8,21 @@
       <title>Google OAuth</title>
       <link>https://blog.jamesmassucco.com/google-oauth.html</link>
       <pubDate>Tue, 13 May 2025 00:00:00 +0000</pubDate>
-      <description>Adding authentication for pseudo-admin services</description>
+      <description>Adding Google authentication for pseudo-admin services like Grafana and Prometheus</description>
     </item>
     
     <item>
       <title>Leveling Up My Blog</title>
       <link>https://blog.jamesmassucco.com/blog-levelup.html</link>
       <pubDate>Sun, 11 May 2025 00:00:00 +0000</pubDate>
-      <description>Turning my blog into a dedicated app with a page for each post</description>
+      <description>Turning my blog into a dedicated site with a subdomain, a landing page, a separate page for each post. Plus an RSS feed!</description>
     </item>
     
     <item>
       <title>Building a Metrics Dashboard</title>
       <link>https://blog.jamesmassucco.com/metrics-dashboard.html</link>
       <pubDate>Sat, 10 May 2025 00:00:00 +0000</pubDate>
-      <description>FastAPI, htmx, chart.js, and prometheus - oh my!</description>
+      <description>FastAPI, htmx, chart.js, and prometheus - oh my! Building a dashboard page with individually refreshing elements for each metric</description>
     </item>
     
     <item>

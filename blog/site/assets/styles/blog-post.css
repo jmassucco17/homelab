@@ -1,0 +1,115 @@
+/* ========= GLOBAL TYPOGRAPHY ========= */
+
+/* Use a readable serif font for post body text */
+.content {
+  font-family: Merriweather, Georgia, serif;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: #e0e0e0;
+}
+
+/* Headings: Strong sans-serif with spacing */
+h1 {
+  font-family: Inter, sans-serif;
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #fff;
+}
+
+.content h2,
+.content h3 {
+  font-family: Inter, sans-serif;
+  font-weight: 600;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  color: #fff;
+}
+
+/* ========= DATE STYLE ========= */
+
+/* Style the post date with a subtle highlight bar */
+.date {
+  font-size: 0.9rem;
+  color: #999;
+  border-left: 4px solid #3498db;
+  padding-left: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+/* ========= TEXT ENHANCEMENTS ========= */
+
+/* Drop cap for the first paragraph in the article */
+
+/* article p:first-of-type::first-letter {
+  float: left;
+  font-size: 3rem;
+  line-height: 1;
+  padding-right: 0.1em;
+  font-weight: bold;
+  color: #3498db;
+} */
+
+/* Stylize inline links */
+.content a {
+  color: #1e88e5;
+  text-decoration: none;
+  border-bottom: 1px dotted currentcolor;
+  transition: all 0.2s ease;
+}
+
+.content a:hover {
+  color: #0d47a1;
+  border-bottom-style: solid;
+}
+
+/* ========= BLOCKQUOTE STYLE ========= */
+
+.content blockquote {
+  border-left: 4px solid #888;
+  padding-left: 1rem;
+  color: #ccc;
+  font-style: italic;
+  margin: 1.5rem 0;
+}
+
+/* ========= CODE HIGHLIGHTING ========= */
+
+/* Inline code style */
+.content code {
+  background: #2c2c2c;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-family: monospace;
+  color: #ffcb6b;
+}
+
+/* Optional: highlight.js theme override (requires JS too) */
+.content pre code {
+  background: #1e1e1e;
+  color: #e8e8e8;
+  padding: 0.75rem;
+  display: block;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-size: 0.95rem;
+}
+
+/* ========= ANIMATION ========= */
+
+/* Fade in the article smoothly */
+article {
+  animation: fadeIn 0.6s ease-out both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -17,7 +17,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/png" href="/assets/icon/favicon-96x96.png" sizes="96x96" />
     <link rel="shortcut icon" href="/assets/icon/favicon.ico" />
-    <link rel="stylesheet" href="/assets/styles/main.css?v=1.11" />
+    <link rel="stylesheet" href="/assets/styles/main.css?v=1.12" />
+    <link rel="stylesheet" href="/assets/styles/blog-post.css?v=1.0" />
+    <link
+      rel="stylesheet"
+      href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css"
+    />
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script>
+      hljs.highlightAll()
+    </script>
   </head>
   <body>
     <div id="theme-toggle-container"></div>
@@ -26,62 +35,58 @@
       <span>Blog Home</span>
     </a>
 
-    <h1>Building the Homepage</h1>
-
     <section>
-      <div class="grid">
-        <article>
-          <p class="date">April 23, 2025</p>
-          <div class="content">
-            <p>
-              With my server running and reasonably secure, it was time to set up a proper homepage!
-              I already had Grafana exposed at <code>grafana.jamesmassucco.com</code> but I didn't
-              have a proper root site at <code>jamesmassucco.com</code>. Again, I relied on ChatGPT
-              to get started. I told it I wanted a sleak and simple website for showcasing my
-              coding, and it rendered a terminal-style website, and then generated some CSS and HTML
-              to make it real! It honestly did a phenomal job, and all I really had to do was edit
-              the content it had populated to align with what I wanted to say.
-            </p>
-            <p>
-              To serve it up, I added a new <code>docker-compose.yml</code> under the new top-level
-              director <code>homepage/</code> to create an <code>nginx</code> container with a my
-              <code>homepage/site/</code> directory mapped into the
-              <code>/usr/share/nginx/html</code> directory of the container. After that, all I need
-              to do was add my desired top-level directory to my <code>cloudflare-ddns</code> setup
-              and it was automatically registered to Cloudflare, and boom - I was able to access my
-              website!
-            </p>
-            <p>
-              Once I had a homepage, I wanted to add a bit more content, so I (agin with help from
-              ChatGPT) cooked up a Metrics page! I initially wanted to embed Grafana directly in the
-              page to show metrics, but this raised some security red flags due to the use of
-              IFrames, and so I opted instead to generate some fake metrics, both static ones and a
-              bit of JavaScript to make some dynamic plots.
-            </p>
-            <h2 id="repo-quality-of-life">Repo Quality of Life</h2>
-            <p>
-              Since the website came together more quickly than I'd expected, I decided to spent a
-              bit of time on repo quality of life items. First, I setup a
-              <code>.vscode/</code> directory with <code>settings.json</code> and
-              <code>extensions.json</code> files so that default settings get automatically applied
-              in any VSCode session accessing the repo, and so that the required extensions are
-              automatically suggested.
-            </p>
-            <p>
-              Next, I added linters: Prettier (HTML/CSS/Markdown), Stylelint (CSS), and Ruff
-              (Python). I made sure to update the VSCode extensions to include them all, and set up
-              configuration files for them in the root of the repo using some basic settings.
-            </p>
-            <p>
-              Finally, I setup a <code>bootstrap.sh</code> script to provision a fresh install of
-              the repo with the required dependencies. There's still some work to be done there,
-              because it does a lot of unnecessary work and has some error messages, but it's enough
-              for now. This will be helpful when I start to expand my cluster to multiple pieces of
-              hardware and want to provision the repo on each of them during initial configuration.
-            </p>
-          </div>
-        </article>
-      </div>
+      <h1>Building the Homepage</h1>
+      <article>
+        <p class="date">April 23, 2025</p>
+        <div class="content">
+          <p>
+            With my server running and reasonably secure, it was time to set up a proper homepage! I
+            already had Grafana exposed at <code>grafana.jamesmassucco.com</code> but I didn't have
+            a proper root site at <code>jamesmassucco.com</code>. Again, I relied on ChatGPT to get
+            started. I told it I wanted a sleak and simple website for showcasing my coding, and it
+            rendered a terminal-style website, and then generated some CSS and HTML to make it real!
+            It honestly did a phenomal job, and all I really had to do was edit the content it had
+            populated to align with what I wanted to say.
+          </p>
+          <p>
+            To serve it up, I added a new <code>docker-compose.yml</code> under the new top-level
+            director <code>homepage/</code> to create an <code>nginx</code> container with a my
+            <code>homepage/site/</code> directory mapped into the
+            <code>/usr/share/nginx/html</code> directory of the container. After that, all I need to
+            do was add my desired top-level directory to my <code>cloudflare-ddns</code> setup and
+            it was automatically registered to Cloudflare, and boom - I was able to access my
+            website!
+          </p>
+          <p>
+            Once I had a homepage, I wanted to add a bit more content, so I (agin with help from
+            ChatGPT) cooked up a Metrics page! I initially wanted to embed Grafana directly in the
+            page to show metrics, but this raised some security red flags due to the use of IFrames,
+            and so I opted instead to generate some fake metrics, both static ones and a bit of
+            JavaScript to make some dynamic plots.
+          </p>
+          <h2 id="repo-quality-of-life">Repo Quality of Life</h2>
+          <p>
+            Since the website came together more quickly than I'd expected, I decided to spent a bit
+            of time on repo quality of life items. First, I setup a <code>.vscode/</code> directory
+            with <code>settings.json</code> and <code>extensions.json</code> files so that default
+            settings get automatically applied in any VSCode session accessing the repo, and so that
+            the required extensions are automatically suggested.
+          </p>
+          <p>
+            Next, I added linters: Prettier (HTML/CSS/Markdown), Stylelint (CSS), and Ruff (Python).
+            I made sure to update the VSCode extensions to include them all, and set up
+            configuration files for them in the root of the repo using some basic settings.
+          </p>
+          <p>
+            Finally, I setup a <code>bootstrap.sh</code> script to provision a fresh install of the
+            repo with the required dependencies. There's still some work to be done there, because
+            it does a lot of unnecessary work and has some error messages, but it's enough for now.
+            This will be helpful when I start to expand my cluster to multiple pieces of hardware
+            and want to provision the repo on each of them during initial configuration.
+          </p>
+        </div>
+      </article>
     </section>
 
     <footer>&copy; 2025 James Massucco. Built with love and Linux.</footer>

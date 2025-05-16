@@ -17,7 +17,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/png" href="/assets/icon/favicon-96x96.png" sizes="96x96" />
     <link rel="shortcut icon" href="/assets/icon/favicon.ico" />
-    <link rel="stylesheet" href="/assets/styles/main.css?v=1.11" />
+    <link rel="stylesheet" href="/assets/styles/main.css?v=1.12" />
+    <link rel="stylesheet" href="/assets/styles/blog-post.css?v=1.0" />
+    <link
+      rel="stylesheet"
+      href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css"
+    />
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script>
+      hljs.highlightAll()
+    </script>
   </head>
   <body>
     <div id="theme-toggle-container"></div>
@@ -26,69 +35,65 @@
       <span>Blog Home</span>
     </a>
 
-    <h1>Security</h1>
-
     <section>
-      <div class="grid">
-        <article>
-          <p class="date">April 22, 2025</p>
-          <div class="content">
-            <p>
-              As I started to set up my home server, I couldn't shake the feeling that I was going
-              to do something stupid and leave my home network open to hacking. So I did a deep dive
-              (with ChatGPT) about what to look into to improve my security. It had some great
-              advice:
-            </p>
-            <ol>
-              <li>Configure firewall to only allow traffic from Cloudflare</li>
-              <li>
-                Use <a href="https://www.grc.com/x/ne.dll?bh0bkyd2">ShieldsUP!</a> to scan my
-                network for any vulnerabilities
-              </li>
-              <li>
-                Add OAuth for Grafana and other admin-only services, or require a VPN to access them
-              </li>
-              <li>
-                Get a router with VLAN capabilities to completely separate my server from the rest
-                of my home network
-              </li>
-              <li>
-                Add rate-limiting configuration to <code>traefik</code> to prevent excessive access
-              </li>
-              <li>Add Captcha or 2FA with something like Authelia or Authentik</li>
-              <li>
-                Add logging and alerts about attacks with <code>ufw</code> logs or
-                <code>fail2ban</code>
-              </li>
-              <li>Regularly update everything</li>
-            </ol>
-            <p>
-              I accomplished Step 1 pretty easily by extending the (arguably unnecessary) script I
-              wrote early to update <code>traefik</code> allowed IPs from Cloudflare to also update
-              my <code>ufw</code> rules to default deny all traffic on ports 80 and 443 and only
-              allow it from Cloudlfare IPs. For convenience, I also added a comment (<code
-                ># Cloudflare</code
-              >) to all of these automated rules so that my script could easily purge them and
-              re-enter them without affecting other firewall rules I configured myself. Parts 2 and
-              5 were also a breeze. And I purchased a lightly used
-              <a href="https://www.amazon.com/dp/B0BQ417K47">ASUS RT-AX86U</a> router so that I
-              could work on Step 4.
-            </p>
-            <p>I decided to defer Steps 3/6/7/8 to a future development session.</p>
-            <p>
-              But the suggestion of a VPN did get me thinking that I wanted to be able to develop on
-              my server even when away from home. ChatGPT suggested
-              <a href="https://tailscale.com/">Tailscale</a> which was astoundingly easy to setup.
-              Within a few minutes, I was able to access my server with my laptop on a hotspot. And
-              because it's a VPN, the access is very secure; I have to login to the same Tailscale
-              account on both machines (which is secured with Google OAuth) and I only have to allow
-              access on <code>ufw</code> for the Tailscale IP range (<code>100.64.0.0/10</code>).
-            </p>
-            <details>
-              <summary>Click here to see my full `ufw` configuration</summary>
+      <h1>Security</h1>
+      <article>
+        <p class="date">April 22, 2025</p>
+        <div class="content">
+          <p>
+            As I started to set up my home server, I couldn't shake the feeling that I was going to
+            do something stupid and leave my home network open to hacking. So I did a deep dive
+            (with ChatGPT) about what to look into to improve my security. It had some great advice:
+          </p>
+          <ol>
+            <li>Configure firewall to only allow traffic from Cloudflare</li>
+            <li>
+              Use <a href="https://www.grc.com/x/ne.dll?bh0bkyd2">ShieldsUP!</a> to scan my network
+              for any vulnerabilities
+            </li>
+            <li>
+              Add OAuth for Grafana and other admin-only services, or require a VPN to access them
+            </li>
+            <li>
+              Get a router with VLAN capabilities to completely separate my server from the rest of
+              my home network
+            </li>
+            <li>
+              Add rate-limiting configuration to <code>traefik</code> to prevent excessive access
+            </li>
+            <li>Add Captcha or 2FA with something like Authelia or Authentik</li>
+            <li>
+              Add logging and alerts about attacks with <code>ufw</code> logs or
+              <code>fail2ban</code>
+            </li>
+            <li>Regularly update everything</li>
+          </ol>
+          <p>
+            I accomplished Step 1 pretty easily by extending the (arguably unnecessary) script I
+            wrote early to update <code>traefik</code> allowed IPs from Cloudflare to also update my
+            <code>ufw</code> rules to default deny all traffic on ports 80 and 443 and only allow it
+            from Cloudlfare IPs. For convenience, I also added a comment (<code># Cloudflare</code>)
+            to all of these automated rules so that my script could easily purge them and re-enter
+            them without affecting other firewall rules I configured myself. Parts 2 and 5 were also
+            a breeze. And I purchased a lightly used
+            <a href="https://www.amazon.com/dp/B0BQ417K47">ASUS RT-AX86U</a> router so that I could
+            work on Step 4.
+          </p>
+          <p>I decided to defer Steps 3/6/7/8 to a future development session.</p>
+          <p>
+            But the suggestion of a VPN did get me thinking that I wanted to be able to develop on
+            my server even when away from home. ChatGPT suggested
+            <a href="https://tailscale.com/">Tailscale</a> which was astoundingly easy to setup.
+            Within a few minutes, I was able to access my server with my laptop on a hotspot. And
+            because it's a VPN, the access is very secure; I have to login to the same Tailscale
+            account on both machines (which is secured with Google OAuth) and I only have to allow
+            access on <code>ufw</code> for the Tailscale IP range (<code>100.64.0.0/10</code>).
+          </p>
+          <details>
+            <summary>Click here to see my full `ufw` configuration</summary>
 
-              <div class="codehilite">
-                <pre><span></span><code>jmassucco@ubuntu-server-1:~/devel/homelab$<span class="w"> </span>sudo<span class="w"> </span>ufw<span class="w"> </span>status<span class="w"> </span>numbered
+            <div class="codehilite">
+              <pre><span></span><code>jmassucco@ubuntu-server-1:~/devel/homelab$<span class="w"> </span>sudo<span class="w"> </span>ufw<span class="w"> </span>status<span class="w"> </span>numbered
 Status:<span class="w"> </span>active
 
 <span class="w">     </span>To<span class="w">                         </span>Action<span class="w">      </span>From
@@ -140,11 +145,10 @@ Status:<span class="w"> </span>active
 <span class="o">[</span><span class="m">45</span><span class="o">]</span><span class="w"> </span><span class="m">80</span>/tcp<span class="w">                     </span>ALLOW<span class="w"> </span>IN<span class="w">    </span>2c0f:f248::/32<span class="w">             </span><span class="c1"># cloudflare</span>
 <span class="o">[</span><span class="m">46</span><span class="o">]</span><span class="w"> </span><span class="m">443</span>/tcp<span class="w">                    </span>ALLOW<span class="w"> </span>IN<span class="w">    </span>2c0f:f248::/32<span class="w">             </span><span class="c1"># cloudflare</span>
 </code></pre>
-              </div>
-            </details>
-          </div>
-        </article>
-      </div>
+            </div>
+          </details>
+        </div>
+      </article>
     </section>
 
     <footer>&copy; 2025 James Massucco. Built with love and Linux.</footer>
