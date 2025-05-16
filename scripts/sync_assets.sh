@@ -7,7 +7,7 @@ cd "$(dirname "$0")"/..
 echo "Syncing shared assets..."
 
 SHARED_DIR="shared-assets"
-SYNCED_DIRS=("homepage/site/assets" "blog/site/assets" "dashboard/app/assets")
+SYNCED_DIRS=("homepage/site/assets" "blog/site/assets" "dashboard/app/assets" "mortgage-calc/app/assets")
 
 for synced_dir in "${SYNCED_DIRS[@]}"; do
     echo "Syncing to $synced_dir..."

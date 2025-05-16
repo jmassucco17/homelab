@@ -1,8 +1,9 @@
 services:
   dashboard:
-    build: .
     container_name: dashboard
+    build: .
     labels:
+      # Expose HTTPS endpoint with traefik
       - 'traefik.enable=true'
       - 'traefik.http.routers.dashboard.rule=Host(`dashboard.jamesmassucco.com`)'
       - 'traefik.http.routers.dashboard.entrypoints=websecure'

@@ -140,6 +140,7 @@ services:
         jamesmassucco.com,
         dashboard.jamesmassucco.com,
         blog.jamesmassucco.com,
+        mortgage-calc.jamesmassucco.com,
         oauth.jamesmassucco.com,
         grafana.jamesmassucco.com,
         traefik.jamesmassucco.com,

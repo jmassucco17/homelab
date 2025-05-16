@@ -1,0 +1,186 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code&display=swap');
+
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  /* Default fallback colors */
+  --color-title-text: #000;
+  --color-text: #000;
+  --color-footer-text: #000;
+  --color-page-bg: #fff;
+  --color-section-bg: #f0f0f0;
+  --color-section-border: rgb(0 0 0 / 10%);
+  --color-card-bg: #fff;
+  --color-card-border: #ccc;
+  --color-red: #ef4444;
+  --color-yellow: #facc15;
+  --color-green: #10b981;
+}
+
+/* ==== DARK THEME (Cool Tech) ==== */
+html[data-theme='dark'] {
+  --color-title-text: #3b82f6;
+  --color-text: #e5e7eb;
+  --color-footer-text: #9ca3af;
+  --color-page-bg: #0f111a;
+  --color-section-bg: #1f2937;
+  --color-section-border: rgb(59 130 246 / 20%);
+  --color-card-bg: #1e293b;
+  --color-card-border: #334155;
+  --color-red: #ef4444;
+  --color-yellow: #facc15;
+  --color-green: #10b981;
+}
+
+/* ==== LIGHT THEME (Cool Tech Light) ==== */
+html[data-theme='light'] {
+  --color-title-text: #1e3a8a;
+  --color-text: #111827;
+  --color-footer-text: #6b7280;
+  --color-page-bg: #f9fafb;
+  --color-section-bg: #fff;
+  --color-section-border: rgb(30 58 138 / 10%);
+  --color-card-bg: #f3f4f6;
+  --color-card-border: #d1d5db;
+  --color-red: #dc2626;
+  --color-yellow: #f40100;
+  --color-green: #059669;
+}
+
+/* === Shared Styles === */
+
+body {
+  margin: 0;
+  font-family: 'Fira Code', monospace;
+  color: var(--color-text);
+  background-color: var(--color-page-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+}
+
+/* Logo and Home Link */
+.site-home-link {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: var(--color-title-text);
+  font-size: 1.1rem;
+}
+
+.site-logo {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+}
+
+/* Dark/Light Theme Button */
+.theme-toggle {
+  background: transparent;
+  border: 2px solid var(--color-title-text);
+  color: var(--color-title-text);
+  font-size: 1.2rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background 0.3s,
+    color 0.3s,
+    border-color 0.3s;
+}
+
+.theme-toggle:hover {
+  background: var(--color-title-text);
+  color: var(--color-page-bg);
+}
+
+#theme-toggle-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1000;
+}
+
+/* Headings */
+h1,
+h2 {
+  color: var(--color-title-text);
+  margin-bottom: 1rem;
+}
+
+/* Section and Section Title */
+section {
+  background: var(--color-section-bg);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  width: 100%;
+  max-width: 800px;
+  box-shadow: 0 0 12px var(--color-section-border);
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.3em;
+  margin-bottom: 1rem;
+}
+
+/* Grid and Cards */
+.grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.card {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  border-radius: 10px;
+  padding: 1rem;
+  transition: transform 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  border-color: var(--color-title-text);
+}
+
+a {
+  color: var(--color-title-text);
+  text-decoration: none;
+}
+
+a.card {
+  color: inherit;
+  text-decoration: none;
+  display: block;
+}
+
+a.card h3 {
+  color: var(--color-title-text);
+}
+
+a.card p {
+  color: var(--color-text);
+}
+
+a.card .date {
+  color: var(--color-yellow);
+  text-decoration: none;
+}
+
+/* Footer */
+footer {
+  margin-top: 4rem;
+  color: var(--color-footer-text);
+  font-size: 0.9rem;
+}
