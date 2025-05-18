@@ -13,7 +13,7 @@ repos:
       # Run the formatter.
       - id: ruff-format
 
-  - repo: https://github.com/pre-commit/mirrors-pyright
-    rev: v1.1.361
+  - repo: https://github.com/RobertCraigie/pyright-python
+    rev: v1.1.400
     hooks:
       - id: pyright
