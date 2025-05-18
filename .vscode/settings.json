@@ -11,6 +11,21 @@
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "css.validate": false, // disable built-in linter if using Stylelint
 
+  // Associate .html.jinja2 files with Jinja language
+  "files.associations": {
+    "*.html.jinja2": "jinja"
+  },
+
+  // HTML and Jinja2 template formatting
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[jinja]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "prettier.jinjaTemplate": true
+  },
   // Python-specific settings
   "[python]": {
     "editor.formatOnSave": true,
