@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Run at repo root (one level up from this directory)
-cd "$(dirname "$0")"/..
+# Run at repo root
+cd "$(dirname "$0")"
 
 main() {
     echo "🔧 Bootstrapping project environment..."
     install_python
     setup_virtualenv
     install_python_deps
-    setup_docker_services
+    # setup_docker_services
     setup_pre_commit
     install_node_deps
     echo "✅ Bootstrap complete."
@@ -73,10 +73,10 @@ install_python_deps() {
     echo "$current_hash" > "$hash_file"
 }
 
+# XXX this doesn't seem to work properly
 setup_docker_services() {
     echo "🚢 Setting up docker systemd services..."
-    echo "XXX skipping this because of issues"
-    # sudo python3 scripts/setup_services.py
+    sudo python3 scripts/setup_services.py
     echo "📦 Done setting up docker systemd services"
 }
 
