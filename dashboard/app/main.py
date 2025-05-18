@@ -18,7 +18,7 @@ app.mount('/assets', staticfiles.StaticFiles(directory='app/assets'), name='asse
 
 # Prometheus connection
 PROM_URL = 'http://prometheus:9090'
-prom = prometheus_api_client.PrometheusConnect(url=PROM_URL, disable_ssl=True)
+prom = prometheus_api_client.PrometheusConnect(url=PROM_URL, disable_ssl=True)  # type: ignore[reportArgumentType]
 
 
 # Main site definition
@@ -40,8 +40,11 @@ for q in QUERIES:
         continue
 
     @app.get(f'/widgets/{q.name}', response_class=responses.HTMLResponse)
-    def widget_route(request: fastapi.Request, _q=q):  # bind q to this instance
-        result = prom.custom_query(query=_q.query)
+    def widget_route(
+        request: fastapi.Request,
+        _q: config_schema.Query = q,
+    ) -> responses.HTMLResponse:
+        result = prom.custom_query(query=_q.query)  # type: ignore[reportArgumentType]
         return render_widget(_q, request, result)
 
 
@@ -51,14 +54,16 @@ for q in QUERIES:
         continue
 
     @app.get(f'/api/{q.name}-timeseries')
-    def timeseries_route(_q=q):  # bind q to this instance
-        result = prom.custom_query(query=_q.query)
+    def timeseries_route(_q: config_schema.Query = q) -> dict[str, float]:
+        result = prom.custom_query(query=_q.query)  # type: ignore[reportArgumentType]
         value = float(result[0]['value'][1]) if result else 0.0
         return {'timestamp': time.time(), 'value': value}
 
 
 def render_widget(
-    query: config_schema.Query, request: fastapi.Request, result: list
+    query: config_schema.Query,
+    request: fastapi.Request,
+    result: list[dict[str, str]],
 ) -> fastapi.responses.HTMLResponse:
     value = round(float(result[0]['value'][1]), 2) if result else 'N/A'
     return templates.TemplateResponse(

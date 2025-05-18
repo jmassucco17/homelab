@@ -59,7 +59,7 @@ def load_calc(request: requests.Request, calc_id: int):
         rows = conn.execute(
             'SELECT id, name FROM calculations ORDER BY created_at DESC'
         ).fetchall()
-    data = json.loads(row[2]) if row else {}
+    data: dict[str, str] = json.loads(row[2]) if row else {}
     return templates.TemplateResponse(
         'index.html.jinja2',
         {'request': request, 'saved_calcs': rows, 'loaded': data, 'name': row[1]},
