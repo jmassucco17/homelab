@@ -9,8 +9,9 @@
 
     <form method="post" action="/save">
       <label>Name this calculation:</label>
-      <input type="text" name="name" value="{{ name if name else '' }}" required /><br />
+      <input type="text" name="name" value="{{ name if name else '' }}" required /><br /><br />
 
+      <h2>Home Purchase</h2>
       <label>House Price:</label>
       <input
         type="number"
@@ -18,14 +19,28 @@
         value="{{ loaded.house_price if loaded and 'house_price' in loaded else '' }}"
       /><br />
 
-      <label>Downpayment:</label>
+      <label>Buyer's Agent (3%):</label>
+      <span id="buyers-agent">$0.00</span><br />
+
+      <label>Misc Closing (5%):</label>
+      <span id="closing-costs">$0.00</span><br />
+
+      <label>Total Home Cost:</label>
+      <span id="home-total">$0.00</span><br /><br />
+
+      <h2>Downpayment</h2>
+      <label>Amount:</label>
       <input
         type="number"
         name="downpayment"
         value="{{ loaded.downpayment if loaded and 'downpayment' in loaded else '' }}"
       /><br />
 
-      <label>Interest Rate:</label>
+      <label>Percent:</label>
+      <span id="downpayment-pct">0%</span><br /><br />
+
+      <h2>Mortgage</h2>
+      <label>Interest Rate (Annual %):</label>
       <input
         type="number"
         step="0.001"
@@ -40,26 +55,38 @@
         value="{{ loaded.term_years if loaded and 'term_years' in loaded else '' }}"
       /><br />
 
-      <label>Home Insurance (monthly):</label>
+      <label>Loan Amount:</label>
+      <span id="loan-amount">$0.00</span><br />
+
+      <label>Monthly Payment (P&I):</label>
+      <span id="monthly-pi">$0.00</span><br />
+
+      <label>Total Interest:</label>
+      <span id="total-interest">$0.00</span><br /><br />
+
+      <h2>Other Monthly Expenses</h2>
+      <label>Home Insurance:</label>
       <input
         type="number"
         name="insurance"
         value="{{ loaded.insurance if loaded and 'insurance' in loaded else '' }}"
       /><br />
 
-      <label>Utilities (monthly):</label>
+      <label>Utilities:</label>
       <input
         type="number"
         name="utilities"
         value="{{ loaded.utilities if loaded and 'utilities' in loaded else '' }}"
-      /><br />
+      /><br /><br />
+
+      <label>Total Monthly Cost:</label>
+      <span id="monthly-total">$0.00</span><br /><br />
 
       <input type="hidden" name="data" id="data-field" />
       <button type="submit" onclick="prepareData()">Save</button>
     </form>
 
     <hr />
-
     <h2>Saved Calculations</h2>
     <ul>
       {% for calc in saved_calcs %}
@@ -68,6 +95,39 @@
     </ul>
 
     <script>
+      function updateResults(data) {
+        const buyersAgent = data.house_price * 0.03
+        const closingCosts = data.house_price * 0.05
+        const homeTotal = data.house_price + buyersAgent + closingCosts
+        const downPct = (data.downpayment / homeTotal) * 100
+        const loan = homeTotal - data.downpayment
+        const r = data.interest_rate / 100 / 12
+        const n = data.term_years * 12
+
+        let monthlyPI = 0
+        if (r > 0 && n > 0) {
+          monthlyPI = (loan * (r * Math.pow(1 + r, n))) / (Math.pow(1 + r, n) - 1)
+        }
+        const totalInterest = monthlyPI * n - loan
+        const monthlyTotal = monthlyPI + data.insurance + data.utilities
+
+        document.getElementById('buyers-agent').textContent =
+          `$${buyersAgent.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+        document.getElementById('closing-costs').textContent =
+          `$${closingCosts.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+        document.getElementById('home-total').textContent =
+          `$${homeTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+        document.getElementById('downpayment-pct').textContent = `${downPct.toFixed(1)}%`
+        document.getElementById('loan-amount').textContent =
+          `$${loan.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+        document.getElementById('monthly-pi').textContent =
+          `$${monthlyPI.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+        document.getElementById('total-interest').textContent =
+          `$${totalInterest.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+        document.getElementById('monthly-total').textContent =
+          `$${monthlyTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+      }
+
       function prepareData() {
         const fields = [
           'house_price',
@@ -80,10 +140,61 @@
         const data = {}
         for (const field of fields) {
           const el = document.querySelector(`[name="${field}"]`)
-          if (el) data[field] = el.value
+          if (el) data[field] = parseFloat(el.value) || 0
         }
         document.getElementById('data-field').value = JSON.stringify(data)
+        updateResults(data)
       }
+
+      document.querySelectorAll('input').forEach((input) => {
+        input.addEventListener('input', (e) => {
+          if (
+            input.type === 'number' ||
+            input.getAttribute('name')?.match(/(price|downpayment|rate|term|insurance|utilities)/)
+          ) {
+            formatNumberWithCommas(input)
+          }
+
+          const fields = [
+            'house_price',
+            'downpayment',
+            'interest_rate',
+            'term_years',
+            'insurance',
+            'utilities',
+          ]
+          const data = {}
+          for (const field of fields) {
+            const el = document.querySelector(`[name="${field}"]`)
+            if (el) data[field] = parseFloat(el.value.replace(/,/g, '')) || 0
+          }
+          updateResults(data)
+        })
+      })
+
+      function formatNumberWithCommas(input) {
+        const cursorPos = input.selectionStart
+        const rawValue = input.value.replace(/,/g, '')
+        const number = parseFloat(rawValue)
+
+        if (isNaN(number)) return
+
+        const parts = rawValue.split('.')
+        let intPart = parts[0]
+        const decimalPart = parts.length > 1 ? '.' + parts[1] : ''
+
+        intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+
+        input.value = intPart + decimalPart
+
+        // Reposition cursor after formatting
+        const newCursorPos = cursorPos + (input.value.length - rawValue.length)
+        input.setSelectionRange(newCursorPos, newCursorPos)
+      }
+
+      window.addEventListener('load', () => {
+        prepareData()
+      })
     </script>
   </body>
 </html>
