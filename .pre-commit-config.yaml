@@ -1,11 +1,11 @@
 repos:
   - repo: local
     hooks:
-      - id: prettier
-        name: prettier
+      - id: prettier-html
+        name: prettier-html
         entry: npx prettier --write
         language: system
-        files: \.(html|jinja2|jinja|htm)$
+        files: \.(html|htm)$
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     rev: v0.11.8
