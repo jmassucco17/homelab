@@ -15,7 +15,7 @@
   },
   "homepage": "https://github.com/jmassucco17/homelab#readme",
   "devDependencies": {
-    "prettier": "^3.5.3",
+    "prettier": "^2.8.8",
     "prettier-plugin-jinja-template": "^2.1.0",
     "stylelint": "^16.19.1",
     "stylelint-config-standard": "^38.0.0",

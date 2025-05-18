@@ -61,8 +61,7 @@
         {% for chart in charts %}
           <h2>{{ chart.label }}</h2>
           <canvas id="{{ chart.name }}-chart" width="350" height="100"></canvas>
-        <div></div>
-      {% endfor %}
+        {% endfor %}
     </section>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
