@@ -1,0 +1,15 @@
+<rss version="2.0">
+  <channel>
+    <title>James Massucco Blog</title>
+    <link>https://blog.jamesmassucco.com</link>
+    <description>Updates from my homelab and engineering work</description>
+    {% for post in posts %}
+    <item>
+      <title>{{ post.metadata.title }}</title>
+      <link>https://blog.jamesmassucco.com/{{ post.metadata.slug }}.html</link>
+      <pubDate>{{ post.metadata.dt.strftime('%a, %d %b %Y %H:%M:%S +0000') }}</pubDate>
+      <description>{{ post.metadata.summary }}</description>
+    </item>
+    {% endfor %}
+  </channel>
+</rss>

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      ;(function () {
+        const cookieTheme = document.cookie
+          .split('; ')
+          .find((row) => row.startsWith('theme='))
+          ?.split('=')[1]
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+        const theme = cookieTheme || (prefersDark ? 'dark' : 'light')
+        document.documentElement.setAttribute('data-theme', theme)
+      })()
+    </script>
+    <title>Blog | JM Homelab</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="icon"
+      type="image/png"
+      href="https://assets.jamesmassucco.com/icon/favicon-96x96.png"
+      sizes="96x96"
+    />
+    <link rel="shortcut icon" href="https://assets.jamesmassucco.com/icon/favicon.ico" />
+    <link rel="stylesheet" href="https://assets.jamesmassucco.com/styles/main.css?v=1.2" />
+    <link rel="stylesheet" href="/assets/styles/blog-index.css" />
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed" href="/rss.xml" />
+  </head>
+  <body>
+    <div id="theme-toggle-container"></div>
+    <a href="https://jamesmassucco.com" class="site-home-link">
+      <img
+        src="https://assets.jamesmassucco.com/icon/favicon-96x96.png"
+        alt="Home"
+        class="site-logo"
+      />
+      <span>Home</span>
+    </a>
+
+    <h1 style="margin-bottom: 1rem">Blog</h1>
+
+    <a class="rss-link" href="/rss.xml" target="_blank" rel="noopener noreferrer"> 📡 RSS Feed </a>
+
+    <section>
+      <div class="grid">
+        {% for post in posts %}
+          <a href="posts/{{ post.metadata.slug }}.html" class="card" style="text-decoration: none">
+            <h3>{{ post.metadata.title }}</h3>
+            <p class="date">{{ post.metadata.dt | datefmt }}</p>
+            <p>{{ post.metadata.summary }}</p>
+          </a>
+        {% endfor %}
+      </div>
+    </section>
+
+    <footer>&copy; 2025 James Massucco. Built with love and Linux.</footer>
+    <script type="module">
+      import { insertThemeToggle } from 'https://assets.jamesmassucco.com/scripts/theme-toggle.js'
+      window.addEventListener('DOMContentLoaded', () => {
+        insertThemeToggle() // Will look for #theme-toggle-container
+      })
+    </script>
+  </body>
+</html>
