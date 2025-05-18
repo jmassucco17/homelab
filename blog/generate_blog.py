@@ -2,7 +2,7 @@ import datetime
 import pathlib
 import subprocess
 
-import frontmatter
+import frontmatter  # type: ignore[reportMissingTypeStubs]
 import jinja2
 import markdown
 import pydantic
@@ -40,7 +40,7 @@ class BlogPost:
     def post(self) -> frontmatter.Post:
         """Returns frontmatter-parsed post, loading and caching if necessary"""
         if self._post is None:
-            self._post = frontmatter.load(self.md_path)
+            self._post = frontmatter.load(self.md_path.as_posix())
         return self._post
 
     @property
@@ -81,7 +81,7 @@ def write_and_format_html(html: str, path: pathlib.Path) -> None:
 def main() -> None:
     # Load jinja templates
     env = jinja2.Environment(loader=jinja2.FileSystemLoader(TEMPLATES_DIR))
-    env.filters['datefmt'] = lambda value, fmt='%B %d, %Y': value.strftime(fmt)
+    env.filters['datefmt'] = lambda value, fmt='%B %d, %Y': value.strftime(fmt)  # type: ignore
     post_template = env.get_template(POST_TEMPLATE_FILE)
     index_template = env.get_template(INDEX_TEMPLATE_FILE)
     rss_template = env.get_template(RSS_TEMPLATE_FILE)
