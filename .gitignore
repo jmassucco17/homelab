@@ -180,6 +180,6 @@ letsencrypt/
 acme.json
 
 # Custom hashes for local environment
-.venv-requirements.hash
-.npm-lock.hash
+.requirements.hash
+.package.hash
 .pre-commit-config.hash

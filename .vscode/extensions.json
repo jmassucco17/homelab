@@ -6,6 +6,7 @@
     "stkb.rewrap",
     "tamasfe.even-better-toml",
     "redhat.vscode-yaml",
-    "samuelcolvin.jinjahtml"
+    "samuelcolvin.jinjahtml",
+    "GitHub.vscode-github-actions"
   ]
 }

@@ -14,14 +14,10 @@
   // Python-specific settings
   "[python]": {
     "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": {
-      "source.fixAll": "explicit",
-      "source.organizeImports": "explicit"
-    },
     "editor.defaultFormatter": "charliermarsh.ruff"
   },
 
   // Rewrap settings
   "rewrap.wrappingColumn": 88,
-  "rewrap.autoWrap.enabled": false // disable auto-wrap on typing
+  "rewrap.autoWrap.enabled": false
 }

@@ -1,0 +1,15 @@
+{
+  "typeCheckingMode": "strict",
+  "reportMissingImports": true,
+  "reportMissingTypeStubs": true,
+  "reportPrivateImportUsage": true,
+  "reportOptionalSubscript": true,
+  "reportOptionalMemberAccess": true,
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+    ".venv"
+  ],
+  "venvPath": ".",
+  "venv": ".venv"
+}

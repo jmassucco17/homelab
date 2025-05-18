@@ -1,7 +1,4 @@
 {
-  "scripts": {
-    "lint:css": "stylelint '**/*.css'"
-  },
   "name": "homelab",
   "description": "Welcome to my homelab project!",
   "version": "1.0.0",
@@ -20,6 +17,11 @@
   "devDependencies": {
     "prettier": "^3.5.3",
     "stylelint": "^16.19.1",
-    "stylelint-config-standard": "^38.0.0"
+    "stylelint-config-standard": "^38.0.0",
+    "pyright": "^1.1.361"
+  },
+  "scripts": {
+    "lint:css": "stylelint '**/*.css'",
+    "lint:types": "pyright"
   }
 }

@@ -57,7 +57,7 @@ setup_virtualenv() {
 
 install_python_deps() {
     echo "🐍 Installing Python dependencies..."
-    local hash_file=".venv-requirements.hash"
+    local hash_file=".requirements.hash"
     local current_hash
     current_hash=$(sha256sum requirements.txt | awk '{print $1}')
 
@@ -107,10 +107,10 @@ install_node_deps() {
         sudo apt-get install -y npm
     fi
 
-    local lock_file="package-lock.json"
-    local hash_file=".npm-lock.hash"
+    local package_file="package.json"
+    local hash_file=".package.hash"
     local current_hash
-    current_hash=$(sha256sum "$lock_file" | awk '{print $1}')
+    current_hash=$(sha256sum "$package_file" | awk '{print $1}')
 
     if [ -f "$hash_file" ] && grep -q "$current_hash" "$hash_file"; then
         echo "📦 Node.js dependencies already up-to-date"
