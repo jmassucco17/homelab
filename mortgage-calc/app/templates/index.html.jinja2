@@ -90,7 +90,7 @@
     <h2>Saved Calculations</h2>
     <ul>
       {% for calc in saved_calcs %}
-      <li><a href="/calc/{{ calc[0] }}">{{ calc[1] }}</a></li>
+        <li><a href="/calc/{{ calc[0] }}">{{ calc[1] }}</a></li>
       {% endfor %}
     </ul>
 
@@ -111,21 +111,34 @@
         const totalInterest = monthlyPI * n - loan
         const monthlyTotal = monthlyPI + data.insurance + data.utilities
 
-        document.getElementById('buyers-agent').textContent =
-          `$${buyersAgent.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
-        document.getElementById('closing-costs').textContent =
-          `$${closingCosts.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
-        document.getElementById('home-total').textContent =
-          `$${homeTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+        document.getElementById('buyers-agent').textContent = `$${buyersAgent.toLocaleString(
+          undefined,
+          { minimumFractionDigits: 2 },
+        )}`
+        document.getElementById('closing-costs').textContent = `$${closingCosts.toLocaleString(
+          undefined,
+          { minimumFractionDigits: 2 },
+        )}`
+        document.getElementById('home-total').textContent = `$${homeTotal.toLocaleString(
+          undefined,
+          { minimumFractionDigits: 2 },
+        )}`
         document.getElementById('downpayment-pct').textContent = `${downPct.toFixed(1)}%`
-        document.getElementById('loan-amount').textContent =
-          `$${loan.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
-        document.getElementById('monthly-pi').textContent =
-          `$${monthlyPI.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
-        document.getElementById('total-interest').textContent =
-          `$${totalInterest.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
-        document.getElementById('monthly-total').textContent =
-          `$${monthlyTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+        document.getElementById('loan-amount').textContent = `$${loan.toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+        })}`
+        document.getElementById('monthly-pi').textContent = `$${monthlyPI.toLocaleString(
+          undefined,
+          { minimumFractionDigits: 2 },
+        )}`
+        document.getElementById('total-interest').textContent = `$${totalInterest.toLocaleString(
+          undefined,
+          { minimumFractionDigits: 2 },
+        )}`
+        document.getElementById('monthly-total').textContent = `$${monthlyTotal.toLocaleString(
+          undefined,
+          { minimumFractionDigits: 2 },
+        )}`
       }
 
       function prepareData() {
