@@ -4,12 +4,20 @@ set -euo pipefail
 # Run at repo root
 cd "$(dirname "$0")"
 
+# Determine operating system
+OS="$(uname -s)"
+
+case "$OS" in
+    Linux*)   MACHINE=Linux;;
+    Darwin*)  MACHINE=Mac;;
+    *)        MACHINE="UNKNOWN:$OS";;
+esac
+
 main() {
     echo "🔧 Bootstrapping project environment..."
     install_python
     setup_virtualenv
     install_python_deps
-    # setup_docker_services
     setup_pre_commit
     install_node_deps
     echo "✅ Bootstrap complete."
@@ -17,24 +25,30 @@ main() {
 
 install_python() {
     echo "🔍 Installing Python..."
-    REQUIRED_PKGS=(python3 python3-venv python3-pip)
-    MISSING_PKGS=()
+    if [ "$MACHINE" = "Linux" ]; then
+        REQUIRED_PKGS=(python3 python3-venv python3-pip)
+        MISSING_PKGS=()
 
-    for pkg in "${REQUIRED_PKGS[@]}"; do
-        dpkg -s "$pkg" &>/dev/null || MISSING_PKGS+=("$pkg")
-    done
+        for pkg in "${REQUIRED_PKGS[@]}"; do
+            dpkg -s "$pkg" &>/dev/null || MISSING_PKGS+=("$pkg")
+        done
 
-    if [ "${#MISSING_PKGS[@]}" -gt 0 ]; then
-        echo "📦 Installing missing Python packages: ${MISSING_PKGS[*]}"
-        sudo apt-get update -qq
-        sudo apt-get install -y "${MISSING_PKGS[@]}"
-    else
-        echo "📦 Python already installed"
-    fi
+        if [ "${#MISSING_PKGS[@]}" -gt 0 ]; then
+            echo "📦 Installing missing Python packages: ${MISSING_PKGS[*]}"
+            sudo apt-get update -qq
+            sudo apt-get install -y "${MISSING_PKGS[@]}"
+        fi
 
-    PYTHON_VERSION=$(python3 -V 2>&1 | awk '{print $2}')
-    if [[ "$PYTHON_VERSION" != 3.12.* ]]; then
-        echo "⚠️  Warning: Python version is $PYTHON_VERSION, but 3.12 is recommended."
+    elif [ "$MACHINE" = "Mac" ]; then
+        if ! command -v brew &>/dev/null; then
+            echo "❌ Homebrew not found. Please install it from https://brew.sh/"
+            exit 1
+        fi
+
+        if ! command -v python3 &>/dev/null; then
+            echo "📦 Installing Python with Homebrew..."
+            brew install python
+        fi
     fi
 }
 
@@ -73,13 +87,6 @@ install_python_deps() {
     echo "$current_hash" > "$hash_file"
 }
 
-# XXX this doesn't seem to work properly
-setup_docker_services() {
-    echo "🚢 Setting up docker systemd services..."
-    sudo python3 scripts/setup_services.py
-    echo "📦 Done setting up docker systemd services"
-}
-
 setup_pre_commit() {
     echo "🪝 Setting up pre-commit hooks..."
     local hook_file=".git/hooks/pre-push"
@@ -103,8 +110,11 @@ setup_pre_commit() {
 install_node_deps() {
     echo "🎨 Installing npm and Node.js dependencies..."
     if ! command -v npm &>/dev/null; then
-        echo "📦 Installing npm..."
-        sudo apt-get install -y npm
+        if [ "$MACHINE" = "Linux" ]; then
+            sudo apt-get install -y npm
+        elif [ "$MACHINE" = "Mac" ]; then
+            brew install node
+        fi
     fi
 
     local package_file="package.json"
