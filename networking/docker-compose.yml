@@ -5,7 +5,7 @@ services:
     container_name: traefik
     command:
       # Debug logging
-      - '--log.level=DEBUG'
+      # - '--log.level=DEBUG'
       # Keep track of users accessing the application
       - '--accesslog=true'
       - '--accesslog.fields.names.ClientHost=keep'
@@ -99,7 +99,7 @@ services:
       OAUTH2_PROXY_UPSTREAMS: static://200
       # Logging
       OAUTH2_PROXY_SHOW_DEBUG_ON_ERROR: true
-      OAUTH2_PROXY_LOG_LEVEL: debug
+      # OAUTH2_PROXY_LOG_LEVEL: debug
     networks:
       - web
     labels:
@@ -140,13 +140,10 @@ services:
         jamesmassucco.com,
         dashboard.jamesmassucco.com,
         blog.jamesmassucco.com,
-        mortgage-calc.jamesmassucco.com,
         oauth.jamesmassucco.com,
         assets.jamesmassucco.com,
-        grafana.jamesmassucco.com,
         traefik.jamesmassucco.com,
         whoami.jamesmassucco.com,
-        prometheus.jamesmassucco.com
       PROXIED: true
       TZ: America/Los_Angeles
     restart: unless-stopped

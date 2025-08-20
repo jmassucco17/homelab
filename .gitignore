@@ -183,3 +183,7 @@ acme.json
 .requirements.hash
 .package.hash
 .pre-commit-config.hash
+
+# Archives
+*.tar
+*.tar.gz
