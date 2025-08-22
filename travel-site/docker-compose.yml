@@ -1,0 +1,22 @@
+services:
+  travel-admin:
+    build: .
+    volumes:
+      - .:/app
+      - ./data:/app/data
+    environment:
+      - PYTHONPATH=/app
+    networks:
+      - web
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.travel.rule=Host(`travel-admin.jamesmassucco.com`)
+      - traefik.http.routers.travel.entrypoints=websecure
+      - traefik.http.routers.travel.tls.certresolver=cloudflare
+      - traefik.http.services.travel.loadbalancer.server.port=8000
+      - traefik.http.routers.travel.middlewares=oauth-auth,ratelimit
+    restart: unless-stopped
+
+networks:
+  web:
+    external: true

@@ -12,5 +12,12 @@ prometheus-api-client
 pyyaml
 pydantic
 
-# mortgage-calc
+# travel-site
+fastapi
+uvicorn
+sqlalchemy
+bcrypt
 python-multipart
+jinja2
+python-jose
+passlib

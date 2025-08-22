@@ -144,6 +144,7 @@ services:
         assets.jamesmassucco.com,
         traefik.jamesmassucco.com,
         whoami.jamesmassucco.com,
+        travel-admin.jamesmassucco.com,
       PROXIED: true
       TZ: America/Los_Angeles
     restart: unless-stopped
