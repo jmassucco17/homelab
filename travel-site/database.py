@@ -1,9 +1,6 @@
-import contextlib
 import datetime
 import os
-from typing import Annotated
 
-import fastapi
 import sqlalchemy
 from sqlalchemy import orm
 
@@ -57,26 +54,7 @@ class Location(Base):
     creator = orm.relationship('User', back_populates='locations')
 
 
-@contextlib.asynccontextmanager
-async def db_lifespan(app: fastapi.FastAPI):
-    """Lifespan function for database"""
-    # Initialize database
+def start_db() -> orm.Session:
     os.makedirs('data', exist_ok=True)
     Base.metadata.create_all(bind=engine)
-
-    # Store in accessible state
-    app.state.db = SessionLocal()
-    yield
-
-    # Close before exiting application
-    app.state.db.close()
-
-
-def get_db(request: fastapi.Request) -> orm.Session:
-    return request.app.state.db
-
-
-DatabaseSession = Annotated[
-    orm.Session,
-    fastapi.Depends(get_db),
-]
+    return SessionLocal()

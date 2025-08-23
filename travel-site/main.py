@@ -1,3 +1,4 @@
+import contextlib
 import datetime
 from typing import Annotated
 
@@ -7,11 +8,30 @@ import fastapi.responses
 import fastapi.staticfiles
 import fastapi.templating
 import uvicorn
+from sqlalchemy import orm
+
+
+@contextlib.asynccontextmanager
+async def db_lifespan(app: fastapi.FastAPI):
+    """Lifespan function for database"""
+    app.state.db = database.start_db()
+    yield
+    app.state.db.close()
+
+
+def get_db(request: fastapi.Request) -> orm.Session:
+    return request.app.state.db
+
+
+DatabaseSession = Annotated[
+    orm.Session,
+    fastapi.Depends(get_db),
+]
 
 
 def get_current_user(
     request: fastapi.Request,
-    db: database.DatabaseSession,
+    db: DatabaseSession,
 ) -> database.User:
     """Get user from OAuth headers and keep in sync with database"""
     email = request.headers.get('X-Auth-Request-Email')
@@ -39,7 +59,7 @@ String = Annotated[str, fastapi.Form(...)]
 Date = Annotated[datetime.date, fastapi.Form(...)]
 
 # Create app
-app = fastapi.FastAPI(title='Travel Locations Admin', lifespan=database.db_lifespan)
+app = fastapi.FastAPI(title='Travel Locations Admin', lifespan=db_lifespan)
 app.mount('/static', fastapi.staticfiles.StaticFiles(directory='static'), name='static')
 templates = fastapi.templating.Jinja2Templates(directory='templates')
 
@@ -55,7 +75,7 @@ def read_root() -> fastapi.responses.RedirectResponse:
 def admin_dashboard(
     request: fastapi.Request,
     current_user: CurrentUser,
-    db: database.DatabaseSession,
+    db: DatabaseSession,
 ) -> fastapi.responses.HTMLResponse:
     locations = db.query(database.Location).all()
     return templates.TemplateResponse(
@@ -72,7 +92,7 @@ def create_location(
     start_date: Date,
     end_date: Date,
     current_user: CurrentUser,
-    db: database.DatabaseSession,
+    db: DatabaseSession,
 ) -> fastapi.responses.RedirectResponse:
     location = database.Location(
         name=name,
@@ -92,7 +112,7 @@ def create_location(
 @app.post('/admin/locations/{location_id}/delete')
 def delete_location(
     location_id: int,
-    db: database.DatabaseSession,
+    db: DatabaseSession,
 ) -> fastapi.responses.RedirectResponse:
     location = (
         db.query(database.Location).filter(database.Location.id == location_id).first()
@@ -115,7 +135,7 @@ def edit_location(
     country: String,
     start_date: Date,
     end_date: Date,
-    db: database.DatabaseSession,
+    db: DatabaseSession,
 ) -> fastapi.responses.RedirectResponse:
     location = (
         db.query(database.Location).filter(database.Location.id == location_id).first()
