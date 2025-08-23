@@ -3,7 +3,7 @@ repos:
     hooks:
       - id: check-xxx-comments
         name: Check for XXX comments
-        entry: python scripts/check_xxx_comments.py
+        entry: scripts/check_xxx_comments.py
         language: system
         pass_filenames: true
         types: [text]
