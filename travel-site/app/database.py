@@ -4,7 +4,7 @@ import os
 import sqlalchemy
 from sqlalchemy import orm
 
-DATABASE_URL = 'sqlite:///./data/travel.db'
+DATABASE_URL = 'sqlite:///data/travel.db'
 
 # Create sqlalchemy classes
 engine = sqlalchemy.create_engine(

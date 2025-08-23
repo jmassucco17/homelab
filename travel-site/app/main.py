@@ -2,12 +2,11 @@ import contextlib
 import datetime
 from typing import Annotated
 
-import database
 import fastapi
 import fastapi.responses
-import fastapi.staticfiles
 import fastapi.templating
 import uvicorn
+from app import database
 from sqlalchemy import orm
 
 
@@ -61,8 +60,7 @@ AfterLocationId = Annotated[int, fastapi.Form(...)]
 
 # Create app
 app = fastapi.FastAPI(title='Travel Locations Admin', lifespan=db_lifespan)
-app.mount('/static', fastapi.staticfiles.StaticFiles(directory='static'), name='static')
-templates = fastapi.templating.Jinja2Templates(directory='templates')
+templates = fastapi.templating.Jinja2Templates(directory='app/templates')
 
 
 @app.get('/', response_class=fastapi.responses.HTMLResponse)

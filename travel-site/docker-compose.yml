@@ -1,11 +1,9 @@
 services:
   travel-admin:
+    container_name: travel-admin
     build: .
     volumes:
-      - .:/app
-      - ./data:/app/data
-    environment:
-      - PYTHONPATH=/app
+      - data-volume:/data
     networks:
       - web
     labels:
@@ -16,6 +14,9 @@ services:
       - traefik.http.services.travel.loadbalancer.server.port=8000
       - traefik.http.routers.travel.middlewares=oauth-auth,ratelimit
     restart: unless-stopped
+
+volumes:
+  data-volume:
 
 networks:
   web:
