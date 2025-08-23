@@ -70,9 +70,7 @@ class Location(Base):
     created_by = sqlalchemy.Column(
         sqlalchemy.Integer, sqlalchemy.ForeignKey('users.id')
     )
-    trip_id = sqlalchemy.Column(
-        sqlalchemy.Integer, sqlalchemy.ForeignKey('trips.id')
-    )
+    trip_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('trips.id'))
 
     creator = orm.relationship('User', back_populates='locations')
     trip = orm.relationship('Trip', back_populates='locations')
