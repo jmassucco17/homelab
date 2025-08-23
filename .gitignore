@@ -187,3 +187,7 @@ acme.json
 # Archives
 *.tar
 *.tar.gz
+
+# Databases
+*.db
+*.db.backup

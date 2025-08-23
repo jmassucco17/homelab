@@ -32,6 +32,26 @@ class User(Base):
     created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=current_time_utc)
 
     locations = orm.relationship('Location', back_populates='creator')
+    trips = orm.relationship('Trip', back_populates='creator')
+
+
+class Trip(Base):
+    __tablename__ = 'trips'
+
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, index=True)
+    name = sqlalchemy.Column(sqlalchemy.String, nullable=False, index=True)
+    created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=current_time_utc)
+    updated_at = sqlalchemy.Column(
+        sqlalchemy.DateTime, default=current_time_utc, onupdate=current_time_utc
+    )
+    created_by = sqlalchemy.Column(
+        sqlalchemy.Integer, sqlalchemy.ForeignKey('users.id')
+    )
+
+    creator = orm.relationship('User', back_populates='trips')
+    locations = orm.relationship(
+        'Location', back_populates='trip', order_by='Location.order_index'
+    )
 
 
 class Location(Base):
@@ -42,7 +62,7 @@ class Location(Base):
     city = sqlalchemy.Column(sqlalchemy.String)
     country = sqlalchemy.Column(sqlalchemy.String)
     start_date = sqlalchemy.Column(sqlalchemy.Date)
-    end_date = sqlalchemy.Column(sqlalchemy.Date)
+    order_index = sqlalchemy.Column(sqlalchemy.Integer, default=0)
     created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=current_time_utc)
     updated_at = sqlalchemy.Column(
         sqlalchemy.DateTime, default=current_time_utc, onupdate=current_time_utc
@@ -50,8 +70,12 @@ class Location(Base):
     created_by = sqlalchemy.Column(
         sqlalchemy.Integer, sqlalchemy.ForeignKey('users.id')
     )
+    trip_id = sqlalchemy.Column(
+        sqlalchemy.Integer, sqlalchemy.ForeignKey('trips.id')
+    )
 
     creator = orm.relationship('User', back_populates='locations')
+    trip = orm.relationship('Trip', back_populates='locations')
 
 
 def start_db() -> orm.Session:

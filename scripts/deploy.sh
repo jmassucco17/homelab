@@ -97,6 +97,7 @@ rm homelab-deploy.tar.gz
 
 echo "🎉 Deployment finished successfully!"
 echo "Your services should be available at:"
-echo "  - https://jamesmassucco.com (homepage)"
-echo "  - https://blog.jamesmassucco.com (blog)"
-echo "  - https://traefik.jamesmassucco.com (traefik dashboard)"
+echo "  - https://jamesmassucco.com"
+echo "  - https://blog.jamesmassucco.com"
+echo "  - https://traefik.jamesmassucco.com"
+echo "  - https://travel-admin.jamesmassucco.com"
