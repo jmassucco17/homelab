@@ -12,79 +12,164 @@
       .trip-section {
         border: 1px solid #dee2e6;
         border-radius: 0.375rem;
-        margin-bottom: 2rem;
+        margin-bottom: 1.5rem;
       }
       .location-item {
         border: 1px solid #e9ecef;
         border-radius: 0.25rem;
         background-color: #f8f9fa;
         margin-bottom: 0.5rem;
-        padding: 1rem;
+        padding: 0.75rem;
+      }
+      @media (max-width: 768px) {
+        .trip-section {
+          margin-bottom: 1rem;
+        }
+        .location-item {
+          padding: 0.5rem;
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .location-content {
+          width: 100%;
+          margin-bottom: 0.75rem;
+        }
+        .location-actions {
+          width: 100%;
+          justify-content: flex-end;
+        }
+        .container {
+          padding-left: 0.75rem;
+          padding-right: 0.75rem;
+        }
       }
       .add-location-btn {
-        border: 2px dashed #6c757d;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 2px solid #28a745;
         background-color: transparent;
-        padding: 1rem;
-        width: 100%;
-        border-radius: 0.25rem;
-        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        color: #28a745;
+        padding: 0;
       }
       .add-location-btn:hover {
-        background-color: #f8f9fa;
-        border-color: #495057;
+        background-color: #28a745;
+        border-color: #28a745;
+        color: white;
       }
       .move-buttons .btn {
         padding: 0.25rem 0.5rem;
         font-size: 0.875rem;
       }
-    </style>
+      @media (max-width: 768px) {
+        .move-buttons {
+          display: flex;
+          gap: 0.25rem;
+        }
+        .move-buttons .btn {
+          padding: 0.25rem 0.375rem;
+          font-size: 0.75rem;
+        }
+        .btn-sm {
+          padding: 0.25rem 0.5rem;
+          font-size: 0.75rem;
+        }
+        .add-location-btn {
+          width: 28px;
+          height: 28px;
+          font-size: 16px;
+        }
+      }
+      @media (max-width: 480px) {
+        .trip-info h5 {
+          font-size: 1.05rem;
+        }
+        .modal-dialog {
+          margin: 0.5rem;
+        }
+        .card-header {
+          padding: 0.75rem;
+        }
+        .card-body {
+          padding: 0.75rem;
+        }
+        .location-actions {
+          gap: 0.25rem;
+        }
+        .location-actions .btn {
+          font-size: 0.7rem;
+          padding: 0.25rem 0.375rem;
+        }
+        .add-location-btn {
+          width: 26px;
+          height: 26px;
+          font-size: 14px;
+        }
+      }\n    </style>
   </head>
   <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
       <div class="container">
-        <span class="navbar-brand">Travel Locations Admin</span>
+        <span class="navbar-brand d-none d-md-inline">Travel Locations Admin</span>
+        <span class="navbar-brand d-md-none">Travel Admin</span>
         <div class="navbar-nav ms-auto">
-          <span class="navbar-text me-3">Welcome, {{ user.email }}</span>
+          <span class="navbar-text small d-none d-sm-inline">Welcome, {{ user.email }}</span>
+          <span class="navbar-text small d-sm-none">{{ user.email.split('@')[0] }}</span>
         </div>
       </div>
     </nav>
 
     <div class="container mt-4">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Trips ({{ trips|length }})</h2>
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Trips ({{ trips|length }})</h3>
         <button class="btn btn-primary" onclick="showNewTripModal()">
-          + New Trip
+          <span class="d-none d-sm-inline">+ New Trip</span>
+          <span class="d-sm-none">+</span>
         </button>
       </div>
 
       {% if trips %}
         {% for trip in trips %}
           <div class="trip-section">
-            <div class="card-header d-flex justify-content-between align-items-center">
-              <div>
-                <h4 class="mb-0">{{ trip.name }}</h4>
-                <small class="text-muted">
-                  {{ trip.start_date.strftime('%Y-%m-%d') }} - {{ trip.end_date.strftime('%Y-%m-%d') }} ({{ trip.duration_days }} days)
-                </small>
-              </div>
-              <div>
-                <button class="btn btn-sm btn-outline-danger" onclick="deleteTrip({{ trip.id }})">
-                  Delete Trip
-                </button>
+            <div class="card-header">
+              <div class="d-flex justify-content-between align-items-start flex-wrap">
+                <div class="trip-info flex-grow-1">
+                  <h5 class="mb-1">{{ trip.name }}</h5>
+                  <small class="text-muted d-block">
+                    {{ trip.start_date.strftime('%m/%d/%y') }} - {{ trip.end_date.strftime('%m/%d/%y') }} ({{ trip.duration_days }}d)
+                  </small>
+                </div>
+                <div class="trip-actions">
+                  <button class="btn btn-sm btn-outline-danger" onclick="deleteTrip({{ trip.id }})">
+                    <span class="d-none d-sm-inline">Delete Trip</span>
+                    <span class="d-sm-none">Delete</span>
+                  </button>
+                </div>
               </div>
             </div>
             <div class="card-body">
               {% if trip.locations %}
                 {% for location in trip.locations %}
                   <div class="location-item d-flex justify-content-between align-items-start">
-                    <div class="flex-grow-1">
+                    <div class="location-content flex-grow-1">
                       <h6 class="mb-1">{{ location.name }}</h6>
-                      <p class="mb-1 text-muted">{{ location.city }}, {{ location.country }}</p>
-                      <small class="text-muted">
-                        {{ location.start_date.strftime('%Y-%m-%d') }} - {{ location.end_date.strftime('%Y-%m-%d') }} ({{ location.days }} days)
+                      <p class="mb-1 text-muted small">{{ location.city }}, {{ location.country }}</p>
+                      <small class="text-muted d-block">
+                        {{ location.start_date.strftime('%m/%d') }} - {{ location.end_date.strftime('%m/%d') }} ({{ location.days }}d)
                       </small>
                     </div>
-                    <div class="d-flex gap-2">
+                    <div class="location-actions d-flex gap-1">
+                      <button 
+                        class="add-location-btn btn"
+                        onclick="showAddLocationModal({{ trip.id }}, {{ location.id }})"
+                        title="Add location after this"
+                      >
+                        +
+                      </button>
                       <div class="move-buttons">
                         <form method="post" action="/admin/locations/{{ location.id }}/move" style="display: inline;">
                           <input type="hidden" name="direction" value="up">
@@ -116,19 +201,14 @@
                       </form>
                     </div>
                   </div>
-                  <button 
-                    class="add-location-btn btn btn-outline-secondary"
-                    onclick="showAddLocationModal({{ trip.id }}, {{ location.id }})"
-                  >
-                    + Add Location After This
-                  </button>
                 {% endfor %}
               {% else %}
                 <button 
-                  class="add-location-btn btn btn-outline-secondary"
+                  class="add-location-btn btn"
                   onclick="showAddLocationModal({{ trip.id }})"
+                  title="Add first location"
                 >
-                  + Add First Location
+                  +
                 </button>
               {% endif %}
             </div>
