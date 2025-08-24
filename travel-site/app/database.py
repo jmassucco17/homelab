@@ -36,6 +36,8 @@ class User(Base):
 
 
 class Trip(Base):
+    """Trip (contains one or more locations)"""
+
     __tablename__ = 'trips'
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, index=True)
@@ -55,6 +57,8 @@ class Trip(Base):
 
 
 class Location(Base):
+    """Location (city or similar)"""
+
     __tablename__ = 'locations'
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, index=True)
@@ -77,6 +81,7 @@ class Location(Base):
 
 
 def start_db() -> orm.Session:
+    """Start db and return session, creating the DB if it doesn't yet exist"""
     os.makedirs('data', exist_ok=True)
     Base.metadata.create_all(bind=engine)
     return SessionLocal()

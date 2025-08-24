@@ -3,10 +3,9 @@ import datetime
 from typing import Annotated
 
 import fastapi
-import fastapi.responses
-import fastapi.templating
 import uvicorn
 from app import database
+from fastapi import responses, templating
 from sqlalchemy import orm
 
 
@@ -60,22 +59,23 @@ AfterLocationId = Annotated[int, fastapi.Form(...)]
 
 # Create app
 app = fastapi.FastAPI(title='Travel Locations Admin', lifespan=db_lifespan)
-templates = fastapi.templating.Jinja2Templates(directory='app/templates')
+templates = templating.Jinja2Templates(directory='app/templates')
+root_redirect = responses.RedirectResponse(
+    url='/admin', status_code=fastapi.status.HTTP_302_FOUND
+)
 
 
-@app.get('/', response_class=fastapi.responses.HTMLResponse)
-def read_root() -> fastapi.responses.RedirectResponse:
-    return fastapi.responses.RedirectResponse(
-        url='/admin', status_code=fastapi.status.HTTP_302_FOUND
-    )
+@app.get('/', response_class=responses.HTMLResponse)
+def read_root() -> responses.RedirectResponse:
+    """Root (redirects to /admin)"""
+    return root_redirect
 
 
-@app.get('/admin', response_class=fastapi.responses.HTMLResponse)
+@app.get('/admin', response_class=responses.HTMLResponse)
 def admin_dashboard(
-    request: fastapi.Request,
-    current_user: CurrentUser,
-    db: DatabaseSession,
-) -> fastapi.responses.HTMLResponse:
+    request: fastapi.Request, current_user: CurrentUser, db: DatabaseSession
+) -> responses.HTMLResponse:
+    """Main admin page"""
     trips = db.query(database.Trip).all()
     return templates.TemplateResponse(
         'admin.html.jinja2',
@@ -85,19 +85,25 @@ def admin_dashboard(
 
 @app.post('/admin/trips')
 def create_trip(
-    name: String,
-    current_user: CurrentUser,
-    db: DatabaseSession,
-) -> fastapi.responses.RedirectResponse:
-    trip = database.Trip(
-        name=name,
-        created_by=current_user.id,
-    )
+    name: String, current_user: CurrentUser, db: DatabaseSession
+) -> responses.RedirectResponse:
+    """Create a trip (redirects to /admin when complete)"""
+    trip = database.Trip(name=name, created_by=current_user.id)
     db.add(trip)
     db.commit()
-    return fastapi.responses.RedirectResponse(
-        url='/admin', status_code=fastapi.status.HTTP_302_FOUND
-    )
+    return root_redirect
+
+
+@app.post('/admin/trips/{trip_id}/delete')
+def delete_trip(trip_id: int, db: DatabaseSession) -> responses.RedirectResponse:
+    """Delete a trip (redirects to /admin when complete)"""
+    trip = db.query(database.Trip).filter(database.Trip.id == trip_id).first()
+    if not trip:
+        raise fastapi.HTTPException(status_code=404, detail='Trip not found')
+
+    db.delete(trip)
+    db.commit()
+    return root_redirect
 
 
 @app.post('/admin/trips/{trip_id}/locations')
@@ -110,7 +116,8 @@ def create_location(
     current_user: CurrentUser,
     db: DatabaseSession,
     after_location_id: AfterLocationId = 0,
-) -> fastapi.responses.RedirectResponse:
+) -> responses.RedirectResponse:
+    """Create a location (redirects to /admin when complete)"""
     trip = db.query(database.Trip).filter(database.Trip.id == trip_id).first()
     if not trip:
         raise fastapi.HTTPException(status_code=404, detail='Trip not found')
@@ -154,16 +161,15 @@ def create_location(
     )
     db.add(location)
     db.commit()
-    return fastapi.responses.RedirectResponse(
-        url='/admin', status_code=fastapi.status.HTTP_302_FOUND
-    )
+    return root_redirect
 
 
 @app.post('/admin/locations/{location_id}/delete')
 def delete_location(
     location_id: int,
     db: DatabaseSession,
-) -> fastapi.responses.RedirectResponse:
+) -> responses.RedirectResponse:
+    """Delete a location (redirects to /admin when complete)"""
     location = (
         db.query(database.Location).filter(database.Location.id == location_id).first()
     )
@@ -172,9 +178,7 @@ def delete_location(
 
     db.delete(location)
     db.commit()
-    return fastapi.responses.RedirectResponse(
-        url='/admin', status_code=fastapi.status.HTTP_302_FOUND
-    )
+    return root_redirect
 
 
 @app.post('/admin/locations/{location_id}/edit')
@@ -185,7 +189,9 @@ def edit_location(
     country: String,
     start_date: Date,
     db: DatabaseSession,
-) -> fastapi.responses.RedirectResponse:
+) -> responses.RedirectResponse:
+    """Edit a location (redirects to /admin when complete)"""
+
     location = (
         db.query(database.Location).filter(database.Location.id == location_id).first()
     )
@@ -198,9 +204,7 @@ def edit_location(
     location.start_date = start_date  # type: ignore
 
     db.commit()
-    return fastapi.responses.RedirectResponse(
-        url='/admin', status_code=fastapi.status.HTTP_302_FOUND
-    )
+    return root_redirect
 
 
 @app.post('/admin/locations/{location_id}/move')
@@ -208,7 +212,8 @@ def move_location(
     location_id: int,
     direction: String,
     db: DatabaseSession,
-) -> fastapi.responses.RedirectResponse:
+) -> responses.RedirectResponse:
+    """Move a location (redirects to /admin when complete)"""
     location = (
         db.query(database.Location).filter(database.Location.id == location_id).first()
     )
@@ -252,25 +257,7 @@ def move_location(
             next_location.order_index = temp_order  # type: ignore
 
     db.commit()
-    return fastapi.responses.RedirectResponse(
-        url='/admin', status_code=fastapi.status.HTTP_302_FOUND
-    )
-
-
-@app.post('/admin/trips/{trip_id}/delete')
-def delete_trip(
-    trip_id: int,
-    db: DatabaseSession,
-) -> fastapi.responses.RedirectResponse:
-    trip = db.query(database.Trip).filter(database.Trip.id == trip_id).first()
-    if not trip:
-        raise fastapi.HTTPException(status_code=404, detail='Trip not found')
-
-    db.delete(trip)
-    db.commit()
-    return fastapi.responses.RedirectResponse(
-        url='/admin', status_code=fastapi.status.HTTP_302_FOUND
-    )
+    return root_redirect
 
 
 if __name__ == '__main__':
