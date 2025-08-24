@@ -55,6 +55,7 @@ def get_current_user(
 CurrentUser = Annotated[database.User, fastapi.Depends(get_current_user)]
 String = Annotated[str, fastapi.Form(...)]
 Date = Annotated[datetime.date, fastapi.Form(...)]
+Int = Annotated[int, fastapi.Form(...)]
 AfterLocationId = Annotated[int, fastapi.Form(...)]
 
 # Create app
@@ -85,10 +86,10 @@ def admin_dashboard(
 
 @app.post('/admin/trips')
 def create_trip(
-    name: String, current_user: CurrentUser, db: DatabaseSession
+    name: String, start_date: Date, current_user: CurrentUser, db: DatabaseSession
 ) -> responses.RedirectResponse:
     """Create a trip (redirects to /admin when complete)"""
-    trip = database.Trip(name=name, created_by=current_user.id)
+    trip = database.Trip(name=name, start_date=start_date, created_by=current_user.id)
     db.add(trip)
     db.commit()
     return root_redirect
@@ -112,7 +113,7 @@ def create_location(
     name: String,
     city: String,
     country: String,
-    start_date: Date,
+    days: Int,
     current_user: CurrentUser,
     db: DatabaseSession,
     after_location_id: AfterLocationId = 0,
@@ -154,7 +155,7 @@ def create_location(
         name=name,
         city=city,
         country=country,
-        start_date=start_date,
+        days=days,
         trip_id=trip_id,
         order_index=order_index,
         created_by=current_user.id,
@@ -187,7 +188,7 @@ def edit_location(
     name: String,
     city: String,
     country: String,
-    start_date: Date,
+    days: Int,
     db: DatabaseSession,
 ) -> responses.RedirectResponse:
     """Edit a location (redirects to /admin when complete)"""
@@ -201,7 +202,7 @@ def edit_location(
     location.name = name  # type: ignore
     location.city = city  # type: ignore
     location.country = country  # type: ignore
-    location.start_date = start_date  # type: ignore
+    location.days = days  # type: ignore
 
     db.commit()
     return root_redirect

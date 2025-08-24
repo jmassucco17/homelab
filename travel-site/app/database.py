@@ -42,6 +42,7 @@ class Trip(Base):
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, index=True)
     name = sqlalchemy.Column(sqlalchemy.String, nullable=False, index=True)
+    start_date = sqlalchemy.Column(sqlalchemy.Date, nullable=False)
     created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=current_time_utc)
     updated_at = sqlalchemy.Column(
         sqlalchemy.DateTime, default=current_time_utc, onupdate=current_time_utc
@@ -55,6 +56,22 @@ class Trip(Base):
         'Location', back_populates='trip', order_by='Location.order_index'
     )
 
+    @property
+    def end_date(self) -> datetime.date:
+        """Calculate end date based on location durations"""
+        if not self.locations:
+            return self.start_date  # type: ignore
+
+        total_days = sum(location.days for location in self.locations)
+        return self.start_date + datetime.timedelta(days=total_days - 1)  # type: ignore
+
+    @property
+    def duration_days(self) -> int:
+        """Calculate total duration in days"""
+        return (
+            sum(location.days for location in self.locations) if self.locations else 1
+        )
+
 
 class Location(Base):
     """Location (city or similar)"""
@@ -65,7 +82,7 @@ class Location(Base):
     name = sqlalchemy.Column(sqlalchemy.String, nullable=False, index=True)
     city = sqlalchemy.Column(sqlalchemy.String)
     country = sqlalchemy.Column(sqlalchemy.String)
-    start_date = sqlalchemy.Column(sqlalchemy.Date)
+    days = sqlalchemy.Column(sqlalchemy.Integer, nullable=False, default=1)
     order_index = sqlalchemy.Column(sqlalchemy.Integer, default=0)
     created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=current_time_utc)
     updated_at = sqlalchemy.Column(
@@ -78,6 +95,32 @@ class Location(Base):
 
     creator = orm.relationship('User', back_populates='locations')
     trip = orm.relationship('Trip', back_populates='locations')
+
+    @property
+    def start_date(self) -> datetime.date:
+        """Calculate start date based on trip start date and previous locations"""
+        if not self.trip:
+            return datetime.date.today()
+
+        trip_start = self.trip.start_date
+
+        # Find all locations before this one in the same trip
+        previous_locations = [
+            loc for loc in self.trip.locations if loc.order_index < self.order_index
+        ]
+
+        # Calculate days from previous locations (with overlap). Each location overlaps
+        # by 1 day with the next (location 2 starts when location 1 ends)
+        days_offset = (
+            sum(loc.days - 1 for loc in previous_locations) if previous_locations else 0
+        )
+
+        return trip_start + datetime.timedelta(days=days_offset)
+
+    @property
+    def end_date(self) -> datetime.date:
+        """Calculate end date based on start date and duration"""
+        return self.start_date + datetime.timedelta(days=self.days - 1)  # type: ignore
 
 
 def start_db() -> orm.Session:

@@ -61,7 +61,12 @@
         {% for trip in trips %}
           <div class="trip-section">
             <div class="card-header d-flex justify-content-between align-items-center">
-              <h4 class="mb-0">{{ trip.name }}</h4>
+              <div>
+                <h4 class="mb-0">{{ trip.name }}</h4>
+                <small class="text-muted">
+                  {{ trip.start_date.strftime('%Y-%m-%d') }} - {{ trip.end_date.strftime('%Y-%m-%d') }} ({{ trip.duration_days }} days)
+                </small>
+              </div>
               <div>
                 <button class="btn btn-sm btn-outline-danger" onclick="deleteTrip({{ trip.id }})">
                   Delete Trip
@@ -76,7 +81,7 @@
                       <h6 class="mb-1">{{ location.name }}</h6>
                       <p class="mb-1 text-muted">{{ location.city }}, {{ location.country }}</p>
                       <small class="text-muted">
-                        Start: {{ location.start_date.strftime('%Y-%m-%d') if location.start_date else 'Not set' }}
+                        {{ location.start_date.strftime('%Y-%m-%d') }} - {{ location.end_date.strftime('%Y-%m-%d') }} ({{ location.days }} days)
                       </small>
                     </div>
                     <div class="d-flex gap-2">
@@ -92,7 +97,7 @@
                       </div>
                       <button
                         class="btn btn-sm btn-outline-primary"
-                        onclick="editLocation({{ location.id }}, '{{ location.name }}', '{{ location.city or '' }}', '{{ location.country or '' }}', '{{ location.start_date.strftime('%Y-%m-%d') if location.start_date else '' }}')"
+                        onclick="editLocation({{ location.id }}, '{{ location.name }}', '{{ location.city or '' }}', '{{ location.country or '' }}', {{ location.days }})"
                       >
                         Edit
                       </button>
@@ -153,6 +158,10 @@
                 <label for="trip_name" class="form-label">Trip Name *</label>
                 <input type="text" class="form-control" id="trip_name" name="name" required />
               </div>
+              <div class="mb-3">
+                <label for="trip_start_date" class="form-label">Start Date *</label>
+                <input type="date" class="form-control" id="trip_start_date" name="start_date" required />
+              </div>
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -188,12 +197,13 @@
                 <input type="text" class="form-control" id="location_country" name="country" required />
               </div>
               <div class="mb-3">
-                <label for="location_start_date" class="form-label">Start Date *</label>
+                <label for="location_days" class="form-label">Number of Days *</label>
                 <input
-                  type="date"
+                  type="number"
                   class="form-control"
-                  id="location_start_date"
-                  name="start_date"
+                  id="location_days"
+                  name="days"
+                  min="1"
                   required
                 />
               </div>
@@ -233,12 +243,13 @@
                 <input type="text" class="form-control" id="edit_location_country" name="country" required />
               </div>
               <div class="mb-3">
-                <label for="edit_location_start_date" class="form-label">Start Date *</label>
+                <label for="edit_location_days" class="form-label">Number of Days *</label>
                 <input
-                  type="date"
+                  type="number"
                   class="form-control"
-                  id="edit_location_start_date"
-                  name="start_date"
+                  id="edit_location_days"
+                  name="days"
+                  min="1"
                   required
                 />
               </div>
@@ -266,12 +277,12 @@
         new bootstrap.Modal(document.getElementById('addLocationModal')).show()
       }
 
-      function editLocation(id, name, city, country, start_date) {
+      function editLocation(id, name, city, country, days) {
         document.getElementById('editLocationForm').action = `/admin/locations/${id}/edit`
         document.getElementById('edit_location_name').value = name
         document.getElementById('edit_location_city').value = city
         document.getElementById('edit_location_country').value = country
-        document.getElementById('edit_location_start_date').value = start_date
+        document.getElementById('edit_location_days').value = days
         new bootstrap.Modal(document.getElementById('editLocationModal')).show()
       }
 
