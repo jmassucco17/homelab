@@ -84,24 +84,60 @@
         color: white;
         font-size: 0.7rem;
         padding: 0.25rem 0.4rem;
-        border-radius: 4px;
-        margin-bottom: 0.25rem;
+        border-radius: 0px;
+        margin: 1px 0;
         line-height: 1.2;
         text-overflow: ellipsis;
         overflow: hidden;
         white-space: nowrap;
+        cursor: pointer;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        position: relative;
+      }
+      .location-indicator:hover {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        transform: translateY(-1px);
+        z-index: 10;
       }
       .location-start {
         border-left: 4px solid #007bff;
-        background: linear-gradient(135deg, #007bff, #0056b3);
+        border-top-left-radius: 4px;
+        border-bottom-left-radius: 4px;
       }
       .location-end {
         border-right: 4px solid #dc3545;
-        background: linear-gradient(135deg, #dc3545, #c82333);
+        border-top-right-radius: 4px;
+        border-bottom-right-radius: 4px;
       }
       .location-start.location-end {
+        border-radius: 4px;
         border: 2px solid #6f42c1;
         background: linear-gradient(135deg, #6f42c1, #5a32a8);
+      }
+      .location-tooltip {
+        position: absolute;
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        padding: 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        white-space: nowrap;
+        z-index: 100;
+        pointer-events: none;
+        display: none;
+        max-width: 200px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      }
+      .crossover-text {
+        font-size: 0.55rem;
+        color: #6f42c1;
+        font-weight: bold;
+        text-align: center;
+        margin-top: 4px;
+        line-height: 1.1;
       }
       @media (max-width: 768px) {
         .calendar-header {
@@ -114,6 +150,7 @@
         .location-indicator {
           font-size: 0.6rem;
           padding: 0.2rem 0.3rem;
+          height: 16px;
         }
         .day-number {
           font-size: 0.8rem;
@@ -130,6 +167,7 @@
         .location-indicator {
           font-size: 0.55rem;
           padding: 0.15rem 0.25rem;
+          height: 14px;
         }
         .day-number {
           font-size: 0.75rem;
@@ -272,29 +310,128 @@
         dayNumber.textContent = date.getDate();
         cell.appendChild(dayNumber);
         
+        // Check for locations ending/starting on this date for crossover display
+        const endingLocations = [];
+        const startingLocations = [];
+        
         // Check for locations on this date
-        trip.locations.forEach(location => {
+        trip.locations.forEach((location, index) => {
           const locationStart = new Date(location.start_date);
           const locationEnd = new Date(location.end_date);
           
-          if (date >= locationStart && date <= locationEnd) {
+          // Add one day to end date to include the overlap/transition day
+          const extendedEndDate = new Date(locationEnd);
+          extendedEndDate.setDate(extendedEndDate.getDate() + 1);
+          
+          if (date >= locationStart && date <= extendedEndDate) {
             const indicator = document.createElement('div');
             indicator.className = 'location-indicator';
             indicator.textContent = location.name;
+            indicator.style.background = getLocationColor(index);
             
             // Add special styling for start/end dates
             if (date.toDateString() === locationStart.toDateString()) {
               indicator.classList.add('location-start');
+              startingLocations.push(location);
             }
-            if (date.toDateString() === locationEnd.toDateString()) {
+            // Use extendedEndDate for the visual end indicator
+            if (date.toDateString() === extendedEndDate.toDateString()) {
               indicator.classList.add('location-end');
+              endingLocations.push(location);
             }
+            
+            // Add hover tooltip
+            addLocationTooltip(indicator, location);
             
             cell.appendChild(indicator);
           }
         });
         
+        // Display crossover information - show when there are multiple different locations on the same day
+        const uniqueLocationsOnThisDay = trip.locations.filter((location, index) => {
+          const locationStart = new Date(location.start_date);
+          const locationEnd = new Date(location.end_date);
+          const extendedEndDate = new Date(locationEnd);
+          extendedEndDate.setDate(extendedEndDate.getDate() + 1);
+          return date >= locationStart && date <= extendedEndDate;
+        });
+        
+        if (uniqueLocationsOnThisDay.length > 1) {
+          // Find which location is ending and which is starting
+          const endingLocation = uniqueLocationsOnThisDay.find(loc => {
+            const endDate = new Date(loc.end_date);
+            endDate.setDate(endDate.getDate() + 1);
+            return date.toDateString() === endDate.toDateString();
+          });
+          
+          const startingLocation = uniqueLocationsOnThisDay.find(loc => {
+            const startDate = new Date(loc.start_date);
+            return date.toDateString() === startDate.toDateString();
+          });
+          
+          if (endingLocation && startingLocation && endingLocation.name !== startingLocation.name) {
+            const crossoverDiv = document.createElement('div');
+            crossoverDiv.className = 'crossover-text';
+            crossoverDiv.textContent = `${endingLocation.name} → ${startingLocation.name}`;
+            cell.appendChild(crossoverDiv);
+          }
+        }
+        
         grid.appendChild(cell);
+      }
+      
+      // Helper function to add tooltip to location indicators
+      function addLocationTooltip(indicator, location) {
+        let tooltip = null;
+        
+        indicator.addEventListener('mouseenter', (e) => {
+          const startDateStr = new Date(location.start_date).toLocaleDateString('en-US', {
+            month: 'short', day: 'numeric', year: 'numeric'
+          });
+          const endDateStr = new Date(location.end_date).toLocaleDateString('en-US', {
+            month: 'short', day: 'numeric', year: 'numeric'
+          });
+          
+          tooltip = document.createElement('div');
+          tooltip.className = 'location-tooltip';
+          tooltip.innerHTML = `
+            <strong>${location.name}</strong><br>
+            ${location.city}, ${location.country}<br>
+            ${startDateStr} - ${endDateStr}<br>
+            Duration: ${location.days} days
+          `;
+          
+          document.body.appendChild(tooltip);
+          tooltip.style.display = 'block';
+          tooltip.style.left = e.pageX + 10 + 'px';
+          tooltip.style.top = e.pageY - 10 + 'px';
+        });
+        
+        indicator.addEventListener('mouseleave', () => {
+          if (tooltip) {
+            tooltip.remove();
+            tooltip = null;
+          }
+        });
+        
+        indicator.addEventListener('mousemove', (e) => {
+          if (tooltip) {
+            tooltip.style.left = e.pageX + 10 + 'px';
+            tooltip.style.top = e.pageY - 10 + 'px';
+          }
+        });
+      }
+      
+      function getLocationColor(index) {
+        const colors = [
+          'linear-gradient(135deg, #28a745, #20c997)',
+          'linear-gradient(135deg, #007bff, #0056b3)',
+          'linear-gradient(135deg, #fd7e14, #e8540b)',
+          'linear-gradient(135deg, #6f42c1, #5a32a8)',
+          'linear-gradient(135deg, #dc3545, #c82333)',
+          'linear-gradient(135deg, #20c997, #17a2b8)'
+        ];
+        return colors[index % colors.length];
       }
       
       // Generate calendars for all trips
