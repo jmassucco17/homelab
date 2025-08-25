@@ -13,6 +13,22 @@ engine = sqlalchemy.create_engine(
 SessionLocal = orm.sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = orm.declarative_base()
 
+# Create read-only sqlalchemy classes
+ro_engine = sqlalchemy.create_engine(
+    DATABASE_URL,
+    connect_args={
+        'check_same_thread': False,
+        'isolation_level': None,  # Autocommit mode for better read consistency
+    },
+    # Set connection to read-only mode
+    pool_pre_ping=True,
+    pool_recycle=300,  # Recycle connections every 5 minutes
+    echo=False,
+)
+ReadOnlySessionLocal = orm.sessionmaker(
+    autocommit=False, autoflush=False, bind=ro_engine
+)
+
 
 def current_time_utc() -> datetime.datetime:
     """Helper for getting current utc datetime"""
@@ -123,8 +139,59 @@ class Location(Base):
         return self.start_date + datetime.timedelta(days=self.days - 1)  # type: ignore
 
 
+class ReadOnlySession:
+    """Wrapper to ensure database session is read-only"""
+
+    _session: orm.Session
+
+    def __init__(self, session: orm.Session):
+        self._session = session
+
+    def query(self, *args, **kwargs):  # type: ignore
+        """Allow queries"""
+        return self._session.query(*args, **kwargs)  # type: ignore
+
+    def get(self, *args, **kwargs):  # type: ignore
+        """Allow get operations"""
+        return self._session.get(*args, **kwargs)  # type: ignore
+
+    def close(self) -> None:
+        """Allow closing session"""
+        return self._session.close()
+
+    def __getattr__(self, name: str):
+        """Block write operations"""
+        if name in [
+            'add',
+            'delete',
+            'commit',
+            'flush',
+            'merge',
+            'bulk_insert_mappings',
+            'bulk_update_mappings',
+        ]:
+            raise AttributeError(
+                f"Write operation '{name}' not allowed in read-only mode"
+            )
+        return getattr(self._session, name)
+
+
 def start_db() -> orm.Session:
     """Start db and return session, creating the DB if it doesn't yet exist"""
     os.makedirs('/data', exist_ok=True)
     Base.metadata.create_all(bind=engine)
     return SessionLocal()
+
+
+def start_db_read_only() -> ReadOnlySession:
+    # Ensure data directory exists
+    os.makedirs('/data', exist_ok=True)
+
+    # If database doesn't exist, create the schema but don't populate it
+    # The admin site will handle data creation
+    if not os.path.exists('/data/travel.db'):
+        # Create empty database with schema
+        Base.metadata.create_all(bind=engine)
+
+    session = ReadOnlySessionLocal()
+    return ReadOnlySession(session)

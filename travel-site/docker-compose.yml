@@ -1,36 +1,30 @@
 services:
-  travel-admin:
-    container_name: travel-admin
-    build: ./admin
+  travel-site:
+    container_name: travel-site
+    build: .
     volumes:
       - data-volume:/data
     networks:
       - web
     labels:
       - traefik.enable=true
-      - traefik.http.routers.travel-admin.rule=Host(`travel-admin.jamesmassucco.com`)
+
+      # Admin routes - require OAuth
+      - traefik.http.routers.travel-admin.rule=Host(`travel.jamesmassucco.com`) && PathPrefix(`/admin`)
       - traefik.http.routers.travel-admin.entrypoints=websecure
       - traefik.http.routers.travel-admin.tls.certresolver=cloudflare
-      - traefik.http.services.travel-admin.loadbalancer.server.port=8000
       - traefik.http.routers.travel-admin.middlewares=oauth-auth,ratelimit
-    restart: unless-stopped
+      - traefik.http.routers.travel-admin.priority=100
 
-  travel-public:
-    container_name: travel-public
-    build:
-      context: ./public
-      dockerfile: Dockerfile
-    volumes:
-      - data-volume:/data:ro # Read-only access to database
-    networks:
-      - web
-    labels:
-      - traefik.enable=true
+      # Public routes - no authentication required
       - traefik.http.routers.travel-public.rule=Host(`travel.jamesmassucco.com`)
       - traefik.http.routers.travel-public.entrypoints=websecure
       - traefik.http.routers.travel-public.tls.certresolver=cloudflare
-      - traefik.http.services.travel-public.loadbalancer.server.port=8000
       - traefik.http.routers.travel-public.middlewares=ratelimit
+      - traefik.http.routers.travel-public.priority=50
+
+      # Service configuration
+      - traefik.http.services.travel-site.loadbalancer.server.port=8000
     restart: unless-stopped
 
 volumes:

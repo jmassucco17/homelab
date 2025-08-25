@@ -5,8 +5,7 @@ echo "Shutting down containers..."
 sudo docker compose down
 
 echo "Updating container images..."
-sudo docker compose build travel-admin
-sudo docker compose build travel-public
+sudo docker compose build travel-site
 
 echo "Starting up containers..."
 sudo docker compose up -d
