@@ -4,7 +4,7 @@ import os
 import sqlalchemy
 from sqlalchemy import orm
 
-DATABASE_URL = 'sqlite:///data/travel.db'
+DATABASE_URL = 'sqlite:////data/travel.db'
 
 # Create sqlalchemy classes
 engine = sqlalchemy.create_engine(
@@ -125,6 +125,6 @@ class Location(Base):
 
 def start_db() -> orm.Session:
     """Start db and return session, creating the DB if it doesn't yet exist"""
-    os.makedirs('data', exist_ok=True)
+    os.makedirs('/data', exist_ok=True)
     Base.metadata.create_all(bind=engine)
     return SessionLocal()

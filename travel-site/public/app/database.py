@@ -4,14 +4,19 @@ import os
 import sqlalchemy
 from sqlalchemy import orm
 
-DATABASE_URL = 'sqlite:///data/travel.db'
+DATABASE_URL = 'sqlite:////data/travel.db'
 
 # Create read-only sqlalchemy engine
 engine = sqlalchemy.create_engine(
     DATABASE_URL,
-    connect_args={'check_same_thread': False},
+    connect_args={
+        'check_same_thread': False,
+        'isolation_level': None,  # Autocommit mode for better read consistency
+    },
     # Set connection to read-only mode
     pool_pre_ping=True,
+    pool_recycle=300,  # Recycle connections every 5 minutes
+    echo=False,
 )
 
 # Create read-only session
@@ -168,11 +173,11 @@ class ReadOnlySession:
 def start_db() -> ReadOnlySession:
     """Start db and return read-only session"""
     # Ensure data directory exists
-    os.makedirs('data', exist_ok=True)
+    os.makedirs('/data', exist_ok=True)
 
     # If database doesn't exist, create the schema but don't populate it
     # The admin site will handle data creation
-    if not os.path.exists('data/travel.db'):
+    if not os.path.exists('/data/travel.db'):
         # Create empty database with schema
         Base.metadata.create_all(bind=engine)
 

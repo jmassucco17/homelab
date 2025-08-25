@@ -1,27 +1,32 @@
 import contextlib
+from collections.abc import Generator
 from typing import Annotated
 
 import fastapi
 import uvicorn
 from app import database
 from fastapi import responses, templating
-from sqlalchemy import orm
 
 
 @contextlib.asynccontextmanager
 async def db_lifespan(app: fastapi.FastAPI):
     """Lifespan function for database (read-only)"""
-    app.state.db = database.start_db()
+    # Just ensure database exists, don't keep persistent session
+    database.start_db().close()
     yield
-    app.state.db.close()
 
 
-def get_db(request: fastapi.Request) -> orm.Session:
-    return request.app.state.db
+def get_db() -> Generator[database.ReadOnlySession, None, None]:
+    """Create a fresh database session for each request"""
+    session = database.start_db()
+    try:
+        yield session
+    finally:
+        session.close()
 
 
 DatabaseSession = Annotated[
-    orm.Session,
+    database.ReadOnlySession,
     fastapi.Depends(get_db),
 ]
 
@@ -41,7 +46,7 @@ def public_calendar(
     request: fastapi.Request, db: DatabaseSession
 ) -> responses.HTMLResponse:
     """Public calendar view of all trips"""
-    trips = db.query(database.Trip).all()
+    trips = db.query(database.Trip).all()  # type: ignore
     return templates.TemplateResponse(
         'calendar.html.jinja2',
         {'request': request, 'trips': trips},
