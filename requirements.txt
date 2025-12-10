@@ -14,10 +14,6 @@ pydantic
 
 # travel-site
 fastapi
-uvicorn
 sqlmodel
-bcrypt
-python-multipart
-jinja2
-python-jose
-passlib
+uvicorn
+exifread

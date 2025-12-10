@@ -2,6 +2,10 @@ services:
   travel-site:
     container_name: travel-site
     build: .
+    environment:
+      - DATA_DIR=/data
+    ports:
+      - "8000:8000"
     volumes:
       - data-volume:/data
     networks:
