@@ -3,13 +3,19 @@
 import os
 import uuid
 from datetime import datetime
+from io import BytesIO
 from typing import Any, BinaryIO
 
 import exifread
+import pillow_heif  # pyright: ignore[reportMissingTypeStubs]
 from fastapi import UploadFile
+from PIL import Image
 from sqlmodel import Session, select
 
 from . import models
+
+# Register HEIF opener for PIL
+pillow_heif.register_heif_opener()  # type: ignore
 
 
 class PictureService:
@@ -76,17 +82,39 @@ class PictureService:
         self, session: Session, file: UploadFile, description: str | None = None
     ) -> models.Picture:
         """Save uploaded picture with extracted metadata."""
+        # Read file content
+        content = await file.read()
+
+        # Check if file is HEIC and convert to JPEG
+        file_extension = os.path.splitext(file.filename or '')[1].lower()
+        mime_type = file.content_type or 'image/jpeg'
+
+        if file_extension in ['.heic', '.heif']:
+            # Convert HEIC to JPEG
+            img = Image.open(BytesIO(content))
+
+            # Convert to RGB if necessary (HEIC can be in different color modes)
+            if img.mode not in ('RGB', 'RGBA'):
+                img = img.convert('RGB')
+
+            # Save as JPEG
+            output = BytesIO()
+            img.save(output, format='JPEG', quality=95)
+            content = output.getvalue()
+
+            # Update extension and mime type
+            file_extension = '.jpg'
+            mime_type = 'image/jpeg'
+
         # Generate unique filename
-        file_extension = os.path.splitext(file.filename or '')[1]
         unique_filename = f'{uuid.uuid4()}{file_extension}'
         file_path = os.path.join(self.upload_dir, unique_filename)
 
         # Save file to disk
-        content = await file.read()
         with open(file_path, 'wb') as f:
             f.write(content)
 
-        # Extract metadata
+        # Extract metadata from original file
         file.file.seek(0)  # Reset file pointer
         metadata = self.extract_metadata(file.file)
 
@@ -99,7 +127,7 @@ class PictureService:
             longitude=metadata.get('longitude'),
             description=description,
             file_size=len(content),
-            mime_type=file.content_type or 'image/jpeg',
+            mime_type=mime_type,
         )
 
         session.add(picture)

@@ -17,3 +17,5 @@ fastapi
 sqlmodel
 uvicorn
 exifread
+pillow
+pillow-heif
