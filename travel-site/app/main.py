@@ -30,11 +30,14 @@ app = FastAPI(
 app.include_router(routes.admin_router)
 app.include_router(routes.public_router)
 
-# Mount static files (for uploaded pictures via web interface if needed)
+# Mount static files for CSS and other assets
+app.mount('/assets', StaticFiles(directory='app/static'), name='assets')
+
+# Mount uploaded pictures
 data_dir = os.environ.get('DATA_DIR', 'data')
 uploads_dir = os.path.join(data_dir, 'uploads')
 if os.path.exists(uploads_dir):
-    app.mount('/static', StaticFiles(directory=uploads_dir), name='static')
+    app.mount('/uploads', StaticFiles(directory=uploads_dir), name='uploads')
 
 # Setup templates
 templates = Jinja2Templates(directory='app/templates')
@@ -43,13 +46,19 @@ templates = Jinja2Templates(directory='app/templates')
 @app.get('/', response_class=HTMLResponse)
 async def root(request: Request):
     """Root endpoint - serve the public gallery."""
-    return templates.TemplateResponse('public/gallery.html', {'request': request})
+    return templates.TemplateResponse(
+        'public/gallery.html.jinja2',
+        {'request': request},
+    )
 
 
 @app.get('/admin', response_class=HTMLResponse)
 async def admin_root(request: Request):
     """Admin root endpoint - serve the admin upload interface."""
-    return templates.TemplateResponse('admin/upload.html', {'request': request})
+    return templates.TemplateResponse(
+        'admin/upload.html.jinja2',
+        {'request': request},
+    )
 
 
 @app.get('/health')
