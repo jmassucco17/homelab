@@ -67,3 +67,5 @@ This is a homelab project consisting of multiple containerized web services:
 
 - Import at the module level and access classes or functions as <module>.<func>; never import classes or functions directly
 - Provide argument and return type hinting for all methods and functions
+- Include docstrings for most classes and functions with brief description; in general, don't include args/returns info in the docstring unless it's non-obvious (e.g. if it returns a dict, describe the structrue)
+- Include comments for operations that need additional explanation

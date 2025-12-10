@@ -15,7 +15,7 @@ pydantic
 # travel-site
 fastapi
 uvicorn
-sqlalchemy
+sqlmodel
 bcrypt
 python-multipart
 jinja2

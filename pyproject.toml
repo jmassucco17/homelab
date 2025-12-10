@@ -22,3 +22,5 @@ preview = true
 select = ["I", "E", "F", "UP", "B"]
 # Don't automatically fix unused imports
 unfixable = ["F401"]
+# Ignore B008
+ignore = ["B008"]
