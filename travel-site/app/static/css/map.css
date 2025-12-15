@@ -100,6 +100,17 @@ body {
   box-shadow: 0 3px 10px rgb(0 0 0 / 50%);
 }
 
+/* Travel line styling */
+.travel-line {
+  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 30%));
+}
+
+/* Arrow marker styling */
+.arrow-marker {
+  background: none;
+  border: none;
+}
+
 /* Cluster styling */
 .marker-cluster-small,
 .marker-cluster-medium,

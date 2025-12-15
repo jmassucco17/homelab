@@ -54,6 +54,7 @@
       let map
       let markerClusterGroup
       let allPictures = []
+      let travelLines = []  // Store polylines for travel paths
 
       // Initialize the map
       function initMap() {
@@ -76,7 +77,41 @@
           maxClusterRadius: 80,
           spiderfyOnMaxZoom: true,
           showCoverageOnHover: false,
-          zoomToBoundsOnClick: true
+          zoomToBoundsOnClick: false  // Disable auto-zoom, we'll handle clicks manually
+        })
+
+        // Handle cluster clicks to show all photos in that cluster
+        markerClusterGroup.on('clusterclick', function(event) {
+          const cluster = event.layer
+          const childMarkers = cluster.getAllChildMarkers()
+
+          // Collect all pictures from all markers in the cluster
+          const allPictures = []
+          const locationNames = new Set()
+
+          childMarkers.forEach(marker => {
+            const markerData = marker.markerData
+            if (markerData && markerData.pictures) {
+              allPictures.push(...markerData.pictures)
+              locationNames.add(markerData.location.location_name)
+            }
+          })
+
+          // Create a combined location object for the sidebar
+          const clusterLocation = {
+            location_name: locationNames.size === 1
+              ? Array.from(locationNames)[0]
+              : `${locationNames.size} locations (${childMarkers.length} photos)`
+          }
+
+          // Zoom to the cluster bounds, accounting for sidebar width (400px)
+          const bounds = cluster.getBounds()
+          map.fitBounds(bounds, {
+            paddingTopLeft: [100, 100],
+            paddingBottomRight: [500, 100]  // Extra padding on right for sidebar
+          })
+
+          openSidebar(clusterLocation, allPictures)
         })
 
         map.addLayer(markerClusterGroup)
@@ -127,6 +162,9 @@
               icon: customIcon
             })
 
+            // Store data on the marker for cluster access
+            marker.markerData = { location, pictures }
+
             marker.on('click', () => {
               openSidebar(location, pictures)
             })
@@ -134,11 +172,85 @@
             markerClusterGroup.addLayer(marker)
           })
 
-          // Keep the initial world view - don't auto-zoom to markers
+          // Fit map to show all markers
+          if (locationGroups.size > 0) {
+            map.fitBounds(markerClusterGroup.getBounds(), { padding: [50, 50] })
+          }
+
+          // Draw travel lines connecting locations chronologically
+          drawTravelLines()
 
         } catch (error) {
           console.error('Error loading pictures:', error)
         }
+      }
+
+      // Draw curved travel lines between locations based on photo dates
+      function drawTravelLines() {
+        // Clear existing lines
+        travelLines.forEach(line => map.removeLayer(line))
+        travelLines = []
+
+        // Get all pictures with dates and locations, sorted by date
+        const sortedPictures = allPictures
+          .filter(p => p.date_taken && p.location && p.location.latitude && p.location.longitude)
+          .sort((a, b) => new Date(a.date_taken) - new Date(b.date_taken))
+
+        if (sortedPictures.length < 2) return
+
+        // Draw lines between consecutive photos
+        for (let i = 0; i < sortedPictures.length - 1; i++) {
+          const from = sortedPictures[i]
+          const to = sortedPictures[i + 1]
+
+          const fromLatLng = [from.location.latitude, from.location.longitude]
+          const toLatLng = [to.location.latitude, to.location.longitude]
+
+          // Create curved line
+          const curvedPath = createCurvedPath(fromLatLng, toLatLng)
+
+          const line = L.polyline(curvedPath, {
+            color: '#667eea',
+            weight: 3,
+            opacity: 0.7,
+            smoothFactor: 1,
+            className: 'travel-line'
+          }).addTo(map)
+
+          travelLines.push(line)
+        }
+      }
+
+      // Create curved path between two points with subtle northward curve
+      function createCurvedPath(from, to, numPoints = 50) {
+        const [lat1, lng1] = from
+        const [lat2, lng2] = to
+
+        const path = []
+
+        // Calculate the midpoint and add height for the curve
+        const latDiff = lat2 - lat1
+        const lngDiff = lng2 - lng1
+        const distance = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff)
+
+        // Subtle curve height (reduced from 0.3 to 0.1)
+        const curveHeight = distance * 0.1
+
+        for (let i = 0; i <= numPoints; i++) {
+          const t = i / numPoints
+
+          // Linear interpolation
+          const lat = lat1 + latDiff * t
+          const lng = lng1 + lngDiff * t
+
+          // Add parabolic curve - always curve northward (positive latitude)
+          const curveFactor = Math.sin(t * Math.PI) * curveHeight
+
+          // Curve northward by adding to latitude
+          path.push([lat + curveFactor, lng])
+        }
+
+        return path
       }
 
       // Open sidebar with location photos
