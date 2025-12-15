@@ -145,3 +145,140 @@ textarea {
 .nav-link:hover {
   text-decoration: underline;
 }
+
+/* File count display */
+.file-count {
+  display: block;
+  margin-top: 8px;
+  color: #666;
+  font-style: italic;
+}
+
+/* Upload progress */
+.upload-progress {
+  margin-top: 20px;
+}
+
+.upload-progress.hidden {
+  display: none;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 30px;
+  background-color: #f0f0f0;
+  border-radius: 15px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+#progressText {
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Description display and editing */
+.description-display {
+  margin-bottom: 8px;
+}
+
+.description-text {
+  font-style: italic;
+  color: #555;
+  background-color: #f9f9f9;
+  padding: 8px;
+  border-radius: 4px;
+  border-left: 3px solid #3498db;
+}
+
+.no-description {
+  color: #999;
+  font-style: italic;
+}
+
+.description-edit {
+  display: none;
+  margin-bottom: 8px;
+}
+
+.description-input {
+  width: 100%;
+  min-height: 80px;
+  padding: 10px;
+  border: 2px solid #3498db;
+  border-radius: 4px;
+  font-size: 14px;
+  resize: vertical;
+  margin-bottom: 10px;
+  font-family: inherit;
+}
+
+.description-input:focus {
+  outline: none;
+  border-color: #2980b9;
+  box-shadow: 0 0 0 3px rgb(52 152 219 / 10%);
+}
+
+.edit-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Picture action buttons */
+.picture-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.save-btn,
+.cancel-btn,
+.edit-desc-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-weight: 500;
+}
+
+.save-btn {
+  background-color: #27ae60;
+  color: white;
+}
+
+.save-btn:hover {
+  background-color: #229954;
+}
+
+.cancel-btn {
+  background-color: #95a5a6;
+  color: white;
+}
+
+.cancel-btn:hover {
+  background-color: #7f8c8d;
+}
+
+.edit-desc-btn {
+  background-color: #3498db;
+  color: white;
+}
+
+.edit-desc-btn:hover {
+  background-color: #2980b9;
+}
+
+.hidden {
+  display: none;
+}

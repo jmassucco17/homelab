@@ -13,22 +13,22 @@
     </div>
 
     <div class="upload-section">
-      <h2>Upload New Picture</h2>
+      <h2>Upload Pictures</h2>
       <form id="uploadForm" enctype="multipart/form-data">
         <div class="form-group">
-          <label for="picture">Select Picture:</label>
-          <input type="file" id="picture" name="file" accept="image/*" required />
+          <label for="picture">Select Pictures:</label>
+          <input type="file" id="picture" name="file" accept="image/*" multiple required />
+          <small id="fileCount" class="file-count"></small>
         </div>
-        <div class="form-group">
-          <label for="description">Description (optional):</label>
-          <textarea
-            id="description"
-            name="description"
-            placeholder="Enter a description for this picture..."
-          ></textarea>
-        </div>
-        <button type="submit" class="upload-btn" id="uploadBtn">Upload Picture</button>
+        <button type="submit" class="upload-btn" id="uploadBtn">Upload Pictures</button>
       </form>
+
+      <div id="uploadProgress" class="upload-progress hidden">
+        <div class="progress-bar">
+          <div id="progressBar" class="progress-fill"></div>
+        </div>
+        <p id="progressText">Uploading...</p>
+      </div>
 
       <div id="message" class="message"></div>
     </div>
@@ -41,50 +41,81 @@
     </div>
 
     <script>
-      // Upload form handling
+      // Show file count when files are selected
+      document.getElementById('picture').addEventListener('change', (e) => {
+        const fileCount = e.target.files.length
+        const fileCountDisplay = document.getElementById('fileCount')
+        if (fileCount > 0) {
+          fileCountDisplay.textContent = `${fileCount} file${fileCount > 1 ? 's' : ''} selected`
+        } else {
+          fileCountDisplay.textContent = ''
+        }
+      })
+
+      // Upload form handling with multi-file support
       document.getElementById('uploadForm').addEventListener('submit', async (e) => {
         e.preventDefault()
 
-        const formData = new FormData()
         const fileInput = document.getElementById('picture')
-        const descriptionInput = document.getElementById('description')
         const uploadBtn = document.getElementById('uploadBtn')
-        const messageDiv = document.getElementById('message')
+        const progressDiv = document.getElementById('uploadProgress')
+        const progressBar = document.getElementById('progressBar')
+        const progressText = document.getElementById('progressText')
 
-        if (!fileInput.files[0]) {
-          showMessage('Please select a picture to upload.', 'error')
+        if (!fileInput.files || fileInput.files.length === 0) {
+          showMessage('Please select at least one picture to upload.', 'error')
           return
         }
 
-        formData.append('file', fileInput.files[0])
-        if (descriptionInput.value.trim()) {
-          formData.append('description', descriptionInput.value.trim())
-        }
+        const files = Array.from(fileInput.files)
+        const totalFiles = files.length
 
         uploadBtn.disabled = true
-        uploadBtn.textContent = 'Uploading...'
+        progressDiv.classList.remove('hidden')
 
-        try {
-          const response = await fetch('/admin/upload', {
-            method: 'POST',
-            body: formData,
-          })
+        let successCount = 0
+        let errorCount = 0
 
-          const result = await response.json()
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i]
+          const formData = new FormData()
+          formData.append('file', file)
 
-          if (response.ok) {
-            showMessage('Picture uploaded successfully!', 'success')
-            document.getElementById('uploadForm').reset()
-            loadPictures() // Reload the pictures list
-          } else {
-            showMessage(result.detail || 'Upload failed', 'error')
+          progressText.textContent = `Uploading ${i + 1} of ${totalFiles}: ${file.name}`
+          progressBar.style.width = `${((i + 1) / totalFiles) * 100}%`
+
+          try {
+            const response = await fetch('/admin/upload', {
+              method: 'POST',
+              body: formData,
+            })
+
+            if (response.ok) {
+              successCount++
+            } else {
+              errorCount++
+            }
+          } catch (error) {
+            errorCount++
           }
-        } catch (error) {
-          showMessage('Upload failed: ' + error.message, 'error')
-        } finally {
-          uploadBtn.disabled = false
-          uploadBtn.textContent = 'Upload Picture'
         }
+
+        progressDiv.classList.add('hidden')
+        progressBar.style.width = '0%'
+        uploadBtn.disabled = false
+
+        if (errorCount === 0) {
+          showMessage(`Successfully uploaded ${successCount} picture${successCount > 1 ? 's' : ''}!`, 'success')
+        } else {
+          showMessage(
+            `Uploaded ${successCount} picture${successCount > 1 ? 's' : ''}. ${errorCount} failed.`,
+            errorCount > successCount ? 'error' : 'success'
+          )
+        }
+
+        document.getElementById('uploadForm').reset()
+        document.getElementById('fileCount').textContent = ''
+        loadPictures()
       })
 
       // Show message function
@@ -115,19 +146,31 @@
           picturesListDiv.innerHTML = pictures
             .map(
               (picture) => `
-                    <div class="picture-item">
+                    <div class="picture-item" id="picture-${picture.id}">
                         <img src="/pictures/${picture.id}/file" alt="${picture.original_filename}" class="picture-thumbnail">
                         <div class="picture-info">
                             <div class="picture-title">${picture.original_filename}</div>
                             <div class="picture-meta">
-                                ${picture.description ? `<div>Description: ${picture.description}</div>` : ''}
+                                <div id="description-display-${picture.id}" class="description-display">
+                                    ${picture.description ? `<div class="description-text">${picture.description}</div>` : '<div class="no-description">No description</div>'}
+                                </div>
+                                <div id="description-edit-${picture.id}" class="description-edit hidden">
+                                    <textarea id="description-input-${picture.id}" class="description-input" placeholder="Enter description...">${picture.description || ''}</textarea>
+                                    <div class="edit-actions">
+                                        <button class="save-btn" onclick="saveDescription(${picture.id})">Save</button>
+                                        <button class="cancel-btn" onclick="cancelEdit(${picture.id})">Cancel</button>
+                                    </div>
+                                </div>
                                 <div>Uploaded: ${new Date(picture.upload_date).toLocaleDateString()}</div>
                                 ${picture.date_taken ? `<div>Taken: ${new Date(picture.date_taken).toLocaleDateString()}</div>` : ''}
                                 ${picture.location ? `<div>Location: ${picture.location.location_name}</div>` : ''}
                                 <div>Size: ${(picture.file_size / 1024 / 1024).toFixed(2)} MB</div>
                             </div>
                         </div>
-                        <button class="delete-btn" onclick="deletePicture(${picture.id})">Delete</button>
+                        <div class="picture-actions">
+                            <button class="edit-desc-btn" onclick="editDescription(${picture.id})">Edit Description</button>
+                            <button class="delete-btn" onclick="deletePicture(${picture.id})">Delete</button>
+                        </div>
                     </div>
                 `,
             )
@@ -157,6 +200,50 @@
           }
         } catch (error) {
           showMessage('Failed to delete picture: ' + error.message, 'error')
+        }
+      }
+
+      // Edit description functions
+      function editDescription(pictureId) {
+        // Hide display, show edit
+        document.getElementById(`description-display-${pictureId}`).style.display = 'none'
+        document.getElementById(`description-edit-${pictureId}`).style.display = 'block'
+
+        // Hide edit button, show delete button
+        const pictureActions = document.querySelector(`#picture-${pictureId} .picture-actions`)
+        pictureActions.style.display = 'none'
+      }
+
+      function cancelEdit(pictureId) {
+        // Show display, hide edit
+        document.getElementById(`description-display-${pictureId}`).style.display = 'block'
+        document.getElementById(`description-edit-${pictureId}`).style.display = 'none'
+
+        // Show buttons again
+        const pictureActions = document.querySelector(`#picture-${pictureId} .picture-actions`)
+        pictureActions.style.display = 'flex'
+      }
+
+      async function saveDescription(pictureId) {
+        const description = document.getElementById(`description-input-${pictureId}`).value.trim()
+        const formData = new FormData()
+        formData.append('description', description)
+
+        try {
+          const response = await fetch(`/admin/pictures/${pictureId}`, {
+            method: 'PATCH',
+            body: formData,
+          })
+
+          if (response.ok) {
+            showMessage('Description updated successfully', 'success')
+            loadPictures()
+          } else {
+            const result = await response.json()
+            showMessage(result.detail || 'Failed to update description', 'error')
+          }
+        } catch (error) {
+          showMessage('Failed to update description: ' + error.message, 'error')
         }
       }
 

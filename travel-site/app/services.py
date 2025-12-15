@@ -200,6 +200,30 @@ class PictureService:
 
         return True
 
+    def update_picture_description(
+        self,
+        session: sqlmodel.Session,
+        picture_id: int,
+        description: str | None,
+    ) -> models.Picture | None:
+        """Update a picture's description."""
+        statement = (
+            sqlmodel.select(models.Picture)
+            .options(selectinload(models.Picture.location))  # type: ignore
+            .where(models.Picture.id == picture_id)
+        )
+        picture = session.exec(statement).first()
+
+        if not picture:
+            return None
+
+        picture.description = description
+        session.add(picture)
+        session.commit()
+        session.refresh(picture)
+
+        return picture
+
 
 class LocationService:
     """Service for handling location data."""

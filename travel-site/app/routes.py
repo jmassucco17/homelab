@@ -85,6 +85,23 @@ async def delete_picture(
     return {'message': 'Picture deleted successfully'}
 
 
+@admin_router.patch('/pictures/{picture_id}')
+async def update_picture(
+    picture_id: int,
+    description: Annotated[str | None, Form()] = None,
+    session: Session = Depends(get_admin_session),
+    picture_service: services.PictureService = Depends(get_picture_service),
+):
+    """Update a picture's description."""
+    picture = picture_service.update_picture_description(
+        session, picture_id, description
+    )
+    if not picture:
+        raise HTTPException(status_code=404, detail='Picture not found')
+
+    return serialize_picture(picture)
+
+
 @admin_router.post('/locations', response_model=models.Location)
 async def create_location(
     name: str = Form(...),
