@@ -27,7 +27,7 @@
         <div class="progress-bar">
           <div id="progressBar" class="progress-fill"></div>
         </div>
-        <p id="progressText">Uploading...</p>
+        <p id="progress-text">Uploading...</p>
       </div>
 
       <div id="message" class="message"></div>
@@ -60,7 +60,7 @@
         const uploadBtn = document.getElementById('uploadBtn')
         const progressDiv = document.getElementById('uploadProgress')
         const progressBar = document.getElementById('progressBar')
-        const progressText = document.getElementById('progressText')
+        const progressText = document.getElementById('progress-text')
 
         if (!fileInput.files || fileInput.files.length === 0) {
           showMessage('Please select at least one picture to upload.', 'error')
