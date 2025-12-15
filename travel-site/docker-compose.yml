@@ -5,9 +5,10 @@ services:
     environment:
       - DATA_DIR=/data
     ports:
-      - "8000:8000"
+      - '8000:8000'
     volumes:
       - data-volume:/data
+      - ./app:/app/app # Mount app directory for live reload during development
     networks:
       - web
     labels:

@@ -1,16 +1,18 @@
 """Business logic services for the travel picture site."""
 
+import datetime
+import io
 import os
 import uuid
-from datetime import datetime
-from io import BytesIO
 from typing import Any, BinaryIO
 
 import exifread
+import fastapi
 import pillow_heif  # pyright: ignore[reportMissingTypeStubs]
-from fastapi import UploadFile
+import sqlmodel
+from geopy import geocoders  # pyright: ignore[reportMissingTypeStubs]
 from PIL import Image
-from sqlmodel import Session, select
+from sqlalchemy.orm import selectinload
 
 from . import models
 
@@ -29,7 +31,10 @@ class PictureService:
         self.upload_dir = upload_dir
         os.makedirs(upload_dir, exist_ok=True)
 
-    def extract_metadata(self, file: BinaryIO) -> dict[str, Any]:
+    def extract_metadata(
+        self,
+        file: BinaryIO,
+    ) -> dict[str, Any]:
         """Extract EXIF metadata from an image file."""
         metadata: dict[str, Any] = {}
 
@@ -40,7 +45,7 @@ class PictureService:
             if 'EXIF DateTimeOriginal' in tags:
                 date_str = str(tags['EXIF DateTimeOriginal'])
                 try:
-                    metadata['date_taken'] = datetime.strptime(
+                    metadata['date_taken'] = datetime.datetime.strptime(
                         date_str, '%Y:%m:%d %H:%M:%S'
                     )
                 except ValueError:
@@ -79,7 +84,11 @@ class PictureService:
         return degrees + (minutes / 60.0) + (seconds / 3600.0)
 
     async def save_picture(
-        self, session: Session, file: UploadFile, description: str | None = None
+        self,
+        session: sqlmodel.Session,
+        location_service: 'LocationService',
+        file: fastapi.UploadFile,
+        description: str | None = None,
     ) -> models.Picture:
         """Save uploaded picture with extracted metadata."""
         # Read file content
@@ -91,14 +100,14 @@ class PictureService:
 
         if file_extension in ['.heic', '.heif']:
             # Convert HEIC to JPEG
-            img = Image.open(BytesIO(content))
+            img = Image.open(io.BytesIO(content))
 
             # Convert to RGB if necessary (HEIC can be in different color modes)
             if img.mode not in ('RGB', 'RGBA'):
                 img = img.convert('RGB')
 
             # Save as JPEG
-            output = BytesIO()
+            output = io.BytesIO()
             img.save(output, format='JPEG', quality=95)
             content = output.getvalue()
 
@@ -119,12 +128,18 @@ class PictureService:
         metadata = self.extract_metadata(file.file)
 
         # Create database record
+        location = location_service.create_location(
+            session=session,
+            name='TBD',
+            latitude=metadata.get('latitude'),
+            longitude=metadata.get('longitude'),
+        )
         picture = models.Picture(
             filename=unique_filename,
             original_filename=file.filename or '',
             date_taken=metadata.get('date_taken'),
-            latitude=metadata.get('latitude'),
-            longitude=metadata.get('longitude'),
+            location_id=location.id if location else None,
+            location=location,
             description=description,
             file_size=len(content),
             mime_type=mime_type,
@@ -136,21 +151,39 @@ class PictureService:
 
         return picture
 
-    def get_all_pictures(self, session: Session) -> list[models.Picture]:
+    def get_all_pictures(
+        self,
+        session: sqlmodel.Session,
+    ) -> list[models.Picture]:
         """Get all pictures ordered by date taken (newest first)."""
-        statement = select(models.Picture).order_by(
-            models.Picture.date_taken.desc().nulls_last(),  # type: ignore
-            models.Picture.upload_date.desc(),  # type: ignore
+        statement = (
+            sqlmodel.select(models.Picture)
+            .options(selectinload(models.Picture.location))  # type: ignore
+            .order_by(
+                models.Picture.date_taken.desc().nulls_last(),  # type: ignore
+                models.Picture.upload_date.desc(),  # type: ignore
+            )
         )
-        return session.exec(statement).all()  # type: ignore
+        return list(session.exec(statement).all())
 
     def get_picture_by_id(
-        self, session: Session, picture_id: int
+        self,
+        session: sqlmodel.Session,
+        picture_id: int,
     ) -> models.Picture | None:
         """Get a specific picture by ID."""
-        return session.get(models.Picture, picture_id)
+        statement = (
+            sqlmodel.select(models.Picture)
+            .options(selectinload(models.Picture.location))  # type: ignore
+            .where(models.Picture.id == picture_id)
+        )
+        return session.exec(statement).first()
 
-    def delete_picture(self, session: Session, picture_id: int) -> bool:
+    def delete_picture(
+        self,
+        session: sqlmodel.Session,
+        picture_id: int,
+    ) -> bool:
         """Delete a picture from database and filesystem."""
         picture = session.get(models.Picture, picture_id)
         if not picture:
@@ -173,20 +206,30 @@ class LocationService:
 
     def create_location(
         self,
-        session: Session,
+        session: sqlmodel.Session,
         name: str,
-        latitude: float,
-        longitude: float,
-        country: str | None = None,
-        city: str | None = None,
-    ) -> models.Location:
+        latitude: float | None,
+        longitude: float | None,
+    ) -> models.Location | None:
         """Create a new location."""
+        if latitude is None or longitude is None:
+            return None
+
+        # Determine city and country
+        geolocator = geocoders.Nominatim(user_agent='james_massucco_travel_blog')
+        location_result = geolocator.reverse(  # type: ignore
+            (latitude, longitude), exactly_one=True
+        )
+        # Convert geopy Location object to string using its address attribute
+        location_name: str | None = (
+            str(location_result.address) if location_result else None  # type: ignore
+        )
+
         location = models.Location(
             name=name,
             latitude=latitude,
             longitude=longitude,
-            country=country,
-            city=city,
+            location_name=location_name,
         )
 
         session.add(location)
@@ -195,7 +238,10 @@ class LocationService:
 
         return location
 
-    def get_all_locations(self, session: Session) -> list[models.Location]:
+    def get_all_locations(
+        self,
+        session: sqlmodel.Session,
+    ) -> list[models.Location]:
         """Get all locations."""
-        statement = select(models.Location).order_by(models.Location.name)
-        return session.exec(statement).all()  # type: ignore
+        statement = sqlmodel.select(models.Location).order_by(models.Location.name)
+        return list(session.exec(statement).all())

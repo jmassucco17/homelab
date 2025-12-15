@@ -1,7 +1,7 @@
 """API routes for the travel picture site."""
 
 import os
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
@@ -13,6 +13,15 @@ from .database import get_admin_session, get_session
 # Create routers
 admin_router = APIRouter(prefix='/admin')
 public_router = APIRouter()
+
+
+# Helper function to serialize pictures with location relationship
+def serialize_picture(picture: models.Picture) -> dict[str, Any]:
+    """Serialize a picture including its location relationship."""
+    return {
+        **picture.model_dump(),
+        'location': picture.location.model_dump() if picture.location else None,
+    }
 
 
 # Dependencies
@@ -33,6 +42,7 @@ async def upload_picture(
     description: Annotated[str | None, Form()] = None,
     session: Session = Depends(get_admin_session),
     picture_service: services.PictureService = Depends(get_picture_service),
+    location_service: services.LocationService = Depends(get_location_service),
 ):
     """Upload a new picture with optional description."""
     # Validate file type
@@ -40,7 +50,9 @@ async def upload_picture(
         raise HTTPException(status_code=400, detail='File must be an image')
 
     # Save picture
-    picture = await picture_service.save_picture(session, file, description)
+    picture = await picture_service.save_picture(
+        session, location_service, file, description
+    )
 
     return {
         'message': 'Picture uploaded successfully',
@@ -49,13 +61,14 @@ async def upload_picture(
     }
 
 
-@admin_router.get('/pictures', response_model=list[models.Picture])
+@admin_router.get('/pictures')
 async def get_admin_pictures(
     session: Session = Depends(get_admin_session),
     picture_service: services.PictureService = Depends(get_picture_service),
 ):
     """Get all pictures for admin interface."""
-    return picture_service.get_all_pictures(session)
+    pictures = picture_service.get_all_pictures(session)
+    return [serialize_picture(picture) for picture in pictures]
 
 
 @admin_router.delete('/pictures/{picture_id}')
@@ -77,28 +90,25 @@ async def create_location(
     name: str = Form(...),
     latitude: float = Form(...),
     longitude: float = Form(...),
-    country: str | None = Form(None),
-    city: str | None = Form(None),
     session: Session = Depends(get_admin_session),
     location_service: services.LocationService = Depends(get_location_service),
 ):
     """Create a new location."""
-    return location_service.create_location(
-        session, name, latitude, longitude, country, city
-    )
+    return location_service.create_location(session, name, latitude, longitude)
 
 
 # Public routes (no authentication required)
-@public_router.get('/pictures', response_model=list[models.Picture])
+@public_router.get('/pictures')
 async def get_public_pictures(
     session: Session = Depends(get_session),
     picture_service: services.PictureService = Depends(get_picture_service),
 ):
     """Get all pictures for public gallery."""
-    return picture_service.get_all_pictures(session)
+    pictures = picture_service.get_all_pictures(session)
+    return [serialize_picture(picture) for picture in pictures]
 
 
-@public_router.get('/pictures/{picture_id}', response_model=models.Picture)
+@public_router.get('/pictures/{picture_id}')
 async def get_picture_details(
     picture_id: int,
     session: Session = Depends(get_session),
@@ -109,7 +119,7 @@ async def get_picture_details(
     if not picture:
         raise HTTPException(status_code=404, detail='Picture not found')
 
-    return picture
+    return serialize_picture(picture)
 
 
 @public_router.get('/pictures/{picture_id}/file')

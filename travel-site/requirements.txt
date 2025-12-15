@@ -9,3 +9,4 @@ passlib
 exifread
 pillow
 pillow-heif
+geopy

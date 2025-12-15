@@ -123,7 +123,7 @@
                                 ${picture.description ? `<div>Description: ${picture.description}</div>` : ''}
                                 <div>Uploaded: ${new Date(picture.upload_date).toLocaleDateString()}</div>
                                 ${picture.date_taken ? `<div>Taken: ${new Date(picture.date_taken).toLocaleDateString()}</div>` : ''}
-                                ${picture.latitude && picture.longitude ? `<div>Location: ${picture.latitude.toFixed(4)}, ${picture.longitude.toFixed(4)}</div>` : ''}
+                                ${picture.location ? `<div>Location Name: ${picture.location.location_name}</div>` : ''}
                                 <div>Size: ${(picture.file_size / 1024 / 1024).toFixed(2)} MB</div>
                             </div>
                         </div>

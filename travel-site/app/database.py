@@ -9,7 +9,11 @@ data_dir = os.environ.get('DATA_DIR', 'data')
 DATABASE_URL = f'sqlite:///{data_dir}/travel.db'
 
 # Create engine with check_same_thread=False for SQLite
-engine = create_engine(DATABASE_URL, connect_args={'check_same_thread': False})
+engine = create_engine(
+    DATABASE_URL,
+    connect_args={'check_same_thread': False},
+    echo=True,
+)
 
 
 def create_db_and_tables():
