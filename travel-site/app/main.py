@@ -45,7 +45,16 @@ templates = Jinja2Templates(directory='app/templates')
 
 @app.get('/', response_class=HTMLResponse)
 async def root(request: Request):
-    """Root endpoint - serve the public gallery."""
+    """Root endpoint - serve the interactive map."""
+    return templates.TemplateResponse(
+        'public/map.html.jinja2',
+        {'request': request},
+    )
+
+
+@app.get('/gallery', response_class=HTMLResponse)
+async def gallery(request: Request):
+    """Gallery endpoint - serve the public gallery."""
     return templates.TemplateResponse(
         'public/gallery.html.jinja2',
         {'request': request},

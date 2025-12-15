@@ -22,16 +22,25 @@ body {
   font-size: 1.2em;
 }
 
-.admin-link {
+.admin-link,
+.map-link {
   position: absolute;
   top: 20px;
-  right: 20px;
   color: #3498db;
   text-decoration: none;
   font-weight: bold;
 }
 
-.admin-link:hover {
+.admin-link {
+  right: 20px;
+}
+
+.map-link {
+  right: 140px;
+}
+
+.admin-link:hover,
+.map-link:hover {
   text-decoration: underline;
 }
 
@@ -175,10 +184,12 @@ body {
     margin-bottom: 20px;
   }
 
-  .admin-link {
+  .admin-link,
+  .map-link {
     position: static;
-    display: block;
+    display: inline-block;
+    margin: 10px 10px 0 0;
+    font-size: 0.9em;
     text-align: center;
-    margin-bottom: 20px;
   }
 }
