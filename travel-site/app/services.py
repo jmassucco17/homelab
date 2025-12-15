@@ -217,9 +217,14 @@ class LocationService:
 
         # Determine city and country
         geolocator = geocoders.Nominatim(user_agent='james_massucco_travel_blog')
-        location_result = geolocator.reverse(  # type: ignore
-            (latitude, longitude), exactly_one=True
-        )
+        try:
+            location_result = geolocator.reverse(  # type: ignore
+                (latitude, longitude),
+                exactly_one=True,
+                # addressdetails=True,
+            )
+        except Exception:
+            location_result = None
         # Convert geopy Location object to string using its address attribute
         location_name: str | None = (
             str(location_result.address) if location_result else None  # type: ignore

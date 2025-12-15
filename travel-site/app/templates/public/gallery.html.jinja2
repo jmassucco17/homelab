@@ -48,7 +48,7 @@
                              class="picture-image"
                              onclick="openModal('/pictures/${picture.id}/file', '${picture.original_filename}')">
                         <div class="picture-info">
-                            <div class="picture-filename">${picture.original_filename}</div>
+                            <div class="picture-filename">${picture.location.location_name}</div>
                             ${picture.description ? `<div class="picture-description">"${picture.description}"</div>` : ''}
                             <div class="picture-meta">
                                 ${
@@ -61,25 +61,16 @@
                                 `
                                     : ''
                                 }
-                                <div class="date-info">
-                                    <span class="meta-icon">📤</span>
-                                    Uploaded: ${formatDate(picture.upload_date)}
-                                </div>
                                 ${
-                                  picture.latitude && picture.longitude
+                                  picture.location.latitude && picture.location.longitude
                                     ? `
                                     <div class="location-info">
                                         <span class="meta-icon">📍</span>
-                                        Location: ${picture.latitude.toFixed(4)}, ${picture.longitude.toFixed(4)}
-                                        ${picture.location_name ? ` (${picture.location_name})` : ''}
+                                        Location: ${picture.location.latitude.toFixed(4)}, ${picture.location.longitude.toFixed(4)}
                                     </div>
                                 `
                                     : ''
                                 }
-                                <div>
-                                    <span class="meta-icon">💾</span>
-                                    Size: ${formatFileSize(picture.file_size)}
-                                </div>
                             </div>
                         </div>
                     </div>
