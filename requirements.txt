@@ -1,6 +1,7 @@
 markdown
 ruff
 pre-commit
+click
 ipython
 python-frontmatter
 
