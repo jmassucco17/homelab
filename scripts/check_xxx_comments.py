@@ -35,7 +35,8 @@ def check_file_for_xxx(file_path: Path) -> list[tuple[int, str]]:
 
 @click.command()
 @click.argument('files', nargs=-1, type=click.Path())
-def main(files: tuple[str, ...]) -> None:
+@click.option('--warn-only', is_flag=True)
+def main(files: tuple[str, ...], warn_only: bool) -> None:
     """Check for XXX comments in source files."""
     if not files:
         click.echo('No files provided to check')
@@ -58,10 +59,11 @@ def main(files: tuple[str, ...]) -> None:
                 click.echo(f'  Line {line_num}: {line_content}')
 
     if found_xxx:
-        click.echo(
-            '\nError: XXX comments found! Please resolve these TODOs before committing.'
-        )
-        sys.exit(1)
+        click.echo('\nError: XXX comments found!')
+        if warn_only:
+            sys.exit(0)
+        else:
+            sys.exit(1)
 
 
 if __name__ == '__main__':

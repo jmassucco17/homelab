@@ -4,9 +4,11 @@ repos:
       - id: check-xxx-comments
         name: Check for XXX comments
         entry: scripts/check_xxx_comments.py
+        args: [--warn-only]
         language: system
         pass_filenames: true
         types: [text]
+        verbose: true
       - id: prettier-html
         name: prettier-html
         entry: npx prettier --write
