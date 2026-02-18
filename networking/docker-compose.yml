@@ -1,7 +1,7 @@
 services:
   # Reverse-proxy service
   traefik:
-    image: traefik:v2.10
+    image: traefik:v3.6
     container_name: traefik
     command:
       # Debug logging
