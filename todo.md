@@ -16,4 +16,4 @@ Deployment improvements:
 Bug fixes:
 
 - Tailscale and NordVPN don't play nice together; fix it
-- Hetzner VPS
+- Github checks consistently failing (pyright)
