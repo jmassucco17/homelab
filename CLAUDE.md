@@ -2,37 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Commands
+## Organization/Architecture
 
-### Development & Testing
-
-- `npm run lint:css` - Lint CSS files using stylelint
-- `npm run lint:types` - Run Python type checking with pyright
-- `ruff format` - Format Python code (configured in pyproject.toml)
-- `ruff check` - Lint Python code
-
-### Local Development
-
-- `scripts/start_all.sh` - Start all services locally with Docker Compose
-- `blog/generate_blog.py` - Generate static blog HTML from markdown posts
-- `scripts/deploy.sh` - Deploy to production server (requires .env configuration)
-
-### Testing
-
-- For Python: Use pytest with `pytest travel-site/app/database_test.py` or similar paths
-- Tests are typically in `*_test.py` files alongside source code
-
-## Architecture
-
-This is a homelab project consisting of multiple containerized web services:
-
-### Service Structure
-
-- **networking/** - Traefik reverse proxy with SSL termination
-- **shared-assets/** - Common static assets (CSS, JS, icons) served across services
-- **homepage/** - Static homepage at jamesmassucco.com
-- **blog/** - Static blog generator (Python + Jinja2) at blog.jamesmassucco.com
-- **travel-site/** - FastAPI app with OAuth2 authentication at travel.jamesmassucco.com
+- The `networking/` directory houses the traefik reverse proxy and other core networking aspects of the site
+- Other folders like `homepage/` and `blog/` house pages which can be deployed, and which rely on `networking/` components to be accessible and secure
+- `scripts/` contains automations for deployments and for checking the repo
+- `bootstrap.sh` is used to provision a new repo
 
 ### Key Patterns
 
@@ -55,11 +30,18 @@ This is a homelab project consisting of multiple containerized web services:
 - Assets are shared via the shared-assets service
 - RSS feed automatically generated
 
-### Deployment
+## Commands
 
-- Production deployment via `scripts/deploy.sh`
-- Uses tar archive with .gitignore exclusions
-- Services start automatically via systemd or Docker restart policies
+- `scripts/deploy.sh` - Deploy to production server
+- `scripts/start_all.sh` - Deploy locally for testing
+- `ruff format; ruff check` - Lint python code
+
+# XXX add commit to run pre-commit hooks
+
+### Testing
+
+- For Python: Use pytest with `pytest travel-site/app/database_test.py` or similar paths
+- Tests are typically in `*_test.py` files alongside source code
 
 ## Style Guide
 
