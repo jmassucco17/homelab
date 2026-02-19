@@ -33,10 +33,8 @@ Interactive web application for creating and viewing custom travel maps with mul
 ```bash
 # Run tests from the travel-maps directory
 cd travel-maps
-python -m pytest tests/ -v
+python -m unittest discover -s app -p "*_test.py"
 ```
-
-See `tests/README.md` for more details on the test suite.
 
 ## API Endpoints
 

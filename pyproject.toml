@@ -24,10 +24,3 @@ select = ["I", "E", "F", "UP", "B"]
 unfixable = ["F401"]
 # Ignore B008
 ignore = ["B008"]
-
-[tool.pytest.ini_options]
-testpaths = ["travel-maps/tests"]
-python_files = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = "-v --tb=short"
