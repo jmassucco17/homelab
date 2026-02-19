@@ -23,6 +23,10 @@ on:
         description: 'Deploy travel-site'
         type: boolean
         default: true
+      travel-maps:
+        description: 'Deploy travel-maps'
+        type: boolean
+        default: true
   push:
     branches:
       - main
@@ -73,11 +77,12 @@ jobs:
           DEPLOY_HOMEPAGE: ${{ github.event_name == 'push' || inputs.homepage }}
           DEPLOY_BLOG: ${{ github.event_name == 'push' || inputs.blog }}
           DEPLOY_TRAVEL_SITE: ${{ github.event_name == 'push' || inputs['travel-site'] }}
+          DEPLOY_TRAVEL_MAPS: ${{ github.event_name == 'push' || inputs['travel-maps'] }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             -o StrictHostKeyChecking=no \
             "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" \
-            "DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' DEPLOY_SHARED_ASSETS='${DEPLOY_SHARED_ASSETS}' DEPLOY_HOMEPAGE='${DEPLOY_HOMEPAGE}' DEPLOY_BLOG='${DEPLOY_BLOG}' DEPLOY_TRAVEL_SITE='${DEPLOY_TRAVEL_SITE}' bash -s" << 'REMOTE'
+            "DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' DEPLOY_SHARED_ASSETS='${DEPLOY_SHARED_ASSETS}' DEPLOY_HOMEPAGE='${DEPLOY_HOMEPAGE}' DEPLOY_BLOG='${DEPLOY_BLOG}' DEPLOY_TRAVEL_SITE='${DEPLOY_TRAVEL_SITE}' DEPLOY_TRAVEL_MAPS='${DEPLOY_TRAVEL_MAPS}' bash -s" << 'REMOTE'
           set -euo pipefail
           mkdir -p /opt/homelab
           cd /opt/homelab
@@ -107,6 +112,7 @@ jobs:
           deploy_if_enabled homepage      "$DEPLOY_HOMEPAGE"
           deploy_if_enabled blog          "$DEPLOY_BLOG"
           deploy_if_enabled travel-site   "$DEPLOY_TRAVEL_SITE"
+          deploy_if_enabled travel-maps   "$DEPLOY_TRAVEL_MAPS"
 
           rm -f /tmp/homelab-deploy.tar.gz
           echo "Deployment complete."

@@ -6,6 +6,7 @@ Welcome to my homelab project!
 
 - Homepage: [jamesmassucco.com](https://jamesmassucco.com)
 - Blog: [blog.jamesmassucco.com](https://blog.jamesmassucco.com/)
+- Travel Maps: [maps.jamesmassucco.com](https://maps.jamesmassucco.com)
 
 ## Service Dashboards
 
