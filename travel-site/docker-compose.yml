@@ -1,7 +1,9 @@
 services:
   travel-site:
     container_name: travel-site
-    build: .
+    build:
+      context: ..
+      dockerfile: travel-site/Dockerfile
     environment:
       - DATA_DIR=/data
     ports:
