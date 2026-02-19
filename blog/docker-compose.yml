@@ -16,10 +16,11 @@ services:
       - 'traefik.http.routers.blog.tls.certresolver=cloudflare'
       - 'traefik.http.services.blog.loadbalancer.server.port=8000'
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8000/"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8000/health"]
       interval: 10s
       timeout: 5s
-      retries: 3
+      retries: 5
+      start_period: 15s
     networks:
       - web
     restart: unless-stopped
