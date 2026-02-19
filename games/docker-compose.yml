@@ -1,0 +1,35 @@
+services:
+  games:
+    container_name: games
+    build:
+      context: ..
+      dockerfile: games/Dockerfile
+    volumes:
+      - ./app:/app/app
+    labels:
+      # Use traefik to provide HTTP endpoint
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.games.rule=Host(`games.jamesmassucco.com`)'
+      - 'traefik.http.routers.games.entrypoints=websecure'
+      - 'traefik.http.routers.games.tls=true'
+      - 'traefik.http.routers.games.tls.certresolver=cloudflare'
+      - 'traefik.http.services.games.loadbalancer.server.port=8000'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python3',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')",
+        ]
+      interval: 5s
+      timeout: 1s
+      retries: 3
+      start_period: 5s
+    networks:
+      - web
+    restart: unless-stopped
+
+networks:
+  web:
+    external: true
