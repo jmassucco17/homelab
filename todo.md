@@ -19,13 +19,6 @@
 - Set up a PR focused workflow and ensure Claude Code can use it, so that I can kick off tasks for it and then manage them through PRs
 - Teach Claude how to run pre-commit hooks, how to check GitHub status, etc.
 - Make Claude Code commit regularly during interactive sessions so that it's easy to roll back
-- Teach Claude how to add packages (both python and npm)
-
-## Misc. Changes/ Improvements:
-
-- Apply more rigid versioning in requirements.txt and other places
-- Consolidate places where versions are specified to avoid conflicts
-- Look for other opportunities to consolidate towards single sources of truth (e.g. pre-commit-config.yaml vs .github workflow yamls)
 
 ## Bug fixes:
 

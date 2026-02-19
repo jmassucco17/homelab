@@ -12,7 +12,7 @@ When creating a new module (i.e. a new page or new sub-site), make a new top-lev
 
 ### Setup
 
-Run `bootstrap.sh` to fully initialize a new environment, including installing all necessary packages.
+Run `bootstrap.sh` to fully initialize a new environment, including installing all necessary packages. When adding a new package, add it to `requirements.txt` or `package.json` and then run `bootstrap.sh` to install
 
 ### Making changes
 
