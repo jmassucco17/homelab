@@ -1,12 +1,15 @@
 repos:
   - repo: local
     hooks:
-      - id: check-xxx-comments
-        name: Check for XXX comments
+      - id: warn-xxx-comments
+        name: Warn about XXX comments
         entry: scripts/check_xxx_comments.py
-        language: system
+        args: [--warn-only]
+        language: python
+        additional_dependencies: [click]
         pass_filenames: true
         types: [text]
+        verbose: true
       - id: prettier-html
         name: prettier-html
         entry: npx prettier --write

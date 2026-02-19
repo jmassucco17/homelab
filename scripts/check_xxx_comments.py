@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
-"""
-Linter to check for XXX comments in source files.
-Fails if any XXX comments are found, as these should be resolved before committing.
-"""
 
-import argparse
+import pathlib
 import re
 import sys
-from pathlib import Path
+
+import click
 
 
-def check_file_for_xxx(file_path: Path) -> list[tuple[int, str]]:
+def check_file_for_xxx(file_path: pathlib.Path) -> list[tuple[int, str]]:
     """Check a single file for XXX comments
 
     Returns list of (line number, content) tuples
@@ -32,27 +29,19 @@ def check_file_for_xxx(file_path: Path) -> list[tuple[int, str]]:
     return xxx_lines
 
 
-def main() -> int:
-    """Main function to check files for XXX comments."""
-    parser = argparse.ArgumentParser(
-        description='Check for XXX comments in source files'
-    )
-    parser.add_argument(
-        'files',
-        nargs='*',
-        help='Files to check (if none provided, checks all tracked files)',
-    )
-
-    args = parser.parse_args()
-
-    if not args.files:
-        print('No files provided to check')
-        return 0
+@click.command()
+@click.argument('files', nargs=-1, type=click.Path())
+@click.option('--warn-only', is_flag=True)
+def main(files: tuple[str, ...], warn_only: bool) -> None:
+    """Check for XXX comments in source files."""
+    if not files:
+        click.echo('No files provided to check')
+        sys.exit(0)
 
     found_xxx = False
 
-    for file_path_str in args.files:
-        file_path = Path(file_path_str)
+    for file_path_str in files:
+        file_path = pathlib.Path(file_path_str)
 
         if not file_path.exists() or not file_path.is_file():
             continue
@@ -61,18 +50,17 @@ def main() -> int:
 
         if xxx_lines:
             found_xxx = True
-            print(f'\nXXX comments found in {file_path}:')
+            click.echo(f'\nXXX comments found in {file_path}:')
             for line_num, line_content in xxx_lines:
-                print(f'  Line {line_num}: {line_content}')
+                click.echo(f'  Line {line_num}: {line_content}')
 
     if found_xxx:
-        print(
-            '\nError: XXX comments found! Please resolve these TODOs before committing.'
-        )
-        return 1
-
-    return 0
+        click.echo('\nError: XXX comments found!')
+        if warn_only:
+            sys.exit(0)
+        else:
+            sys.exit(1)
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    main()

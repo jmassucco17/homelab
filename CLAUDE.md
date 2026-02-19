@@ -1,65 +1,23 @@
-# CLAUDE.md
+# Agent Guidance
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (and GitHub Copilot) agents interacting with this repo.
 
-## Commands
+## Summary
 
-### Development & Testing
+This repo is primarily focused on deploying a public personal website at `jamesmassucco.com` and its sub-domains. The `networking/` directory contains core technologies (like `traefik` reverse proxy, oauth, and Cloudflare DDNS configuration) and other top-level directories contain containerized "services" which handle various pages within the site.
 
-- `npm run lint:css` - Lint CSS files using stylelint
-- `npm run lint:types` - Run Python type checking with pyright
-- `ruff format` - Format Python code (configured in pyproject.toml)
-- `ruff check` - Lint Python code
+When creating a new module (i.e. a new page or new sub-site), make a new top-level folder and populate it with a `docker-compose.yml` and `start.sh`. Make sure to update `scripts/start_all.sh` to reference the new `start.sh`, and update `networking/` as necessary to populate a top-level domain for the new module
 
-### Local Development
+## Details
 
-- `scripts/start_all.sh` - Start all services locally with Docker Compose
-- `blog/generate_blog.py` - Generate static blog HTML from markdown posts
-- `scripts/deploy.sh` - Deploy to production server (requires .env configuration)
+### Setup
 
-### Testing
+Run `bootstrap.sh` to fully initialize a new environment, including installing all necessary packages.
 
-- For Python: Use pytest with `pytest travel-site/app/database_test.py` or similar paths
-- Tests are typically in `*_test.py` files alongside source code
+### Making changes
 
-## Architecture
-
-This is a homelab project consisting of multiple containerized web services:
-
-### Service Structure
-
-- **networking/** - Traefik reverse proxy with SSL termination
-- **shared-assets/** - Common static assets (CSS, JS, icons) served across services
-- **homepage/** - Static homepage at jamesmassucco.com
-- **blog/** - Static blog generator (Python + Jinja2) at blog.jamesmassucco.com
-- **travel-site/** - FastAPI app with OAuth2 authentication at travel.jamesmassucco.com
-
-### Key Patterns
-
-- Each service has its own `Dockerfile`, `docker-compose.yml`, and `start.sh` script
-- Services use the `web` Docker network for internal communication
-- Traefik handles routing and SSL with automatic Let's Encrypt certificates
-- Python services use FastAPI with SQLAlchemy for database operations
-- Authentication uses OAuth2 with selective protection (public/admin routes)
-
-### Database Architecture
-
-- travel-site uses dual database sessions:
-  - Read-only sessions for public routes
-  - Full access sessions for admin routes
-- Database models defined in `database.py` files
-
-### Static Site Generation
-
-- Blog uses markdown frontmatter + Jinja2 templates
-- Assets are shared via the shared-assets service
-- RSS feed automatically generated
-
-### Deployment
-
-- Production deployment via `scripts/deploy.sh`
-- Uses tar archive with .gitignore exclusions
-- Services start automatically via systemd or Docker restart policies
+- Commit regularly during work, including during interactive sessions. Provide concise but informative commit messages
+- Never commit to the `main` branch. If work is requested while on the `main` branch, checkout a new branch with a concise but informative name. When work is complete, or is ready for feedback, create a PR through GitHub
 
 ## Style Guide
 
@@ -67,5 +25,5 @@ This is a homelab project consisting of multiple containerized web services:
 
 - Import at the module level and access classes or functions as <module>.<func>; never import classes or functions directly
 - Provide argument and return type hinting for all methods and functions
-- Include docstrings for most classes and functions with brief description; in general, don't include args/returns info in the docstring unless it's non-obvious (e.g. if it returns a dict, describe the structrue)
+- Include docstrings for most classes and functions with brief description; in general, don't include args/returns info in the docstring unless it's non-obvious (e.g. if it returns a dict, describe the structure)
 - Include comments for operations that need additional explanation
