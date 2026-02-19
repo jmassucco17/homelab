@@ -16,7 +16,7 @@ Run `bootstrap.sh` to fully initialize a new environment, including installing a
 
 ### Making changes
 
-- Commit regularly during work, including during interactive sessions. Provide concise but informative commit messages
+- Commit regularly during work, including during interactive sessions. Commit messages must be a single line - no multi-line messages, no body, no footers
 - Never commit to the `main` branch. If work is requested while on the `main` branch, checkout a new branch with a concise but informative name. When work is complete, or is ready for feedback, create a PR through GitHub
 
 ## Style Guide

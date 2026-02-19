@@ -1,12 +1,12 @@
 services:
-  homepage:
+  blog:
     container_name: blog
-    # Use custom dockerfile (imports from nginx:alpine)
     build:
-      context: .
-      dockerfile: Dockerfile
-    # Copy files from temp directory (established by dockerfile) to live directory at container start
-    entrypoint: /bin/sh -c "cp -r /tmp/site/* /usr/share/nginx/html && nginx -g 'daemon off;'"
+      context: ..
+      dockerfile: blog/Dockerfile
+    volumes:
+      - ./app:/app/app
+      - ./posts:/app/posts
     labels:
       # Use traefik to provide HTTP endpoint
       - 'traefik.enable=true'
@@ -14,7 +14,19 @@ services:
       - 'traefik.http.routers.blog.entrypoints=websecure'
       - 'traefik.http.routers.blog.tls=true'
       - 'traefik.http.routers.blog.tls.certresolver=cloudflare'
-      - 'traefik.http.services.blog.loadbalancer.server.port=80'
+      - 'traefik.http.services.blog.loadbalancer.server.port=8000'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python3',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')",
+        ]
+      interval: 5s
+      timeout: 1s
+      retries: 3
+      start_period: 5s
     networks:
       - web
     restart: unless-stopped
