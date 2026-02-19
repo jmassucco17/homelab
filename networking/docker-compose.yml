@@ -69,7 +69,7 @@ services:
       - traefik.http.middlewares.oauth-auth.forwardauth.trustForwardHeader=true
       - traefik.http.middlewares.oauth-auth.forwardauth.authResponseHeaders=X-Auth-Request-User,X-Auth-Request-Email
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080/ping"]
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:8080/ping']
       interval: 10s
       timeout: 5s
       retries: 3
@@ -116,11 +116,6 @@ services:
       - traefik.http.routers.oauth.entrypoints=websecure
       - traefik.http.routers.oauth.tls.certresolver=cloudflare
       - traefik.http.services.oauth.loadbalancer.server.port=4180
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:4180/ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
     restart: unless-stopped
 
   # Basic whoami service, useful for debugging network configuration
@@ -138,7 +133,7 @@ services:
       # Use rate-limiting and OAuth
       - traefik.http.routers.whoami.middlewares=oauth-auth,ratelimit
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      test: ['CMD', 'wget', '-qO-', 'http://localhost/']
       interval: 10s
       timeout: 5s
       retries: 3
