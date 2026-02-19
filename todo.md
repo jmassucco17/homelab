@@ -9,7 +9,6 @@
 
 ## Deployment improvements:
 
-- Add tooling (maybe outside this repo) to automatically monitor homepage, blog, and other public websites and email me if they go down
 - Teach Claude Code how to manage the deployment: how to ssh into the server, how to check the webpage from the public internet, etc.
 - Add a more standardized debug deployment (on local machine) and also teach claude how to use that
 - Make Tailscale remind me when Hetzner VPS is going to expire
