@@ -1,10 +1,6 @@
 name: Pyright type checking
 
 on:
-  push:
-    paths:
-      - '**.py'
-      - 'pyrightconfig.json'
   pull_request:
     paths:
       - '**.py'

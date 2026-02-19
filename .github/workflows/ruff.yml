@@ -1,10 +1,6 @@
 name: Ruff
 
 on:
-  push:
-    paths:
-      - '**.py'
-      - 'pyproject.toml'
   pull_request:
     paths:
       - '**.py'
