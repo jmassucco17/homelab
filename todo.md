@@ -20,6 +20,11 @@
 - Teach Claude how to run pre-commit hooks, how to check GitHub status, etc.
 - Make Claude Code commit regularly during interactive sessions so that it's easy to roll back
 
+## Security
+
+- Update Python to 3.13
+- Don't use `root` for managing the VPS
+
 ## Bug fixes:
 
 - Tailscale and NordVPN don't play nice together; fix it
