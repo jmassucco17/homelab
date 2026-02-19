@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (and GitHub Copilot) agents interacti
 This repo is primarily focused on deploying a public personal website at `jamesmassucco.com` and its sub-domains. The `networking/` directory contains core technologies (like `traefik` reverse proxy, oauth, and Cloudflare DDNS configuration) and other top-level directories contain containerized "services" which handle various pages within the site.
 
 When creating a new module (i.e. a new page or new sub-site), make a new top-level folder and populate it with a `docker-compose.yml` and `start.sh`. Make sure to:
+
 - Update `scripts/start_local.sh` to include the service in `ALL_SERVICES`
 - Create a `docker-compose.local.yml` in the new module directory (see existing examples for the pattern)
 - Update `networking/` to create a new sub-domain
@@ -35,3 +36,7 @@ Run `bootstrap.sh` to fully initialize a new environment, including installing a
 - Use the `unittest` module when writing tests, but run them with `pytest` in command line
 - Tests should always be housed in the same directory as the file they test, and be named `<module>_test.py` (e.g. test for `main.py` should be `main_test.py`)
 - Whenever you create a new Python file, you must also create an associated `<module>_test.py` in the same directory
+
+### Bash
+
+- Make sure that new shell scripts (`.sh` files) have executable permissions (run `chmod +x <script>.sh`)
