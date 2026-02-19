@@ -28,7 +28,7 @@ async def index(request: fastapi.Request) -> fastapi.responses.HTMLResponse:
     """Render the blog index page listing all posts."""
     posts = blog.load_posts()
     return templates.TemplateResponse(
-        'index.html.jinja2', {'request': request, 'posts': posts}
+        request=request, name='index.html.jinja2', context={'posts': posts}
     )
 
 
@@ -40,7 +40,7 @@ async def post(request: fastapi.Request, slug: str) -> fastapi.responses.HTMLRes
     if matched is None:
         raise fastapi.HTTPException(status_code=404, detail='Post not found')
     return templates.TemplateResponse(
-        'post.html.jinja2', {'request': request, 'post': matched}
+        request=request, name='post.html.jinja2', context={'post': matched}
     )
 
 
