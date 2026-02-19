@@ -5,6 +5,8 @@ services:
   shared-assets:
     ports:
       - '8003:80'
+    volumes:
+      - ./nginx.local.conf:/etc/nginx/nginx.conf:ro
     labels:
       - 'traefik.http.routers.shared-assets-local.rule=Host(`assets.jamesmassucco.com`)'
       - 'traefik.http.routers.shared-assets-local.entrypoints=web'

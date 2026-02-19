@@ -27,7 +27,8 @@
     "stylelint-config-standard": "^40.0.0"
   },
   "scripts": {
-    "lint:css": "stylelint '**/*.css'",
+    "build:css": "postcss shared-assets/assets/styles/main.src.css -o shared-assets/assets/styles/main.css",
+    "lint:css": "stylelint '**/*.css' --ignore-pattern 'node_modules/**'",
     "lint:types": "pyright"
   }
 }

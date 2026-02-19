@@ -1,0 +1,25 @@
+/* ===== DESIGN TOKENS (Vercel-inspired) =====
+ * Mirrors shared-assets/assets/styles/src/_tokens.css.
+ * Included by travel-site pages that do not load the CDN main.css.
+ */
+
+:root {
+  --color-page-bg: #000;
+  --color-section-bg: #111;
+  --color-card-bg: #0a0a0a;
+  --color-card-border: rgb(255 255 255 / 10%);
+  --color-section-border: rgb(255 255 255 / 10%);
+  --color-title-text: #ededed;
+  --color-text: #888;
+  --color-footer-text: #444;
+  --color-accent: #0070f3;
+  --color-red: #ff4d4d;
+  --color-yellow: #f5a623;
+  --color-green: #50e3c2;
+  --font-sans: 'Inter', -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, sans-serif;
+  --font-mono: 'Fira Code', 'JetBrains Mono', monospace;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --shadow-card: 0 0 0 1px var(--color-card-border);
+}
