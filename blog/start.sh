@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
+set -euo pipefail
 cd "$(dirname "$0")"
 
 echo "Shutting down containers..."
-sudo docker compose down
+sudo docker compose down --remove-orphans
 
-echo "Updating container images..."
-sudo docker compose build blog
-
-echo "Starting up containers..."
-sudo docker compose up -d
+echo "Building and starting containers..."
+sudo docker compose up -d --build --wait
