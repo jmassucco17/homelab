@@ -31,6 +31,7 @@
 ## Bug fixes:
 
 - Tailscale and NordVPN don't play nice together; fix it
+- Snake is too wide on mobile
 
 ## Recurring Items
 
