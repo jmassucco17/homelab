@@ -1,12 +1,7 @@
 name: pytest
 
 on:
-  push:
-    branches-ignore:
-      - main
   pull_request:
-    branches:
-      - main
 
 jobs:
   test:
@@ -17,7 +12,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: '3.12'
 
       - name: Install root dependencies
         run: pip install -r requirements.txt pytest
