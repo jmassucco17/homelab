@@ -113,7 +113,7 @@ services:
 
   # Basic whoami service, useful for debugging network configuration
   whoami:
-    image: traefik/whoami
+    image: traefik/whoami:v1.11
     container_name: whoami
     networks:
       - web
