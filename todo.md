@@ -16,6 +16,13 @@
 - Make Tailscale remind me when Hetzner VPS is going to expire
 - Setup GitHub deployment checks of different site components
 
+## Organization
+
+- Add instructions about port management for local deployments
+- Reduce sources of truth for what packages are available (listed in a lot of places, see #23 for example)
+- Consolidate `start.sh` scripts to just a single script that works for any package
+- (add to CLAUDE.md) new subdomains should have a link from the homepage
+
 ## Security
 
 - Update Python to 3.13
