@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
+set -euo pipefail
 cd "$(dirname "$0")"
 
 echo "Shutting down containers..."
-sudo docker compose down
+sudo docker compose down --remove-orphans
 
-echo "Updating container images..."
+echo "Pulling latest images..."
 sudo docker compose pull
 
 echo "Starting up containers..."
-sudo docker compose up -d
+sudo docker compose up -d --wait

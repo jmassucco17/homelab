@@ -1,0 +1,113 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      networking:
+        description: 'Deploy networking'
+        type: boolean
+        default: true
+      shared-assets:
+        description: 'Deploy shared-assets'
+        type: boolean
+        default: true
+      homepage:
+        description: 'Deploy homepage'
+        type: boolean
+        default: true
+      blog:
+        description: 'Deploy blog'
+        type: boolean
+        default: true
+      travel-site:
+        description: 'Deploy travel-site'
+        type: boolean
+        default: true
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          tags: tag:github
+
+      - name: Write networking/.env from secret
+        run: printf '%s' "${{ secrets.NETWORKING_ENV }}" > networking/.env
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.SERVER_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Create deployment archive
+        run: |
+          grep -v '^#' .gitignore | grep -v '^$' > /tmp/exclude_list
+          printf '.git/\n*.tar.gz\n*.tar\n' >> /tmp/exclude_list
+          tar --exclude-from=/tmp/exclude_list -cf /tmp/homelab-deploy.tar .
+          tar --append -f /tmp/homelab-deploy.tar networking/.env
+          gzip /tmp/homelab-deploy.tar
+
+      - name: Upload archive to server
+        run: |
+          scp -i ~/.ssh/deploy_key \
+            -o StrictHostKeyChecking=no \
+            /tmp/homelab-deploy.tar.gz \
+            "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/homelab-deploy.tar.gz"
+
+      - name: Extract and start services on server
+        env:
+          # On push, deploy all services; on workflow_dispatch, deploy only checked ones
+          DEPLOY_NETWORKING: ${{ github.event_name == 'push' || inputs.networking }}
+          DEPLOY_SHARED_ASSETS: ${{ github.event_name == 'push' || inputs['shared-assets'] }}
+          DEPLOY_HOMEPAGE: ${{ github.event_name == 'push' || inputs.homepage }}
+          DEPLOY_BLOG: ${{ github.event_name == 'push' || inputs.blog }}
+          DEPLOY_TRAVEL_SITE: ${{ github.event_name == 'push' || inputs['travel-site'] }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o StrictHostKeyChecking=no \
+            "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" \
+            "DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' DEPLOY_SHARED_ASSETS='${DEPLOY_SHARED_ASSETS}' DEPLOY_HOMEPAGE='${DEPLOY_HOMEPAGE}' DEPLOY_BLOG='${DEPLOY_BLOG}' DEPLOY_TRAVEL_SITE='${DEPLOY_TRAVEL_SITE}' bash -s" << 'REMOTE'
+          set -euo pipefail
+          mkdir -p /opt/homelab
+          cd /opt/homelab
+          echo "Extracting deployment archive..."
+          tar -xzf /tmp/homelab-deploy.tar.gz
+          touch networking/acme.json
+          chmod 600 networking/acme.json
+          docker network create web 2>/dev/null || true
+
+          # Deploy each service if its flag is true
+          deploy_if_enabled() {
+            local svc="$1"
+            local flag="$2"
+            if [ "$flag" = "true" ]; then
+              echo "--- Starting $svc ---"
+              cd /opt/homelab/$svc
+              ./start.sh
+              cd /opt/homelab
+            else
+              echo "--- Skipping $svc ---"
+            fi
+          }
+
+          # Services deployed in dependency order
+          deploy_if_enabled networking    "$DEPLOY_NETWORKING"
+          deploy_if_enabled shared-assets "$DEPLOY_SHARED_ASSETS"
+          deploy_if_enabled homepage      "$DEPLOY_HOMEPAGE"
+          deploy_if_enabled blog          "$DEPLOY_BLOG"
+          deploy_if_enabled travel-site   "$DEPLOY_TRAVEL_SITE"
+
+          rm -f /tmp/homelab-deploy.tar.gz
+          echo "Deployment complete."
+          REMOTE

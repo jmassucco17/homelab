@@ -28,6 +28,6 @@ repos:
 
   # NOTE: pyright version must stay in sync with package.json
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.400
+    rev: v1.1.408
     hooks:
       - id: pyright
