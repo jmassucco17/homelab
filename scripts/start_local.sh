@@ -7,6 +7,8 @@
 #   ./scripts/start_local.sh                          # Start all services
 #   ./scripts/start_local.sh blog                     # Start only blog
 #   ./scripts/start_local.sh blog travel-site         # Start specific services
+#   ./scripts/start_local.sh --stop                   # Stop all services
+#   ./scripts/start_local.sh blog travel-site --stop  # Stop specific services
 #
 # Services can be accessed at http://localhost:<port> where <port> can be found
 # in the associated docker-compose.local.yml for each service.
@@ -20,10 +22,19 @@ cd "$(dirname "$0")"/..
 ALL_SERVICES=("shared-assets" "homepage" "blog" "travel-site")
 LOCAL_HOSTS="jamesmassucco.com blog.jamesmassucco.com travel.jamesmassucco.com assets.jamesmassucco.com"
 
-if [ $# -eq 0 ]; then
+# Parse arguments: extract --stop flag and service names (order-independent)
+STOP=false
+SERVICES=()
+for arg in "$@"; do
+  if [[ "$arg" == "--stop" ]]; then
+    STOP=true
+  else
+    SERVICES+=("$arg")
+  fi
+done
+
+if [ "${#SERVICES[@]}" -eq 0 ]; then
   SERVICES=("${ALL_SERVICES[@]}")
-else
-  SERVICES=("$@")
 fi
 
 # Validate provided service names
@@ -37,6 +48,27 @@ for service in "${SERVICES[@]}"; do
     exit 1
   fi
 done
+
+if [[ "$STOP" == "true" ]]; then
+  # Stop each requested service
+  for service in "${SERVICES[@]}"; do
+    echo "Stopping $service..."
+    pushd "$service" > /dev/null
+    sudo docker compose -f docker-compose.yml -f docker-compose.local.yml down --remove-orphans || true
+    popd > /dev/null
+  done
+
+  # Stop traefik only when stopping all services
+  if [ "${#SERVICES[@]}" -eq "${#ALL_SERVICES[@]}" ]; then
+    echo "Stopping local networking (traefik)..."
+    pushd networking > /dev/null
+    sudo docker compose -f docker-compose.local.yml down --remove-orphans || true
+    popd > /dev/null
+  fi
+
+  echo "Local deployment stopped."
+  exit 0
+fi
 
 # Ensure the shared docker network exists
 if ! sudo docker network inspect web >/dev/null 2>&1; then
