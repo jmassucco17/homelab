@@ -48,8 +48,8 @@ npx pyright
 # Run all tests with pytest
 pytest -v
 
-# Run tests for a specific module (e.g., travel-maps)
-cd travel-maps && python -m unittest discover -s app -p "*_test.py"
+# Run tests for a specific module (e.g., travel/maps)
+cd travel/maps && python -m unittest discover -s app -p "*_test.py"
 ```
 
 #### Complete pre-commit workflow

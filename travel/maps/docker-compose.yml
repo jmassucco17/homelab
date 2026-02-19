@@ -2,8 +2,8 @@ services:
   travel-maps:
     container_name: travel-maps
     build:
-      context: ..
-      dockerfile: travel-maps/Dockerfile
+      context: ../..
+      dockerfile: travel/maps/Dockerfile
     environment:
       - DATA_DIR=/data
     ports:

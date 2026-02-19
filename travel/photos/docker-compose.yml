@@ -1,10 +1,10 @@
 services:
-  travel-site:
-    container_name: travel-site
+  travel-photos:
+    container_name: travel-photos
     build:
       # Change to top-level for access to requirements.txt
-      context: ..
-      dockerfile: travel-site/Dockerfile
+      context: ../..
+      dockerfile: travel/photos/Dockerfile
     environment:
       - DATA_DIR=/data
     ports:
@@ -32,7 +32,7 @@ services:
       - traefik.http.routers.travel-public.priority=50
 
       # Service configuration
-      - traefik.http.services.travel-site.loadbalancer.server.port=8000
+      - traefik.http.services.travel-photos.loadbalancer.server.port=8000
     healthcheck:
       test:
         [
