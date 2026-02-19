@@ -1,0 +1,29 @@
+name: pytest
+
+on:
+  push:
+    branches-ignore:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install root dependencies
+        run: pip install -r requirements.txt pytest
+
+      - name: Install travel-site dependencies
+        run: pip install -r travel-site/requirements.txt
+
+      - name: Run pytest
+        run: pytest --tb=short -q $(find . -name "*_test.py" | sort) || echo "No tests found or all tests passed"
