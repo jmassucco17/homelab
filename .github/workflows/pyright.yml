@@ -1,4 +1,4 @@
-name: Pyright type checking
+name: Pyright
 
 on:
   pull_request:

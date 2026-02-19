@@ -1,4 +1,4 @@
-name: Check for XXX comments
+name: No XXX comments
 
 on:
   pull_request:
