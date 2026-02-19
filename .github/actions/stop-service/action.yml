@@ -1,0 +1,16 @@
+name: Stop service
+description: Stops a service and removes its containers
+
+inputs:
+  service:
+    description: Service directory name (e.g. blog, homepage, travel-site)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Stop service
+      shell: bash
+      run: |
+        cd "${{ github.workspace }}/${{ inputs.service }}"
+        sudo docker compose down --remove-orphans || true
