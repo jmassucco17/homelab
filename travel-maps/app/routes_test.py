@@ -5,7 +5,7 @@ import unittest
 import sqlalchemy
 import sqlalchemy.pool
 import sqlmodel
-from app import database, main, models, services
+from app import database, main, services
 from fastapi.testclient import TestClient
 
 
@@ -175,7 +175,9 @@ class TestLocationAPI(unittest.TestCase):
         """Test updating a location via API."""
         with sqlmodel.Session(database.engine) as session:
             map_obj = services.create_map(session, 'Test Map')
-            location = services.add_location_to_map(session, map_obj.id, 'Paris', 48.8566, 2.3522)
+            location = services.add_location_to_map(
+                session, map_obj.id, 'Paris', 48.8566, 2.3522
+            )
 
         response = self.client.put(
             f'/api/locations/{location.id}',
@@ -190,7 +192,9 @@ class TestLocationAPI(unittest.TestCase):
         """Test deleting a location via API."""
         with sqlmodel.Session(database.engine) as session:
             map_obj = services.create_map(session, 'Test Map')
-            location = services.add_location_to_map(session, map_obj.id, 'Paris', 48.8566, 2.3522)
+            location = services.add_location_to_map(
+                session, map_obj.id, 'Paris', 48.8566, 2.3522
+            )
 
         response = self.client.delete(f'/api/locations/{location.id}')
         self.assertEqual(response.status_code, 200)

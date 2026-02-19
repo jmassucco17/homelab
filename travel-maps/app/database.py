@@ -3,10 +3,10 @@ from pathlib import Path
 
 from sqlmodel import Session, SQLModel, create_engine
 
-DATA_DIR = os.getenv("DATA_DIR", "/data")
-DATABASE_PATH = Path(DATA_DIR) / "travel_maps.db"
+DATA_DIR = os.getenv('DATA_DIR', '/data')
+DATABASE_PATH = Path(DATA_DIR) / 'travel_maps.db'
 
-DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
+DATABASE_URL = f'sqlite:///{DATABASE_PATH}'
 
 engine = create_engine(DATABASE_URL, echo=False)
 

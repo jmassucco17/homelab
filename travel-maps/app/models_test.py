@@ -68,6 +68,7 @@ class TestLocationModel(unittest.TestCase):
             session.add(map_obj)
             session.commit()
             session.refresh(map_obj)
+            assert map_obj.id is not None
 
             # Create a location
             location = models.Location(
@@ -108,6 +109,7 @@ class TestMapLocationRelationship(unittest.TestCase):
             session.add(map_obj)
             session.commit()
             session.refresh(map_obj)
+            assert map_obj.id is not None
 
             # Add locations
             location1 = models.Location(
@@ -143,6 +145,7 @@ class TestMapLocationRelationship(unittest.TestCase):
             session.add(map_obj)
             session.commit()
             session.refresh(map_obj)
+            assert map_obj.id is not None
 
             location = models.Location(
                 map_id=map_obj.id,
@@ -173,6 +176,7 @@ class TestMapLocationRelationship(unittest.TestCase):
             session.add(map_obj)
             session.commit()
             session.refresh(map_obj)
+            assert map_obj.id is not None
 
             # Add locations out of order
             location2 = models.Location(

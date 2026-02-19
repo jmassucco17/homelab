@@ -1,10 +1,8 @@
-from datetime import datetime
-from typing import Optional
+from datetime import UTC, datetime
 
 import httpx
-from sqlmodel import Session, select
-
 from app.models import Location, Map
+from sqlmodel import Session, select
 
 
 async def geocode_location(query: str) -> list[dict]:
@@ -19,18 +17,18 @@ async def geocode_location(query: str) -> list[dict]:
     """
     async with httpx.AsyncClient() as client:
         response = await client.get(
-            "https://nominatim.openstreetmap.org/search",
-            params={"q": query, "format": "json", "limit": 5},
-            headers={"User-Agent": "TravelMapsApp/1.0"},
+            'https://nominatim.openstreetmap.org/search',
+            params={'q': query, 'format': 'json', 'limit': 5},
+            headers={'User-Agent': 'TravelMapsApp/1.0'},
         )
         response.raise_for_status()
         results = response.json()
 
         return [
             {
-                "name": result.get("display_name"),
-                "latitude": float(result.get("lat")),
-                "longitude": float(result.get("lon")),
+                'name': result.get('display_name'),
+                'latitude': float(result.get('lat')),
+                'longitude': float(result.get('lon')),
             }
             for result in results
         ]
@@ -41,12 +39,12 @@ def get_all_maps(session: Session) -> list[Map]:
     return session.exec(select(Map).order_by(Map.updated_at.desc())).all()
 
 
-def get_map_by_id(session: Session, map_id: int) -> Optional[Map]:
+def get_map_by_id(session: Session, map_id: int) -> Map | None:
     """Get a map by ID."""
     return session.get(Map, map_id)
 
 
-def create_map(session: Session, name: str, description: Optional[str] = None) -> Map:
+def create_map(session: Session, name: str, description: str | None = None) -> Map:
     """Create a new map."""
     map_obj = Map(name=name, description=description)
     session.add(map_obj)
@@ -55,7 +53,9 @@ def create_map(session: Session, name: str, description: Optional[str] = None) -
     return map_obj
 
 
-def update_map(session: Session, map_id: int, name: str, description: Optional[str] = None) -> Optional[Map]:
+def update_map(
+    session: Session, map_id: int, name: str, description: str | None = None
+) -> Map | None:
     """Update an existing map."""
     map_obj = session.get(Map, map_id)
     if not map_obj:
@@ -63,7 +63,7 @@ def update_map(session: Session, map_id: int, name: str, description: Optional[s
 
     map_obj.name = name
     map_obj.description = description
-    map_obj.updated_at = datetime.utcnow()
+    map_obj.updated_at = datetime.now(UTC)
     session.add(map_obj)
     session.commit()
     session.refresh(map_obj)
@@ -87,15 +87,19 @@ def add_location_to_map(
     name: str,
     latitude: float,
     longitude: float,
-    nickname: Optional[str] = None,
-    description: Optional[str] = None,
-) -> Optional[Location]:
+    nickname: str | None = None,
+    description: str | None = None,
+) -> Location | None:
     """Add a location to a map."""
     map_obj = session.get(Map, map_id)
     if not map_obj:
         return None
 
-    max_order = session.exec(select(Location.order_index).where(Location.map_id == map_id).order_by(Location.order_index.desc())).first()
+    max_order = session.exec(
+        select(Location.order_index)
+        .where(Location.map_id == map_id)
+        .order_by(Location.order_index.desc())
+    ).first()
     order_index = (max_order + 1) if max_order is not None else 0
 
     location = Location(
@@ -109,7 +113,7 @@ def add_location_to_map(
     )
     session.add(location)
 
-    map_obj.updated_at = datetime.utcnow()
+    map_obj.updated_at = datetime.now(UTC)
     session.add(map_obj)
 
     session.commit()
@@ -118,8 +122,11 @@ def add_location_to_map(
 
 
 def update_location(
-    session: Session, location_id: int, nickname: Optional[str] = None, description: Optional[str] = None
-) -> Optional[Location]:
+    session: Session,
+    location_id: int,
+    nickname: str | None = None,
+    description: str | None = None,
+) -> Location | None:
     """Update a location's nickname and description."""
     location = session.get(Location, location_id)
     if not location:
@@ -131,7 +138,7 @@ def update_location(
 
     map_obj = session.get(Map, location.map_id)
     if map_obj:
-        map_obj.updated_at = datetime.utcnow()
+        map_obj.updated_at = datetime.now(UTC)
         session.add(map_obj)
 
     session.commit()
@@ -150,7 +157,7 @@ def delete_location(session: Session, location_id: int) -> bool:
 
     map_obj = session.get(Map, map_id)
     if map_obj:
-        map_obj.updated_at = datetime.utcnow()
+        map_obj.updated_at = datetime.now(UTC)
         session.add(map_obj)
 
     session.commit()
@@ -168,7 +175,7 @@ def reorder_locations(session: Session, location_ids: list[int]) -> bool:
             if index == 0:
                 map_obj = session.get(Map, location.map_id)
                 if map_obj:
-                    map_obj.updated_at = datetime.utcnow()
+                    map_obj.updated_at = datetime.now(UTC)
                     session.add(map_obj)
 
     session.commit()
