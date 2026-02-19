@@ -134,3 +134,55 @@ jobs:
         if: always()
         with:
           service: travel-site
+
+  networking:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Create networking/.env with test credentials
+        run: |
+          COOKIE_SECRET=$(python3 -c "import secrets; print(secrets.token_hex(16))")
+          cat > networking/.env << EOF
+          CLOUDFLARE_API_EMAIL=test@example.com
+          CLOUDFLARE_API_TOKEN=test-token
+          CLOUDFLARE_TRUSTED_IPS=0.0.0.0/0
+          GOOGLE_OAUTH2_CLIENT_ID=test-client-id
+          GOOGLE_OAUTH2_CLIENT_SECRET=test-client-secret
+          GOOGLE_OAUTH2_COOKIE_SECRET=${COOKIE_SECRET}
+          OAUTH2_AUTHORIZED_EMAILS=test@example.com
+          EOF
+
+      - name: Create acme.json with correct permissions
+        run: |
+          touch networking/acme.json
+          chmod 600 networking/acme.json
+
+      - name: Create docker web network
+        run: docker network create web 2>/dev/null || true
+
+      - name: Start networking services (excluding cloudflare-ddns)
+        run: |
+          cd networking
+          docker compose up -d --wait traefik oauth2-proxy whoami
+
+      - name: Test traefik ping endpoint
+        run: docker exec traefik wget -qO- http://127.0.0.1:8080/ping
+
+      - name: Test oauth2-proxy is listening
+        run: |
+          PROXY_IP=$(docker inspect oauth2-proxy --format='{{.NetworkSettings.Networks.web.IPAddress}}')
+          docker run --rm --network web alpine wget -qO- "http://${PROXY_IP}:4180/ping"
+
+      - name: Test whoami is responding
+        run: |
+          WHOAMI_IP=$(docker inspect whoami --format='{{.NetworkSettings.Networks.web.IPAddress}}')
+          docker run --rm --network web alpine wget -qO- "http://${WHOAMI_IP}/"
+
+      - name: Stop networking services
+        uses: ./.github/actions/stop-service
+        if: always()
+        with:
+          service: networking
