@@ -2,6 +2,7 @@ name: Linting
 
 on:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   no-xxx-comments:
@@ -18,7 +19,11 @@ jobs:
         run: pip install -r requirements.txt
       - name: Check for XXX comments
         run: |
-          git diff -z --name-only ${{ github.event.pull_request.base.sha }}...HEAD | xargs -0 -r python scripts/check_xxx_comments.py
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            git ls-files -z | xargs -0 -r python scripts/check_xxx_comments.py
+          else
+            git diff -z --name-only ${{ github.event.pull_request.base.sha }}...HEAD | xargs -0 -r python scripts/check_xxx_comments.py
+          fi
   pyright:
     runs-on: ubuntu-latest
     steps:
@@ -28,10 +33,16 @@ jobs:
       - name: Check for changed Python files
         id: changes
         run: |
-          git diff --name-only ${{ github.event.pull_request.base.sha }}...HEAD \
-            | grep -qE '(\.py$|pyrightconfig\.json$)' \
-            && echo "python=true" >> $GITHUB_OUTPUT \
-            || echo "python=false" >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            git ls-files | grep -qE '(\.py$|pyrightconfig\.json$)' \
+              && echo "python=true" >> $GITHUB_OUTPUT \
+              || echo "python=false" >> $GITHUB_OUTPUT
+          else
+            git diff --name-only ${{ github.event.pull_request.base.sha }}...HEAD \
+              | grep -qE '(\.py$|pyrightconfig\.json$)' \
+              && echo "python=true" >> $GITHUB_OUTPUT \
+              || echo "python=false" >> $GITHUB_OUTPUT
+          fi
       - name: Set up Python
         if: steps.changes.outputs.python == 'true'
         uses: actions/setup-python@v6
@@ -55,10 +66,16 @@ jobs:
       - name: Check for changed Python files
         id: changes
         run: |
-          git diff --name-only ${{ github.event.pull_request.base.sha }}...HEAD \
-            | grep -qE '(\.py$|pyproject\.toml$)' \
-            && echo "python=true" >> $GITHUB_OUTPUT \
-            || echo "python=false" >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            git ls-files | grep -qE '(\.py$|pyproject\.toml$)' \
+              && echo "python=true" >> $GITHUB_OUTPUT \
+              || echo "python=false" >> $GITHUB_OUTPUT
+          else
+            git diff --name-only ${{ github.event.pull_request.base.sha }}...HEAD \
+              | grep -qE '(\.py$|pyproject\.toml$)' \
+              && echo "python=true" >> $GITHUB_OUTPUT \
+              || echo "python=false" >> $GITHUB_OUTPUT
+          fi
       - name: Set up Python
         if: steps.changes.outputs.python == 'true'
         uses: actions/setup-python@v6
