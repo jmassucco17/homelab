@@ -73,7 +73,7 @@ services:
       interval: 5s
       timeout: 1s
       retries: 3
-      start_period: 1s
+      start_period: 3s
     restart: unless-stopped
 
   # Provide Google OAuth services for other containers
