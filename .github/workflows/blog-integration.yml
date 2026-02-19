@@ -1,0 +1,69 @@
+name: Blog integration test
+
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  docker-integration:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build blog Docker image
+        run: docker build -f blog/Dockerfile -t blog-test .
+
+      - name: Run blog container
+        run: docker run -d -p 8000:8000 --name blog-test blog-test
+
+      - name: Wait for container to be healthy
+        run: |
+          for i in $(seq 1 30); do
+            if docker exec blog-test python3 -c \
+              "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')" \
+              2>/dev/null; then
+              echo "Container is healthy"
+              exit 0
+            fi
+            echo "Waiting for container... ($i/30)"
+            sleep 1
+          done
+          echo "Container did not become healthy in time"
+          docker logs blog-test
+          exit 1
+
+      - name: Test health endpoint
+        run: |
+          response=$(curl -sf http://localhost:8000/health)
+          echo "$response"
+          echo "$response" | grep -q '"healthy"'
+
+      - name: Test index endpoint returns HTML
+        run: |
+          response=$(curl -sf http://localhost:8000/)
+          echo "$response" | grep -qi '<html'
+
+      - name: Test a blog post endpoint returns HTML
+        run: |
+          response=$(curl -sf http://localhost:8000/posts/starting-a-homelab)
+          echo "$response" | grep -qi 'Starting a Homelab'
+
+      - name: Test RSS endpoint returns XML
+        run: |
+          response=$(curl -sf http://localhost:8000/rss.xml)
+          echo "$response" | grep -q '<rss'
+          echo "$response" | grep -q '<channel>'
+
+      - name: Test invalid post returns 404
+        run: |
+          status=$(curl -o /dev/null -s -w "%{http_code}" http://localhost:8000/posts/nonexistent-post)
+          test "$status" = "404"
+
+      - name: Stop and remove container
+        if: always()
+        run: docker rm -f blog-test || true
