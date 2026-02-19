@@ -33,6 +33,8 @@
 
 ## Recurring Items
 
-- Check for core updates (e.g. python version)
-- Check requirements.txt and package.json for possible upgrades of packages
+- Check for new Python version
+- Check for new ruff version
+- Check requirements.txt and package.json for other possible package upgrades (`pip3 list --outdated`, `pre-commit autoupdate`)
+- Check for updated docker image tags
 - Check VPS for apt updates and OS updates
