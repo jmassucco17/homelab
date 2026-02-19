@@ -24,7 +24,7 @@ Misc. Changes/ Improvements:
 
 - Apply more rigid versioning in requirements.txt and other places
 - Consolidate places where versions are specified to avoid conflicts
-- Look for other opportunities to consolidate towards single sources of truth (e.g. pr-commit-config.yaml vs .github workflow yamls)
+- Look for other opportunities to consolidate towards single sources of truth (e.g. pre-commit-config.yaml vs .github workflow yamls)
 
 Bug fixes:
 
