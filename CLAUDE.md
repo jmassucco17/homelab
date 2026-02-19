@@ -33,3 +33,4 @@ Run `bootstrap.sh` to fully initialize a new environment, including installing a
 - Include docstrings for most classes and functions with brief description; in general, don't include args/returns info in the docstring unless it's non-obvious (e.g. if it returns a dict, describe the structure)
 - Include comments for operations that need additional explanation
 - Use the `unittest` module when writing tests, but run them with `pytest` in command line
+- Tests should always be housed in the same directory as the file they test, and be named `<module>_test.py` (e.g. test for `main.py` should be `main_test.py`)
