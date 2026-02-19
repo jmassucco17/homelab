@@ -1,0 +1,11 @@
+# Local development override for homepage service.
+# Merges with docker-compose.yml to add HTTP routing and direct port access.
+# Used by scripts/start_local.sh via: docker compose -f docker-compose.yml -f docker-compose.local.yml
+services:
+  homepage:
+    ports:
+      - '8001:80'
+    labels:
+      - 'traefik.http.routers.homepage-local.rule=Host(`jamesmassucco.com`)'
+      - 'traefik.http.routers.homepage-local.entrypoints=web'
+      - 'traefik.http.services.homepage.loadbalancer.server.port=80'
