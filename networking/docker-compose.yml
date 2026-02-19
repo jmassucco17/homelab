@@ -69,7 +69,7 @@ services:
       - traefik.http.middlewares.oauth-auth.forwardauth.trustForwardHeader=true
       - traefik.http.middlewares.oauth-auth.forwardauth.authResponseHeaders=X-Auth-Request-User,X-Auth-Request-Email
     healthcheck:
-      test: ['CMD', 'wget', '-qO-', 'http://localhost:8080/ping']
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:8080/ping']
       interval: 10s
       timeout: 5s
       retries: 3

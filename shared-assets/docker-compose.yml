@@ -13,8 +13,7 @@ services:
       # Use rate-limiting
       - 'traefik.http.routers.shared-assets.middlewares=ratelimit'
     healthcheck:
-      # Use nc to check TCP connectivity since GET / returns 404 by design (no index.html)
-      test: ["CMD", "nc", "-z", "localhost", "80"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
       interval: 10s
       timeout: 5s
       retries: 3
