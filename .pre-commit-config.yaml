@@ -6,7 +6,7 @@ repos:
         entry: scripts/check_xxx_comments.py
         args: [--warn-only]
         language: python
-        additional_dependencies: [click>=8.2, <9]
+        additional_dependencies: [click]
         pass_filenames: true
         types: [text]
         verbose: true
