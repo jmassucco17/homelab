@@ -27,4 +27,4 @@ Run `bootstrap.sh` to fully initialize a new environment, including installing a
 - Provide argument and return type hinting for all methods and functions
 - Include docstrings for most classes and functions with brief description; in general, don't include args/returns info in the docstring unless it's non-obvious (e.g. if it returns a dict, describe the structure)
 - Include comments for operations that need additional explanation
-- Use the `unittest` module for testing, not pytest or other testing frameworks
+- Use the `unittest` module when writing tests, but run them with `pytest` in command line
