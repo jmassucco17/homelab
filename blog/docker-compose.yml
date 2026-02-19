@@ -6,7 +6,7 @@ services:
       dockerfile: blog/Dockerfile
     volumes:
       - ./app:/app/app
-      - ./blog_posts:/app/blog_posts
+      - ./posts:/app/posts
     labels:
       # Use traefik to provide HTTP endpoint
       - 'traefik.enable=true'
@@ -15,6 +15,18 @@ services:
       - 'traefik.http.routers.blog.tls=true'
       - 'traefik.http.routers.blog.tls.certresolver=cloudflare'
       - 'traefik.http.services.blog.loadbalancer.server.port=8000'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python3',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')",
+        ]
+      interval: 5s
+      timeout: 1s
+      retries: 3
+      start_period: 5s
     networks:
       - web
     restart: unless-stopped

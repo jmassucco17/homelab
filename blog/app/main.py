@@ -52,7 +52,7 @@ async def rss(request: fastapi.Request) -> fastapi.responses.Response:
     return fastapi.responses.Response(content=xml, media_type='application/rss+xml')
 
 
-@app.get('/health')
+@app.api_route('/health', methods=['GET', 'HEAD'])
 async def health() -> dict[str, str]:
     """Health check endpoint."""
     return {'status': 'healthy'}
