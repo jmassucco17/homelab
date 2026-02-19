@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
-"""
-Linter to check for XXX comments in source files.
-Fails if any XXX comments are found, as these should be resolved before committing.
-"""
 
+import pathlib
 import re
 import sys
-from pathlib import Path
 
 import click
 
 
-def check_file_for_xxx(file_path: Path) -> list[tuple[int, str]]:
+def check_file_for_xxx(file_path: pathlib.Path) -> list[tuple[int, str]]:
     """Check a single file for XXX comments
 
     Returns list of (line number, content) tuples
@@ -45,7 +41,7 @@ def main(files: tuple[str, ...], warn_only: bool) -> None:
     found_xxx = False
 
     for file_path_str in files:
-        file_path = Path(file_path_str)
+        file_path = pathlib.Path(file_path_str)
 
         if not file_path.exists() or not file_path.is_file():
             continue

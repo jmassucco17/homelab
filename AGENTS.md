@@ -17,7 +17,7 @@ Run `bootstrap.sh` to fully initialize a new environment, including installing a
 ### Making changes
 
 - Commit regularly during work, including during interactive sessions. Provide concise but informative commit messages
-- Never commit to the `main` branch. If work is requested while on the `main` branch, checkout a new branch with a concise but informative name. When work is complete, or is ready for feedback, create a PR through Github
+- Never commit to the `main` branch. If work is requested while on the `main` branch, checkout a new branch with a concise but informative name. When work is complete, or is ready for feedback, create a PR through GitHub
 
 ## Style Guide
 
@@ -25,5 +25,5 @@ Run `bootstrap.sh` to fully initialize a new environment, including installing a
 
 - Import at the module level and access classes or functions as <module>.<func>; never import classes or functions directly
 - Provide argument and return type hinting for all methods and functions
-- Include docstrings for most classes and functions with brief description; in general, don't include args/returns info in the docstring unless it's non-obvious (e.g. if it returns a dict, describe the structrue)
+- Include docstrings for most classes and functions with brief description; in general, don't include args/returns info in the docstring unless it's non-obvious (e.g. if it returns a dict, describe the structure)
 - Include comments for operations that need additional explanation
