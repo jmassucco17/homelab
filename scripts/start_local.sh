@@ -8,12 +8,8 @@
 #   ./scripts/start_local.sh blog                     # Start only blog
 #   ./scripts/start_local.sh blog travel-site         # Start specific services
 #
-# Direct port access (no /etc/hosts needed):
-#   http://localhost:8001  — homepage
-#   http://localhost:8002  — blog
-#   http://localhost:8000  — travel-site
-#   http://localhost:8003  — shared-assets
-#   http://localhost:8080  — traefik dashboard
+# Services can be accessed at http://localhost:<port> where <port> can be found
+# in the associated docker-compose.local.yml for each service.
 #
 # Access by hostname (add to /etc/hosts first):
 #   127.0.0.1  jamesmassucco.com blog.jamesmassucco.com travel.jamesmassucco.com assets.jamesmassucco.com
@@ -65,15 +61,8 @@ done
 echo ""
 echo "Local deployment ready!"
 echo ""
-echo "Direct port access:"
-for service in "${SERVICES[@]}"; do
-  case $service in
-    homepage)      echo "  homepage:      http://localhost:8001" ;;
-    blog)          echo "  blog:          http://localhost:8002" ;;
-    travel-site)   echo "  travel-site:   http://localhost:8000" ;;
-    shared-assets) echo "  shared-assets: http://localhost:8003" ;;
-  esac
-done
+echo "Services can be accessed at http://localhost:<port>"
+echo "See each service's docker-compose.local.yml for its port mapping."
 echo "  traefik dashboard: http://localhost:8080"
 echo ""
 echo "To access services by hostname, add to /etc/hosts:"

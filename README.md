@@ -27,15 +27,9 @@ requested services.
 ./scripts/start_local.sh blog travel-site
 ```
 
-Services are accessible directly by port:
-
-| Service | URL |
-|---|---|
-| homepage | <http://localhost:8001> |
-| blog | <http://localhost:8002> |
-| travel-site | <http://localhost:8000> |
-| shared-assets | <http://localhost:8003> |
-| traefik dashboard | <http://localhost:8080> |
+Services can be accessed at `http://localhost:<port>` where `<port>` can be found in the
+associated `docker-compose.local.yml` for each service. The traefik dashboard is always
+available at `http://localhost:8080`.
 
 To access services by hostname instead (matching production URLs), add to `/etc/hosts`:
 
