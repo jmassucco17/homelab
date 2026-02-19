@@ -6,7 +6,7 @@ services:
       dockerfile: blog/Dockerfile
     volumes:
       - ./app:/app/app
-      - ./blog_posts:/app/blog_posts
+      - ./posts:/app/posts
     labels:
       # Use traefik to provide HTTP endpoint
       - 'traefik.enable=true'
