@@ -68,6 +68,15 @@ updates:
         patterns: ["*"]
 
   - package-ecosystem: "docker"
+    directory: "/games"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    groups:
+      docker-images:
+        patterns: ["*"]
+
+  - package-ecosystem: "docker"
     directory: "/shared-assets"
     schedule:
       interval: "weekly"
