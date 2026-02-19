@@ -16,11 +16,17 @@ services:
       - 'traefik.http.routers.blog.tls.certresolver=cloudflare'
       - 'traefik.http.services.blog.loadbalancer.server.port=8000'
     healthcheck:
-      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
+      test:
+        [
+          'CMD',
+          'python3',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')",
+        ]
+      interval: 5s
+      timeout: 1s
+      retries: 3
+      start_period: 2s
     networks:
       - web
     restart: unless-stopped

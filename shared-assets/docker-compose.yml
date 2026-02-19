@@ -13,10 +13,11 @@ services:
       # Use rate-limiting
       - 'traefik.http.routers.shared-assets.middlewares=ratelimit'
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
-      interval: 10s
-      timeout: 5s
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1/']
+      interval: 5s
+      timeout: 1s
       retries: 3
+      start_period: 2s
     networks:
       - web
     restart: unless-stopped
