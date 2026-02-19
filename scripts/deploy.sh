@@ -20,12 +20,6 @@ echo "🚀 Deploying homelab to ${SERVER_USER}@${SERVER_HOST}:${DEPLOY_PATH}"
 echo "📦 Creating deployment archive..."
 cd "$REPO_ROOT"
 
-# Ensure blog is generated
-echo "Generating blog HTML..."
-pushd blog > /dev/null
-../venv/bin/python3 ./generate_blog.py
-popd > /dev/null
-
 # Convert .gitignore to tar exclude format and add extra deployment exclusions
 EXCLUDE_FILE=$(mktemp)
 trap "rm -f $EXCLUDE_FILE" EXIT

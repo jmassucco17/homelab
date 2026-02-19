@@ -5,7 +5,7 @@ echo "Shutting down containers..."
 sudo docker compose down
 
 echo "Updating container images..."
-sudo docker compose build homepage
+sudo docker compose build blog
 
 echo "Starting up containers..."
 sudo docker compose up -d

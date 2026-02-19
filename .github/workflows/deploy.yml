@@ -1,0 +1,64 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+
+      - name: Write networking/.env from secret
+        run: printf '%s' "${{ secrets.NETWORKING_ENV }}" > networking/.env
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.SERVER_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Create deployment archive
+        run: |
+          grep -v '^#' .gitignore | grep -v '^$' > /tmp/exclude_list
+          printf '.git/\n*.tar.gz\n*.tar\n' >> /tmp/exclude_list
+          tar --exclude-from=/tmp/exclude_list -cf /tmp/homelab-deploy.tar .
+          tar --append -f /tmp/homelab-deploy.tar networking/.env
+          gzip /tmp/homelab-deploy.tar
+
+      - name: Upload archive to server
+        run: |
+          scp -i ~/.ssh/deploy_key \
+            -o StrictHostKeyChecking=no \
+            /tmp/homelab-deploy.tar.gz \
+            "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/homelab-deploy.tar.gz"
+
+      - name: Extract and start services on server
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o StrictHostKeyChecking=no \
+            "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" \
+            'bash -s' << 'REMOTE'
+          set -euo pipefail
+          mkdir -p /opt/homelab
+          cd /opt/homelab
+          echo "Extracting deployment archive..."
+          tar -xzf /tmp/homelab-deploy.tar.gz
+          touch networking/acme.json
+          chmod 600 networking/acme.json
+          docker network create web 2>/dev/null || true
+          echo "Starting services..."
+          ./scripts/start_all.sh
+          rm -f /tmp/homelab-deploy.tar.gz
+          echo "Deployment complete."
+          REMOTE
