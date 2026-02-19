@@ -3,6 +3,9 @@ name: Linting
 on:
   pull_request:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   no-xxx-comments:
