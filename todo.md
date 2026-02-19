@@ -6,7 +6,7 @@
 - Replace travel-site with travel-maps, a site designed for creating annotated travel maps showing the destinations with brief descriptions / estimated visit dates
 - Change blog so that we don't need to generate HTML for each post, and instead just need the raw markdown
 - New project (TBD) that requires creating an iOS app
-- Setup nice colored logging for python
+- Setup nice colored logging for Python
 
 ## Deployment improvements:
 
