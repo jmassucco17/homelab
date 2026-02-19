@@ -1,0 +1,37 @@
+name: Unit testing
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Check for changed Python files
+        id: changes
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            git ls-files | grep -qE '\.py$' \
+              && echo "python=true" >> $GITHUB_OUTPUT \
+              || echo "python=false" >> $GITHUB_OUTPUT
+          else
+            git diff --name-only ${{ github.event.pull_request.base.sha }}...HEAD \
+              | grep -qE '\.py$' \
+              && echo "python=true" >> $GITHUB_OUTPUT \
+              || echo "python=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Set up Python
+        if: steps.changes.outputs.python == 'true'
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        if: steps.changes.outputs.python == 'true'
+        run: pip install -r requirements.txt
+      - name: Run unit tests
+        if: steps.changes.outputs.python == 'true'
+        run: python -m unittest discover -s . -p "*_test.py" -v

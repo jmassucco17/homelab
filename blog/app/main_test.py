@@ -1,64 +1,66 @@
 """Unit tests for main.py FastAPI application."""
 
+import unittest
+
 import fastapi.testclient
 
 from blog.app import main
 
 
-class TestApp:
+class TestApp(unittest.TestCase):
     """Tests for FastAPI application."""
 
-    def setup_method(self) -> None:
+    def setUp(self) -> None:
         """Set up test client."""
         self.client = fastapi.testclient.TestClient(main.app)
 
     def test_health_endpoint(self) -> None:
         """Test health check endpoint."""
         response = self.client.get('/health')
-        assert response.status_code == 200
-        assert response.json() == {'status': 'healthy'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'status': 'healthy'})
 
     def test_health_endpoint_head(self) -> None:
         """Test health check endpoint with HEAD method."""
         response = self.client.head('/health')
-        assert response.status_code == 200
+        self.assertEqual(response.status_code, 200)
 
     def test_index_endpoint(self) -> None:
         """Test index page endpoint."""
         response = self.client.get('/')
-        assert response.status_code == 200
-        assert 'text/html' in response.headers['content-type']
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('text/html', response.headers['content-type'])
         # Should contain some HTML
-        assert '<html' in response.text.lower()
+        self.assertIn('<html', response.text.lower())
 
     def test_post_endpoint_valid_slug(self) -> None:
         """Test individual post endpoint with valid slug."""
         # First get the list of posts to find a valid slug
         response = self.client.get('/')
-        assert response.status_code == 200
-        
+        self.assertEqual(response.status_code, 200)
+
         # Try to get the first post - we know from the repo there are posts
         # Let's use a known slug from the sample data
         response = self.client.get('/posts/starting-a-homelab')
-        assert response.status_code == 200
-        assert 'text/html' in response.headers['content-type']
-        assert 'Starting a Homelab' in response.text
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('text/html', response.headers['content-type'])
+        self.assertIn('Starting a Homelab', response.text)
 
     def test_post_endpoint_invalid_slug(self) -> None:
         """Test individual post endpoint with invalid slug."""
         response = self.client.get('/posts/nonexistent-post')
-        assert response.status_code == 404
-        assert 'Post not found' in response.json()['detail']
+        self.assertEqual(response.status_code, 404)
+        self.assertIn('Post not found', response.json()['detail'])
 
     def test_rss_endpoint(self) -> None:
         """Test RSS feed endpoint."""
         response = self.client.get('/rss.xml')
-        assert response.status_code == 200
-        assert response.headers['content-type'] == 'application/rss+xml'
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers['content-type'], 'application/rss+xml')
         # Should contain RSS/XML structure
-        assert '<rss' in response.text
-        assert '<channel>' in response.text
-        assert '<title>' in response.text
+        self.assertIn('<rss', response.text)
+        self.assertIn('<channel>', response.text)
+        self.assertIn('<title>', response.text)
 
     def test_static_files_mounted(self) -> None:
         """Test that static files are accessible."""
@@ -67,4 +69,8 @@ class TestApp:
         # by trying to access a likely non-existent file and getting 404
         response = self.client.get('/assets/nonexistent.css')
         # Should get 404 from the static files handler, not 404 from FastAPI router
-        assert response.status_code == 404
+        self.assertEqual(response.status_code, 404)
+
+
+if __name__ == '__main__':
+    unittest.main()

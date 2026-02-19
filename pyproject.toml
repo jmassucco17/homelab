@@ -24,9 +24,3 @@ select = ["I", "E", "F", "UP", "B"]
 unfixable = ["F401"]
 # Ignore B008
 ignore = ["B008"]
-
-[tool.pytest.ini_options]
-testpaths = ["blog/tests"]
-pythonpath = ["."]
-asyncio_mode = "auto"
-asyncio_default_fixture_loop_scope = "function"
