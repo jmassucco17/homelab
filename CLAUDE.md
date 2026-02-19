@@ -36,8 +36,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `scripts/start_all.sh` - Deploy locally for testing
 - `ruff format; ruff check` - Lint python code
 
-# XXX add commit to run pre-commit hooks
-
 ### Testing
 
 - For Python: Use pytest with `pytest travel-site/app/database_test.py` or similar paths
