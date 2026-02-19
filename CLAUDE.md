@@ -34,3 +34,4 @@ Run `bootstrap.sh` to fully initialize a new environment, including installing a
 - Include comments for operations that need additional explanation
 - Use the `unittest` module when writing tests, but run them with `pytest` in command line
 - Tests should always be housed in the same directory as the file they test, and be named `<module>_test.py` (e.g. test for `main.py` should be `main_test.py`)
+- Whenever you create a new Python file, you must also create an associated `<module>_test.py` in the same directory
