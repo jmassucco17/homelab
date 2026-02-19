@@ -3,9 +3,26 @@ name: Deploy
 on:
   workflow_dispatch:
     inputs:
-      services:
-        description: 'Services to deploy (comma-separated, or "all")'
-        default: 'all'
+      networking:
+        description: 'Deploy networking'
+        type: boolean
+        default: true
+      shared-assets:
+        description: 'Deploy shared-assets'
+        type: boolean
+        default: true
+      homepage:
+        description: 'Deploy homepage'
+        type: boolean
+        default: true
+      blog:
+        description: 'Deploy blog'
+        type: boolean
+        default: true
+      travel-site:
+        description: 'Deploy travel-site'
+        type: boolean
+        default: true
   push:
     branches:
       - main
@@ -50,12 +67,17 @@ jobs:
 
       - name: Extract and start services on server
         env:
-          SERVICES_INPUT: ${{ github.event_name == 'push' && 'all' || inputs.services }}
+          # On push, deploy all services; on workflow_dispatch, deploy only checked ones
+          DEPLOY_NETWORKING: ${{ github.event_name == 'push' || inputs.networking }}
+          DEPLOY_SHARED_ASSETS: ${{ github.event_name == 'push' || inputs['shared-assets'] }}
+          DEPLOY_HOMEPAGE: ${{ github.event_name == 'push' || inputs.homepage }}
+          DEPLOY_BLOG: ${{ github.event_name == 'push' || inputs.blog }}
+          DEPLOY_TRAVEL_SITE: ${{ github.event_name == 'push' || inputs['travel-site'] }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             -o StrictHostKeyChecking=no \
             "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" \
-            "SERVICES_INPUT='${SERVICES_INPUT}' bash -s" << 'REMOTE'
+            "DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' DEPLOY_SHARED_ASSETS='${DEPLOY_SHARED_ASSETS}' DEPLOY_HOMEPAGE='${DEPLOY_HOMEPAGE}' DEPLOY_BLOG='${DEPLOY_BLOG}' DEPLOY_TRAVEL_SITE='${DEPLOY_TRAVEL_SITE}' bash -s" << 'REMOTE'
           set -euo pipefail
           mkdir -p /opt/homelab
           cd /opt/homelab
@@ -65,27 +87,26 @@ jobs:
           chmod 600 networking/acme.json
           docker network create web 2>/dev/null || true
 
-          # Resolve which services to deploy
-          ALL_SERVICES="networking shared-assets homepage blog travel-site"
-          if [ "${SERVICES_INPUT:-all}" = "all" ]; then
-            SERVICES="$ALL_SERVICES"
-          else
-            SERVICES=$(echo "$SERVICES_INPUT" | tr ',' ' ')
-            for svc in $SERVICES; do
-              if ! echo "$ALL_SERVICES" | grep -qw "$svc"; then
-                echo "ERROR: Unknown service '$svc'. Valid services: $ALL_SERVICES"
-                exit 1
-              fi
-            done
-          fi
+          # Deploy each service if its flag is true
+          deploy_if_enabled() {
+            local svc="$1"
+            local flag="$2"
+            if [ "$flag" = "true" ]; then
+              echo "--- Starting $svc ---"
+              cd /opt/homelab/$svc
+              ./start.sh
+              cd /opt/homelab
+            else
+              echo "--- Skipping $svc ---"
+            fi
+          }
 
-          echo "Deploying services: $SERVICES"
-          for svc in $SERVICES; do
-            echo "--- Starting $svc ---"
-            cd /opt/homelab/$svc
-            ./start.sh
-            cd /opt/homelab
-          done
+          # Services deployed in dependency order
+          deploy_if_enabled networking    "$DEPLOY_NETWORKING"
+          deploy_if_enabled shared-assets "$DEPLOY_SHARED_ASSETS"
+          deploy_if_enabled homepage      "$DEPLOY_HOMEPAGE"
+          deploy_if_enabled blog          "$DEPLOY_BLOG"
+          deploy_if_enabled travel-site   "$DEPLOY_TRAVEL_SITE"
 
           rm -f /tmp/homelab-deploy.tar.gz
           echo "Deployment complete."
