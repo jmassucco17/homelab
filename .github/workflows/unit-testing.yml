@@ -3,6 +3,9 @@ name: Unit testing
 on:
   pull_request:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   pytest:
