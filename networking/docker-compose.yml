@@ -132,11 +132,6 @@ services:
       - traefik.http.routers.whoami.tls.certresolver=cloudflare
       # Use rate-limiting and OAuth
       - traefik.http.routers.whoami.middlewares=oauth-auth,ratelimit
-    healthcheck:
-      test: ['CMD', 'wget', '-qO-', 'http://localhost/']
-      interval: 10s
-      timeout: 5s
-      retries: 3
     restart: unless-stopped
 
   # Automatically updates public IP DNS in Cloudflare
