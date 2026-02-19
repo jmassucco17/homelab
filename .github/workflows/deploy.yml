@@ -17,6 +17,7 @@ jobs:
         with:
           oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          tags: tag:github
 
       - name: Write networking/.env from secret
         run: printf '%s' "${{ secrets.NETWORKING_ENV }}" > networking/.env
