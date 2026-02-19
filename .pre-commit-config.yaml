@@ -16,8 +16,9 @@ repos:
         language: system
         files: \.(html|htm)$
 
+  # NOTE: ruff version must stay in sync with requirements.txt
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.11.8
+    rev: v0.12.9
     hooks:
       # Run the linter.
       - id: ruff
@@ -25,6 +26,7 @@ repos:
       # Run the formatter.
       - id: ruff-format
 
+  # NOTE: pyright version must stay in sync with package.json
   - repo: https://github.com/RobertCraigie/pyright-python
     rev: v1.1.400
     hooks:

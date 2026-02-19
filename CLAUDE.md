@@ -6,13 +6,13 @@ This file provides guidance to Claude Code (and GitHub Copilot) agents interacti
 
 This repo is primarily focused on deploying a public personal website at `jamesmassucco.com` and its sub-domains. The `networking/` directory contains core technologies (like `traefik` reverse proxy, oauth, and Cloudflare DDNS configuration) and other top-level directories contain containerized "services" which handle various pages within the site.
 
-When creating a new module (i.e. a new page or new sub-site), make a new top-level folder and populate it with a `docker-compose.yml` and `start.sh`. Make sure to update `scripts/start_all.sh` to reference the new `start.sh`, and update `networking/` as necessary to populate a top-level domain for the new module
+When creating a new module (i.e. a new page or new sub-site), make a new top-level folder and populate it with a `docker-compose.yml` and `start.sh`. Make sure to update `scripts/start_all.sh` to reference the new `start.sh`, update `networking/` to create a new sub-domain, and update `dependabot.yml` to ensure we track updates for the new docker image
 
 ## Details
 
 ### Setup
 
-Run `bootstrap.sh` to fully initialize a new environment, including installing all necessary packages.
+Run `bootstrap.sh` to fully initialize a new environment, including installing all necessary packages. When adding a new package, add it to `requirements.txt` or `package.json` and then run `bootstrap.sh` to install
 
 ### Making changes
 

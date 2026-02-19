@@ -19,7 +19,7 @@
     "prettier-plugin-jinja-template": "^2.1.0",
     "stylelint": "^16.19.1",
     "stylelint-config-standard": "^38.0.0",
-    "pyright": "^1.1.361"
+    "pyright": "^1.1.400"
   },
   "scripts": {
     "lint:css": "stylelint '**/*.css'",

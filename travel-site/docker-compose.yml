@@ -1,7 +1,10 @@
 services:
   travel-site:
     container_name: travel-site
-    build: .
+    build:
+      # Change to top-level for access to requirements.txt
+      context: ..
+      dockerfile: travel-site/Dockerfile
     environment:
       - DATA_DIR=/data
     ports:
