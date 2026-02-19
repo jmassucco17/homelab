@@ -28,6 +28,16 @@ Interactive web application for creating and viewing custom travel maps with mul
 # Access at http://localhost:8002
 ```
 
+## Testing
+
+```bash
+# Run tests from the travel-maps directory
+cd travel-maps
+python -m pytest tests/ -v
+```
+
+See `tests/README.md` for more details on the test suite.
+
 ## API Endpoints
 
 - `GET /` - List all maps
