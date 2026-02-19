@@ -49,6 +49,7 @@ services:
 
 volumes:
   data-volume:
+    name: travel-site_data-volume  # Preserve existing database from travel-site
 
 networks:
   web:
