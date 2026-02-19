@@ -7,7 +7,7 @@ import frontmatter  # type: ignore[reportMissingTypeStubs]
 import markdown
 import pydantic
 
-BLOG_POSTS_DIR = pathlib.Path(__file__).resolve().parent.parent / 'blog_posts'
+POSTS_DIR = pathlib.Path(__file__).resolve().parent.parent / 'posts'
 
 
 class BlogPostMetadata(pydantic.BaseModel):
@@ -59,11 +59,11 @@ class BlogPost:
 
 
 def load_posts() -> list[BlogPost]:
-    """Load all blog posts from the blog_posts directory, sorted newest first.
+    """Load all blog posts from the posts directory, sorted newest first.
 
     Raises ValueError if duplicate slugs are detected.
     """
-    posts = [BlogPost(path) for path in BLOG_POSTS_DIR.glob('*.md')]
+    posts = [BlogPost(path) for path in POSTS_DIR.glob('*.md')]
     posts = sorted(posts, key=lambda p: p.metadata.dt, reverse=True)
 
     slugs = [p.metadata.slug for p in posts]
