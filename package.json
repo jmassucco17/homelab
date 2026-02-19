@@ -15,11 +15,16 @@
   },
   "homepage": "https://github.com/jmassucco17/homelab#readme",
   "devDependencies": {
+    "autoprefixer": "^10.4.24",
+    "postcss": "^8.5.6",
+    "postcss-cli": "^11.0.1",
+    "postcss-import": "^16.1.1",
+    "postcss-nesting": "^14.0.0",
     "prettier": "^3.8.1",
     "prettier-plugin-jinja-template": "^2.1.0",
+    "pyright": "^1.1.408",
     "stylelint": "^17.3.0",
-    "stylelint-config-standard": "^40.0.0",
-    "pyright": "^1.1.408"
+    "stylelint-config-standard": "^40.0.0"
   },
   "scripts": {
     "lint:css": "stylelint '**/*.css'",
