@@ -218,3 +218,53 @@ jobs:
         if: always()
         with:
           service: shared-assets
+
+  games:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Start games service
+        uses: ./.github/actions/start-service
+        with:
+          service: games
+
+      - name: Test health endpoint
+        run: |
+          docker exec games python3 -c '
+          import json, urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/health")
+          assert json.loads(resp.read())["status"] == "healthy"
+          '
+
+      - name: Test index endpoint returns HTML
+        run: |
+          docker exec games python3 -c '
+          import urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/")
+          assert b"<html" in resp.read().lower()
+          '
+
+      - name: Test snake endpoint returns HTML
+        run: |
+          docker exec games python3 -c '
+          import urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/snake")
+          assert b"<html" in resp.read().lower()
+          '
+
+      - name: Test snake.js is served
+        run: |
+          docker exec games python3 -c '
+          import urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/static/snake/snake.js")
+          assert b"requestAnimationFrame" in resp.read()
+          '
+
+      - name: Stop games service
+        uses: ./.github/actions/stop-service
+        if: always()
+        with:
+          service: games

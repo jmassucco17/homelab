@@ -1,0 +1,11 @@
+# Local development override for games service.
+# Merges with docker-compose.yml to add HTTP routing and direct port access.
+# Used by scripts/start_local.sh via: docker compose -f docker-compose.yml -f docker-compose.local.yml
+services:
+  games:
+    ports:
+      - '8004:8000'
+    labels:
+      - 'traefik.http.routers.games-local.rule=Host(`games.jamesmassucco.com`)'
+      - 'traefik.http.routers.games-local.entrypoints=web'
+      - 'traefik.http.services.games.loadbalancer.server.port=8000'
