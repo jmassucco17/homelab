@@ -22,6 +22,20 @@ The plan is structured so that most phases can be executed in **parallel by inde
 | Container | Docker + docker-compose | Consistent with all other services |
 | Routing | Traefik (existing) | Add `games.jamesmassucco.com` label |
 
+### Mobile / iOS compatibility
+
+All chosen APIs are supported on iOS Safari and iOS Chrome (note: iOS Chrome uses the same WKWebView engine as Safari due to Apple App Store rules, so Safari compatibility implies iOS Chrome compatibility):
+
+- **HTML5 Canvas** — fully supported on iOS Safari 9+ / Chrome for iOS
+- **WebSockets** — fully supported on iOS Safari 8+ / Chrome for iOS
+- **`requestAnimationFrame`** — fully supported on iOS Safari 6+ / Chrome for iOS
+- **Touch events** (`touchstart`, `touchmove`, `touchend`) — the standard mechanism for touch input on iOS; keyboard controls are supplemented with on-screen touch controls for every game
+- **`localStorage`** — fully supported for high-score persistence on iOS Safari (private browsing mode will limit storage but not break the game)
+- **Viewport meta tag** (`<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">`) — required in every template to prevent double-tap zoom and ensure correct canvas sizing on high-DPI Retina displays
+- **`devicePixelRatio` scaling** — canvas drawing surfaces must be scaled by `window.devicePixelRatio` (typically 2–3× on iPhone) to avoid blurry rendering; CSS size and canvas pixel size must be set independently
+
+One known iOS Safari caveat: **WebSockets over HTTP are blocked**; connections must use `wss://` (HTTPS). Since the site already runs behind Traefik with Let's Encrypt certificates, this is already satisfied.
+
 ---
 
 ## Phase 0 — Infrastructure (parallel with all other phases)
@@ -74,6 +88,7 @@ No other phase can be deployed until this is done, but development of game logic
 - [ ] Physics: ball velocity, bouncing off walls and paddles, angle variation based on hit position
 - [ ] Single-player mode: right paddle controlled by simple AI (tracks ball Y position with a configurable speed cap)
 - [ ] Two-player local mode: left paddle = W/S keys, right paddle = Up/Down arrows
+- [ ] Mobile two-player mode: left paddle = left-side touch drag, right paddle = right-side touch drag (two-thumb play)
 - [ ] Game-over at first player to reach 7 points; rematch button
 
 ### 2b — UI/template (`games/app/templates/pong.html`)
@@ -191,7 +206,9 @@ This phase produces the shared data models and API contracts that all other Cata
   - Highlight valid placement vertices/edges (fed from server's legal actions)
   - Animate resource collection on dice roll
   - Show robber piece on active hex
-  - Responsive sizing; pan/zoom on mobile
+  - Responsive sizing; scale canvas by `window.devicePixelRatio` for sharp Retina rendering on iPhone
+  - Touch event handling for tile/vertex/edge selection (`touchstart` / `touchend`); tap targets sized ≥44×44 px per Apple HIG
+  - Pinch-to-zoom and pan on mobile for the full board view
 - [ ] **UI components** (`games/app/static/catan/ui.js`)
   - Player hand panel (resource counts, dev cards)
   - Build menu (road, settlement, city, dev card) with cost display; grayed out when insufficient resources
