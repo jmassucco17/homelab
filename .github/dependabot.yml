@@ -1,86 +1,98 @@
 version: 2
 updates:
   # Python packages (requirements.txt)
-  - package-ecosystem: "pip"
-    directory: "/"
+  - package-ecosystem: 'pip'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: 'weekly'
+      day: 'monday'
     groups:
       python-packages:
-        patterns: ["*"]
+        patterns: ['*']
 
   # npm packages (package.json)
-  - package-ecosystem: "npm"
-    directory: "/"
+  - package-ecosystem: 'npm'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: 'weekly'
+      day: 'monday'
     groups:
       npm-packages:
-        patterns: ["*"]
+        patterns: ['*']
 
   # GitHub Actions
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: 'github-actions'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: 'weekly'
+      day: 'monday'
     groups:
       github-actions:
-        patterns: ["*"]
+        patterns: ['*']
 
   # Docker images - one entry per directory containing a Dockerfile or docker-compose.yml
-  - package-ecosystem: "docker"
-    directory: "/networking"
+  - package-ecosystem: 'docker'
+    directory: '/networking'
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: 'weekly'
+      day: 'monday'
     groups:
       docker-images:
-        patterns: ["*"]
+        patterns: ['*']
 
-  - package-ecosystem: "docker"
-    directory: "/travel-site"
+  - package-ecosystem: 'docker'
+    directory: '/travel-site'
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: 'weekly'
+      day: 'monday'
     groups:
       docker-images:
-        patterns: ["*"]
+        patterns: ['*']
+    # Hold at Python 3.12
+    ignore:
+      - dependency-name: 'python'
+        versions: ['>=3.13']
 
-  - package-ecosystem: "docker"
-    directory: "/homepage"
+  - package-ecosystem: 'docker'
+    directory: '/homepage'
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: 'weekly'
+      day: 'monday'
     groups:
       docker-images:
-        patterns: ["*"]
+        patterns: ['*']
 
-  - package-ecosystem: "docker"
-    directory: "/blog"
+  - package-ecosystem: 'docker'
+    directory: '/blog'
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: 'weekly'
+      day: 'monday'
     groups:
       docker-images:
-        patterns: ["*"]
+        patterns: ['*']
+    # Hold at Python 3.12
+    ignore:
+      - dependency-name: 'python'
+        versions: ['>=3.13']
 
-  - package-ecosystem: "docker"
-    directory: "/games"
+  - package-ecosystem: 'docker'
+    directory: '/games'
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: 'weekly'
+      day: 'monday'
     groups:
       docker-images:
-        patterns: ["*"]
+        patterns: ['*']
+    # Hold at Python 3.12
+    ignore:
+      - dependency-name: 'python'
+        versions: ['>=3.13']
 
-  - package-ecosystem: "docker"
-    directory: "/shared-assets"
+  - package-ecosystem: 'docker'
+    directory: '/shared-assets'
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: 'weekly'
+      day: 'monday'
     groups:
       docker-images:
-        patterns: ["*"]
+        patterns: ['*']
