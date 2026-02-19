@@ -19,6 +19,12 @@ Other AI-focused improvements:
 - Make Claude Code commit regularly during interactive sessions so that it's easy to roll back
 - Teach Claude how to add packages (both python and npm)
 
+Misc. Changes/ Improvements:
+
+- Apply more rigid versioning in requirements.txt and other places
+- Consolidate places where versions are specified to avoid conflicts
+- Look for other opportunities to consolidate towards single sources of truth (e.g. pr-commit-config.yaml vs .github workflow yamls)
+
 Bug fixes:
 
 - Tailscale and NordVPN don't play nice together; fix it
