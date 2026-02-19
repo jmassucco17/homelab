@@ -5,7 +5,7 @@
 This directory will host a games sub-site at `games.jamesmassucco.com`. The goals are:
 
 1. **Warm-up games** – Build Snake and Pong to establish the tech stack and deployment pipeline.
-2. **Main goal** – Build a Settlers of Catan emulator supporting two human players and computer opponents.
+2. **Main goal** – Build a Settlers of Catan emulator that two human players can play together, and that also supports computer (AI) opponents at multiple difficulty levels.
 
 The plan is structured so that most phases can be executed in **parallel by independent agents**. Dependencies between workstreams are called out explicitly.
 
