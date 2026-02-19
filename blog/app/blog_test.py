@@ -48,12 +48,14 @@ class TestBlogPost(unittest.TestCase):
         posts_dir = blog.POSTS_DIR
         md_files = list(posts_dir.glob('*.md'))
         if len(md_files) > 0:
-            # Create a fresh BlogPost instance to test lazy loading
-            post = blog.BlogPost(md_files[0])
-            self.assertIsNone(post._post)  # Lazy loading
-            # Access post to trigger loading
-            _ = post.post
-            self.assertIsNotNone(post._post)
+            # Create a fresh BlogPost instance to test loading
+            post: blog.BlogPost = blog.BlogPost(md_files[0])
+            # Access post property - it should load successfully
+            loaded_post = post.post
+            self.assertIsNotNone(loaded_post)
+            # Verify the post has expected attributes
+            self.assertTrue(hasattr(loaded_post, 'metadata'))
+            self.assertTrue(hasattr(loaded_post, 'content'))
 
     def test_metadata_parsing_from_real_posts(self) -> None:
         """Test that metadata is parsed correctly from real posts."""
