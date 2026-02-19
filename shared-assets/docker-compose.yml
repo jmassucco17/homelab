@@ -13,7 +13,8 @@ services:
       # Use rate-limiting
       - 'traefik.http.routers.shared-assets.middlewares=ratelimit'
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      # Use --spider so any HTTP response (including 404) is treated as healthy
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
       interval: 10s
       timeout: 5s
       retries: 3
