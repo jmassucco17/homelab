@@ -19,62 +19,57 @@ jobs:
       - name: Check for XXX comments
         run: |
           git diff -z --name-only ${{ github.event.pull_request.base.sha }}...HEAD | xargs -0 -r python scripts/check_xxx_comments.py
-  pyright-changes:
-    runs-on: ubuntu-latest
-    outputs:
-      python: ${{ steps.filter.outputs.python }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            python:
-              - '**.py'
-              - 'pyrightconfig.json'
   pyright:
-    needs: pyright-changes
-    if: needs.pyright-changes.outputs.python == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check for changed Python files
+        id: changes
+        run: |
+          git diff --name-only ${{ github.event.pull_request.base.sha }}...HEAD \
+            | grep -qE '(\.py$|pyrightconfig\.json$)' \
+            && echo "python=true" >> $GITHUB_OUTPUT \
+            || echo "python=false" >> $GITHUB_OUTPUT
       - name: Set up Python
+        if: steps.changes.outputs.python == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - name: Install dependencies
+        if: steps.changes.outputs.python == 'true'
         run: |
           python -m venv venv
           venv/bin/pip install -r requirements.txt
           venv/bin/pip install pyright
       - name: Run Pyright
+        if: steps.changes.outputs.python == 'true'
         run: venv/bin/pyright
-  ruff-changes:
-    runs-on: ubuntu-latest
-    outputs:
-      python: ${{ steps.filter.outputs.python }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            python:
-              - '**.py'
-              - 'pyproject.toml'
   ruff:
-    needs: ruff-changes
-    if: needs.ruff-changes.outputs.python == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check for changed Python files
+        id: changes
+        run: |
+          git diff --name-only ${{ github.event.pull_request.base.sha }}...HEAD \
+            | grep -qE '(\.py$|pyproject\.toml$)' \
+            && echo "python=true" >> $GITHUB_OUTPUT \
+            || echo "python=false" >> $GITHUB_OUTPUT
       - name: Set up Python
+        if: steps.changes.outputs.python == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - name: Install Ruff
+        if: steps.changes.outputs.python == 'true'
         run: pip install ruff
       - name: Run Ruff linter
+        if: steps.changes.outputs.python == 'true'
         run: ruff check
       - name: Run Ruff formatter
+        if: steps.changes.outputs.python == 'true'
         run: ruff format --check
