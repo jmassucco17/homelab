@@ -2,6 +2,10 @@ name: Deploy
 
 on:
   workflow_dispatch:
+    inputs:
+      services:
+        description: 'Services to deploy (comma-separated, or "all")'
+        default: 'all'
   push:
     branches:
       - main
@@ -45,11 +49,13 @@ jobs:
             "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/homelab-deploy.tar.gz"
 
       - name: Extract and start services on server
+        env:
+          SERVICES_INPUT: ${{ github.event_name == 'push' && 'all' || inputs.services }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             -o StrictHostKeyChecking=no \
             "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" \
-            'bash -s' << 'REMOTE'
+            "SERVICES_INPUT='${SERVICES_INPUT}' bash -s" << 'REMOTE'
           set -euo pipefail
           mkdir -p /opt/homelab
           cd /opt/homelab
@@ -58,8 +64,29 @@ jobs:
           touch networking/acme.json
           chmod 600 networking/acme.json
           docker network create web 2>/dev/null || true
-          echo "Starting services..."
-          ./scripts/start_all.sh
+
+          # Resolve which services to deploy
+          ALL_SERVICES="networking shared-assets homepage blog travel-site"
+          if [ "${SERVICES_INPUT:-all}" = "all" ]; then
+            SERVICES="$ALL_SERVICES"
+          else
+            SERVICES=$(echo "$SERVICES_INPUT" | tr ',' ' ')
+            for svc in $SERVICES; do
+              if ! echo "$ALL_SERVICES" | grep -qw "$svc"; then
+                echo "ERROR: Unknown service '$svc'. Valid services: $ALL_SERVICES"
+                exit 1
+              fi
+            done
+          fi
+
+          echo "Deploying services: $SERVICES"
+          for svc in $SERVICES; do
+            echo "--- Starting $svc ---"
+            cd /opt/homelab/$svc
+            ./start.sh
+            cd /opt/homelab
+          done
+
           rm -f /tmp/homelab-deploy.tar.gz
           echo "Deployment complete."
           REMOTE
