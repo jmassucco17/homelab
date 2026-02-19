@@ -39,7 +39,17 @@ class LocationReorder(BaseModel):
 async def index(request: Request, session: Session = Depends(get_session)):
     """Display list of all maps."""
     maps = services.get_all_maps(session)
-    return templates.TemplateResponse("index.html.jinja2", {"request": request, "maps": maps})
+    maps_list = [
+        {
+            "id": m.id,
+            "name": m.name,
+            "description": m.description,
+            "updated_at": m.updated_at,
+            "locations": m.locations,
+        }
+        for m in maps
+    ]
+    return templates.TemplateResponse("index.html.jinja2", {"request": request, "maps": maps_list})
 
 
 @router.get("/maps/new", response_class=HTMLResponse)
@@ -55,7 +65,25 @@ async def view_map(request: Request, map_id: int, session: Session = Depends(get
     if not map_obj:
         raise HTTPException(status_code=404, detail="Map not found")
 
-    return templates.TemplateResponse("map-view.html.jinja2", {"request": request, "map": map_obj})
+    map_dict = {
+        "id": map_obj.id,
+        "name": map_obj.name,
+        "description": map_obj.description,
+        "locations": [
+            {
+                "id": loc.id,
+                "name": loc.name,
+                "latitude": loc.latitude,
+                "longitude": loc.longitude,
+                "nickname": loc.nickname,
+                "description": loc.description,
+                "order_index": loc.order_index,
+            }
+            for loc in map_obj.locations
+        ],
+    }
+
+    return templates.TemplateResponse("map-view.html.jinja2", {"request": request, "map": map_dict})
 
 
 @router.get("/maps/{map_id}/edit", response_class=HTMLResponse)
@@ -65,7 +93,25 @@ async def edit_map_form(request: Request, map_id: int, session: Session = Depend
     if not map_obj:
         raise HTTPException(status_code=404, detail="Map not found")
 
-    return templates.TemplateResponse("map-edit.html.jinja2", {"request": request, "map": map_obj})
+    map_dict = {
+        "id": map_obj.id,
+        "name": map_obj.name,
+        "description": map_obj.description,
+        "locations": [
+            {
+                "id": loc.id,
+                "name": loc.name,
+                "latitude": loc.latitude,
+                "longitude": loc.longitude,
+                "nickname": loc.nickname,
+                "description": loc.description,
+                "order_index": loc.order_index,
+            }
+            for loc in map_obj.locations
+        ],
+    }
+
+    return templates.TemplateResponse("map-edit.html.jinja2", {"request": request, "map": map_dict})
 
 
 @router.post("/api/maps")
