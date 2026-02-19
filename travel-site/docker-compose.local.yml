@@ -1,0 +1,10 @@
+# Local development override for travel-site service.
+# Merges with docker-compose.yml to add HTTP routing.
+# Used by scripts/start_local.sh via: docker compose -f docker-compose.yml -f docker-compose.local.yml
+# Note: port 8000 is already exposed by the base docker-compose.yml.
+services:
+  travel-site:
+    labels:
+      - 'traefik.http.routers.travel-local.rule=Host(`travel.jamesmassucco.com`)'
+      - 'traefik.http.routers.travel-local.entrypoints=web'
+      - 'traefik.http.services.travel-site.loadbalancer.server.port=8000'
