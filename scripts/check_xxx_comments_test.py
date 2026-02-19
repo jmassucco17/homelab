@@ -12,6 +12,10 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
 from check_xxx_comments import check_file_for_xxx, main  # noqa: E402
 
+# Construct the marker string dynamically to avoid triggering the XXX comment checker
+# on this file itself.
+_XXX = 'XX' + 'X'
+
 
 class TestCheckFileForXxx(unittest.TestCase):
     """Tests for check_file_for_xxx function."""
@@ -25,7 +29,7 @@ class TestCheckFileForXxx(unittest.TestCase):
             return pathlib.Path(f.name)
 
     def test_no_xxx_returns_empty(self) -> None:
-        """Test that a file without XXX returns an empty list."""
+        """Test that a file without the marker returns an empty list."""
         path = self._write_temp_file('# A normal comment\nprint("hello")\n')
         try:
             result = check_file_for_xxx(path)
@@ -34,19 +38,19 @@ class TestCheckFileForXxx(unittest.TestCase):
             path.unlink()
 
     def test_xxx_in_comment_detected(self) -> None:
-        """Test that an XXX comment in a file is detected."""
-        path = self._write_temp_file('# XXX: fix this later\nprint("hello")\n')
+        """Test that a marker comment in a file is detected."""
+        path = self._write_temp_file(f'# {_XXX}: fix this later\nprint("hello")\n')
         try:
             result = check_file_for_xxx(path)
             self.assertEqual(len(result), 1)
             self.assertEqual(result[0][0], 1)
-            self.assertIn('XXX', result[0][1])
+            self.assertIn(_XXX, result[0][1])
         finally:
             path.unlink()
 
     def test_xxx_with_space_detected(self) -> None:
-        """Test that '# XXX ' pattern is detected."""
-        path = self._write_temp_file('# XXX fix this\nprint("hello")\n')
+        """Test that the '# MARKER ' pattern is detected."""
+        path = self._write_temp_file(f'# {_XXX} fix this\nprint("hello")\n')
         try:
             result = check_file_for_xxx(path)
             self.assertEqual(len(result), 1)
@@ -54,8 +58,8 @@ class TestCheckFileForXxx(unittest.TestCase):
             path.unlink()
 
     def test_multiple_xxx_detected(self) -> None:
-        """Test that multiple XXX comments across lines are all detected."""
-        content = '# XXX: first issue\nok = True\n# XXX: second issue\n'
+        """Test that multiple marker comments across lines are all detected."""
+        content = f'# {_XXX}: first issue\nok = True\n# {_XXX}: second issue\n'
         path = self._write_temp_file(content)
         try:
             result = check_file_for_xxx(path)
@@ -85,7 +89,7 @@ class TestCheckFileForXxx(unittest.TestCase):
 
     def test_line_number_reported_correctly(self) -> None:
         """Test that the correct line number is reported."""
-        content = 'line1\nline2\n# XXX: issue here\nline4\n'
+        content = f'line1\nline2\n# {_XXX}: issue here\nline4\n'
         path = self._write_temp_file(content)
         try:
             result = check_file_for_xxx(path)
@@ -125,8 +129,8 @@ class TestMainCommand(unittest.TestCase):
             path.unlink()
 
     def test_xxx_file_exits_one(self) -> None:
-        """Test that a file with XXX exits with code 1."""
-        path = self._write_temp_file('# XXX: fix me\n')
+        """Test that a file with the marker exits with code 1."""
+        path = self._write_temp_file(f'# {_XXX}: fix me\n')
         try:
             result = self.runner.invoke(main, [str(path)])
             self.assertEqual(result.exit_code, 1)
@@ -135,8 +139,8 @@ class TestMainCommand(unittest.TestCase):
             path.unlink()
 
     def test_warn_only_exits_zero_even_with_xxx(self) -> None:
-        """Test that --warn-only exits with code 0 even when XXX is found."""
-        path = self._write_temp_file('# XXX: fix me\n')
+        """Test that --warn-only exits with code 0 even when the marker is found."""
+        path = self._write_temp_file(f'# {_XXX}: fix me\n')
         try:
             result = self.runner.invoke(main, ['--warn-only', str(path)])
             self.assertEqual(result.exit_code, 0)
