@@ -1,3 +1,6 @@
+# Dev/CI dependencies only.
+# Runtime dependencies for each service are in their own requirements.txt.
+
 # Alphabetical order
 
 click>=8.2,<9

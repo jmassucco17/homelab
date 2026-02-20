@@ -13,6 +13,7 @@ services:
       - 'traefik.http.routers.games.entrypoints=websecure'
       - 'traefik.http.routers.games.tls=true'
       - 'traefik.http.routers.games.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.games.middlewares=ratelimit'
       - 'traefik.http.services.games.loadbalancer.server.port=8000'
     healthcheck:
       test:

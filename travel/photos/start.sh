@@ -8,8 +8,4 @@ if sudo docker ps -a --format '{{.Names}}' | grep -q '^travel-site$'; then
   sudo docker rm -f travel-site 2>/dev/null || true
 fi
 
-echo "Shutting down containers..."
-sudo docker compose down --remove-orphans
-
-echo "Building and starting containers..."
-sudo docker compose up -d --build --wait
+source "$(dirname "$0")/../../scripts/service_start.sh"
