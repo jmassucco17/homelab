@@ -44,7 +44,7 @@ async function deleteMap(mapId) {
     }
     
     try {
-        const response = await fetch(`/api/maps/${mapId}`, {
+        const response = await fetch(`/maps/api/maps/${mapId}`, {
             method: 'DELETE'
         });
         

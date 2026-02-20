@@ -32,7 +32,7 @@ function initSortable() {
             const items = Array.from(locationsList.children).filter(el => el.classList.contains('location-item'));
             const locationIds = items.map(item => parseInt(item.dataset.locationId));
             
-            await fetch('/api/locations/reorder', {
+            await fetch('/maps/api/locations/reorder', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({location_ids: locationIds})
@@ -54,7 +54,7 @@ async function addLocationFromSearch(result) {
     }
     
     try {
-        const response = await fetch(`/api/maps/${currentMapId}/locations`, {
+        const response = await fetch(`/maps/api/maps/${currentMapId}/locations`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
@@ -173,7 +173,7 @@ async function saveLocationEdit() {
     const description = document.getElementById('edit-description').value;
     
     try {
-        const response = await fetch(`/api/locations/${locationId}`, {
+        const response = await fetch(`/maps/api/locations/${locationId}`, {
             method: 'PUT',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({nickname, description})
@@ -206,7 +206,7 @@ async function deleteLocation(locationId) {
     }
     
     try {
-        const response = await fetch(`/api/locations/${locationId}`, {
+        const response = await fetch(`/maps/api/locations/${locationId}`, {
             method: 'DELETE'
         });
         

@@ -103,13 +103,13 @@ async function saveMap() {
     try {
         let response;
         if (mapId) {
-            response = await fetch(`/api/maps/${mapId}`, {
+            response = await fetch(`/maps/api/maps/${mapId}`, {
                 method: 'PUT',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({name, description})
             });
         } else {
-            response = await fetch('/api/maps', {
+            response = await fetch('/maps/api/maps', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({name, description})
