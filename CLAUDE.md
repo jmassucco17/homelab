@@ -106,3 +106,25 @@ git add . && git commit -m "Your commit message"
 ### Bash
 
 - Make sure that new shell scripts (`.sh` files) have executable permissions (run `chmod +x <script>.sh`)
+
+### Renaming Docker volumes
+
+When a volume needs to be renamed (e.g. because a service or project was renamed):
+
+1. **Migrate data** (if the volume contains data that must be preserved):
+   ```bash
+   # Copy all data from the old volume into the new volume
+   docker run --rm \
+     -v <old-volume>:/from \
+     -v <new-volume>:/to \
+     alpine sh -c "cp -a /from/. /to/"
+   ```
+2. **Update `docker-compose.yml`**: change or remove the `name:` override on the volume so Docker Compose owns the volume under the new name. Remove `external: true` if it was added as a workaround.
+3. **Add a cleanup step** in `scripts/start_service.sh` inside the service-specific migration block to remove the old volume once deployment succeeds:
+   ```bash
+   if sudo docker volume ls --format '{{.Name}}' | grep -q "^<old-volume>$"; then
+     echo "Removing old <old-volume>..."
+     sudo docker volume rm <old-volume> 2>/dev/null || true
+   fi
+   ```
+4. **Update CI** (`docker-integration.yml`): if the old integration test was manually pre-creating the old volume, remove that step — Docker Compose will create the new volume automatically.
