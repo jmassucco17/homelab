@@ -120,7 +120,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Run ShellCheck
-        run: find . -name '*.sh' -not -path './node_modules/*' | xargs shellcheck
+        run: find . -name '*.sh' -not -path './node_modules/*' -print0 | xargs -0 shellcheck
   actionlint:
     runs-on: ubuntu-latest
     permissions:
