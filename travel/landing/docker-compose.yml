@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: ghcr.io/jmassucco17/homelab/travel-landing:latest
     container_name: travel-landing
     restart: unless-stopped
     ports:

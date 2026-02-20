@@ -1,0 +1,78 @@
+name: Build and push Docker images
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - service: blog
+            image: ghcr.io/jmassucco17/homelab/blog
+            context: .
+            file: blog/Dockerfile
+          - service: shared-assets
+            image: ghcr.io/jmassucco17/homelab/shared-assets
+            context: shared-assets
+            file: shared-assets/Dockerfile
+          - service: homepage
+            image: ghcr.io/jmassucco17/homelab/homepage
+            context: homepage
+            file: homepage/Dockerfile
+          - service: travel-landing
+            image: ghcr.io/jmassucco17/homelab/travel-landing
+            context: travel/landing
+            file: travel/landing/Dockerfile
+          - service: travel-photos
+            image: ghcr.io/jmassucco17/homelab/travel-photos
+            context: .
+            file: travel/photos/Dockerfile
+          - service: travel-maps
+            image: ghcr.io/jmassucco17/homelab/travel-maps
+            context: .
+            file: travel/maps/Dockerfile
+          - service: games
+            image: ghcr.io/jmassucco17/homelab/games
+            context: .
+            file: games/Dockerfile
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ matrix.image }}
+          tags: |
+            type=sha,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}

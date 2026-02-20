@@ -1,6 +1,7 @@
 services:
   travel-photos:
     container_name: travel-photos
+    image: ghcr.io/jmassucco17/homelab/travel-photos:latest
     build:
       # Change to top-level for access to requirements.txt
       context: ../..
