@@ -166,7 +166,9 @@ class TestMapLocationRelationship(unittest.TestCase):
 
             # Verify locations are also deleted
             remaining_locations = session.exec(
-                sqlmodel.select(models.MapLocation).where(models.MapLocation.map_id == map_id)
+                sqlmodel.select(models.MapLocation).where(
+                    models.MapLocation.map_id == map_id
+                )
             ).all()
             self.assertEqual(len(remaining_locations), 0)
 

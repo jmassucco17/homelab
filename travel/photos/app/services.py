@@ -272,5 +272,7 @@ class LocationService:
         session: sqlmodel.Session,
     ) -> list[models.PhotoLocation]:
         """Get all locations."""
-        statement = sqlmodel.select(models.PhotoLocation).order_by(models.PhotoLocation.name)
+        statement = sqlmodel.select(models.PhotoLocation).order_by(
+            models.PhotoLocation.name
+        )
         return list(session.exec(statement).all())
