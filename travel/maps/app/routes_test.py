@@ -180,6 +180,7 @@ class TestLocationAPI(unittest.TestCase):
             location = services.add_location_to_map(
                 session, map_obj.id, 'Paris', 48.8566, 2.3522
             )
+        assert location is not None
         assert location.id is not None
 
         response = self.client.put(
@@ -199,6 +200,7 @@ class TestLocationAPI(unittest.TestCase):
             location = services.add_location_to_map(
                 session, map_obj.id, 'Paris', 48.8566, 2.3522
             )
+        assert location is not None
         assert location.id is not None
 
         response = self.client.delete(f'/api/locations/{location.id}')
@@ -212,6 +214,8 @@ class TestLocationAPI(unittest.TestCase):
             assert map_obj.id is not None
             loc1 = services.add_location_to_map(session, map_obj.id, 'First', 0, 0)
             loc2 = services.add_location_to_map(session, map_obj.id, 'Second', 0, 0)
+        assert loc1 is not None
+        assert loc2 is not None
         assert loc1.id is not None
         assert loc2.id is not None
         loc1_id = loc1.id

@@ -14,7 +14,7 @@ class Map(SQLModel, table=True):
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
-    locations: list['travel.maps.app.models.Location'] = Relationship(  # noqa: F821  # type: ignore[name-defined]
+    locations: list['Location'] = Relationship(
         back_populates='map',
         sa_relationship_kwargs={
             'cascade': 'all, delete-orphan',

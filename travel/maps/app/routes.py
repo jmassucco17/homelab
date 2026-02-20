@@ -119,7 +119,7 @@ async def edit_map_form(
                 'description': loc.description,
                 'order_index': loc.order_index,
             }
-            for loc in map_obj.locations  # type: ignore[attr-defined]
+            for loc in map_obj.locations
         ],
     }
 
@@ -158,7 +158,7 @@ async def get_map(map_id: int, session: Session = Depends(get_session)):
                 'description': loc.description,
                 'order_index': loc.order_index,
             }
-            for loc in map_obj.locations  # type: ignore[attr-defined]
+            for loc in map_obj.locations
         ],
     }
 
@@ -262,7 +262,7 @@ async def reorder_locations(
 
 
 @router.get('/api/geocode')
-async def geocode(q: str):
+async def geocode(q: str) -> list[dict[str, str | float]]:
     """Search for locations using geocoding."""
     if not q or len(q) < 2:
         return []
