@@ -9,6 +9,7 @@
 ## Testing improvements
 
 - Call pytest with `-W error` to raise warnings as errors
+- Add non-python testing wherever appropriate
 
 ## Deployment improvements:
 
