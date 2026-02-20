@@ -3,7 +3,7 @@
 import unittest
 from datetime import UTC, datetime
 
-from travel.photos.app import models
+from travel.app import models
 
 
 class TestLocation(unittest.TestCase):
