@@ -25,6 +25,7 @@
 - (add to CLAUDE.md) new subdomains should have a link from the homepage
 - Explain CSS strategy (have Copilot do this based on #24)
 - Apply a fixed order for all the subdomains wherever they appear (networking -> shared-assets -> homepage -> etc)
+- Simplify the structure of travel maps / photos to just be a single site instead of two separate ones
 
 ## Security
 
