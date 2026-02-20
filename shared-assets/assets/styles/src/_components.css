@@ -1,0 +1,91 @@
+/* ===== COMPONENTS =====
+ * Reusable UI pieces: cards, nav, theme toggle.
+ */
+
+/* ---- Card ---- */
+.card {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.card:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+a.card {
+  color: inherit;
+  text-decoration: none;
+  display: block;
+
+  & h3 {
+    color: var(--color-title-text);
+    margin-bottom: 0.5rem;
+  }
+
+  & p {
+    color: var(--color-text);
+    margin-bottom: 0;
+  }
+
+  & .date {
+    color: var(--color-yellow);
+    font-size: 0.85rem;
+  }
+}
+
+/* ---- Site home link (top-left fixed) ---- */
+.site-home-link {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: var(--color-title-text);
+  font-size: 0.9rem;
+  font-weight: 500;
+  z-index: 1000;
+
+  &:hover {
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+}
+
+.site-logo {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+}
+
+/* ---- Theme toggle (top-right fixed) ---- */
+#theme-toggle-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1000;
+}
+
+.theme-toggle {
+  background: transparent;
+  border: 1px solid var(--color-card-border);
+  color: var(--color-title-text);
+  font-size: 1rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius-md);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+
+  &:hover {
+    background: var(--color-section-bg);
+    border-color: var(--color-accent);
+  }
+}

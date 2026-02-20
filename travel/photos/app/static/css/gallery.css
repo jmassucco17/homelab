@@ -1,8 +1,11 @@
+/* ===== TRAVEL GALLERY ===== */
+
 body {
-  font-family: Arial, sans-serif;
+  font-family: var(--font-sans);
   margin: 0;
   padding: 20px;
-  background-color: #f8f9fa;
+  background-color: var(--color-page-bg);
+  color: var(--color-text);
   line-height: 1.6;
 }
 
@@ -12,23 +15,23 @@ body {
 }
 
 .header h1 {
-  color: #2c3e50;
+  color: var(--color-title-text);
   margin-bottom: 10px;
-  font-size: 2.5em;
+  font-size: 2rem;
 }
 
 .header p {
-  color: #7f8c8d;
-  font-size: 1.2em;
+  color: var(--color-footer-text);
+  font-size: 1.1rem;
 }
 
 .admin-link,
 .map-link {
   position: absolute;
   top: 20px;
-  color: #3498db;
+  color: var(--color-accent);
   text-decoration: none;
-  font-weight: bold;
+  font-weight: 500;
 }
 
 .admin-link {
@@ -53,18 +56,18 @@ body {
 }
 
 .picture-card {
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgb(0 0 0 / 10%);
+  background-color: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   transition:
-    transform 0.3s ease,
-    box-shadow 0.3s ease;
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .picture-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 15px rgb(0 0 0 / 20%);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
 }
 
 .picture-image {
@@ -79,25 +82,25 @@ body {
 }
 
 .picture-filename {
-  font-weight: bold;
-  font-size: 1.1em;
-  color: #2c3e50;
-  margin-bottom: 10px;
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--color-title-text);
+  margin-bottom: 8px;
 }
 
 .picture-description {
-  color: #555;
-  margin-bottom: 15px;
+  color: var(--color-text);
+  margin-bottom: 12px;
   font-style: italic;
 }
 
 .picture-meta {
-  font-size: 0.9em;
-  color: #7f8c8d;
+  font-size: 0.875rem;
+  color: var(--color-footer-text);
 }
 
 .picture-meta div {
-  margin-bottom: 5px;
+  margin-bottom: 4px;
 }
 
 .meta-icon {
@@ -107,29 +110,28 @@ body {
 }
 
 .location-info {
-  color: #27ae60;
+  color: var(--color-green);
   font-weight: 500;
 }
 
 .date-info {
-  color: #8e44ad;
+  color: var(--color-yellow);
 }
 
-.no-pictures {
+.no-pictures,
+.loading,
+.error-message {
   text-align: center;
-  color: #7f8c8d;
-  font-size: 1.2em;
+  color: var(--color-footer-text);
+  font-size: 1.1rem;
   margin-top: 50px;
 }
 
-.loading {
-  text-align: center;
-  color: #7f8c8d;
-  font-size: 1.2em;
-  margin-top: 50px;
+.error-message {
+  color: var(--color-red);
 }
 
-/* Modal styles for full-size image viewing */
+/* ---- Modal ---- */
 .modal {
   display: none;
   position: fixed;
@@ -156,21 +158,14 @@ body {
   position: absolute;
   top: 20px;
   right: 35px;
-  color: white;
+  color: var(--color-title-text);
   font-size: 40px;
   font-weight: bold;
   cursor: pointer;
 }
 
 .modal-close:hover {
-  color: #ccc;
-}
-
-.error-message {
-  text-align: center;
-  color: #e74c3c;
-  font-size: 1.2em;
-  margin-top: 50px;
+  color: var(--color-footer-text);
 }
 
 @media (width <= 768px) {

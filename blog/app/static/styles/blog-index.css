@@ -1,65 +1,44 @@
-/* ===== PAGE TITLE ===== */
+/* ===== BLOG INDEX =====
+ * Overrides and additions on top of shared main.css.
+ */
 
+/* ---- Page title ---- */
 h1 {
   text-align: center;
-  font-size: 2.5rem;
+  font-size: 2rem;
   margin-bottom: 2rem;
-  color: var(--color-title-text);
 }
 
-/* ===== BLOG GRID LAYOUT ===== */
-
+/* ---- Single-column blog grid ---- */
 .grid {
-  display: grid;
-  grid-template-columns: 1fr; /* One column per row */
-  gap: 1.5rem;
-  padding: 0 1.5rem;
-  max-width: 768px; /* Optional: constrain content width */
-  margin: 0 auto; /* Center the column */
+  grid-template-columns: 1fr;
+  max-width: 720px;
+  margin: 0 auto;
 }
 
-/* ===== BLOG CARD ===== */
-
+/* ---- Blog card ---- */
 .card {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  background-color: var(--color-card-bg);
-  border: 1px solid var(--color-card-border);
-  border-radius: 12px;
   padding: 1.5rem 2rem;
-  text-decoration: none;
-  color: inherit;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-  height: 100%;
 }
-
-/* Hover effect for interactivity */
-.card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgb(0 0 0 / 20%);
-}
-
-/* ===== CARD TITLE ===== */
 
 .card h3 {
-  font-size: 1.25rem;
-  color: var(--color-title-text);
-  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+  margin-bottom: 0.25rem;
 }
-
-/* ===== DATE ===== */
 
 .card .date {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--color-yellow);
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
+/* ---- RSS link ---- */
 .rss-link {
   display: inline-block;
   margin-bottom: 1rem;
-  font-weight: bold;
+  font-weight: 500;
+  color: var(--color-accent);
 }

@@ -1,0 +1,30 @@
+/* ===== MINIMAL RESET =====
+ * Removes browser default margins, enforces box-sizing,
+ * and smooths rendering. No opinionated normalization.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Also remove default body margin here to avoid a duplicate body rule in the compiled output. */
+body {
+  margin: 0;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+}

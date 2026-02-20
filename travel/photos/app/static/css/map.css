@@ -1,30 +1,33 @@
+/* ===== TRAVEL MAP ===== */
+
 body {
-  font-family: Arial, sans-serif;
+  font-family: var(--font-sans);
   margin: 0;
   padding: 0;
-  background-color: #f8f9fa;
+  background-color: var(--color-page-bg);
+  color: var(--color-text);
   line-height: 1.6;
   overflow: hidden;
 }
 
 .header {
   text-align: center;
-  padding: 20px;
-  background-color: white;
-  box-shadow: 0 2px 4px rgb(0 0 0 / 10%);
+  padding: 16px 20px;
+  background-color: var(--color-section-bg);
+  border-bottom: 1px solid var(--color-section-border);
   position: relative;
   z-index: 100;
 }
 
 .header h1 {
-  color: #2c3e50;
-  margin: 0 0 5px;
-  font-size: 2em;
+  color: var(--color-title-text);
+  margin: 0 0 4px;
+  font-size: 1.5rem;
 }
 
 .header p {
-  color: #7f8c8d;
-  font-size: 1em;
+  color: var(--color-footer-text);
+  font-size: 0.9rem;
   margin: 0;
 }
 
@@ -32,18 +35,18 @@ body {
 .gallery-link {
   position: absolute;
   right: 20px;
-  color: #3498db;
+  color: var(--color-accent);
   text-decoration: none;
-  font-weight: bold;
+  font-weight: 500;
   z-index: 101;
 }
 
 .gallery-link {
-  top: 20px;
+  top: 16px;
 }
 
 .admin-link {
-  top: 50px;
+  top: 44px;
 }
 
 .admin-link:hover,
@@ -53,7 +56,7 @@ body {
 
 .map-container {
   position: relative;
-  height: calc(100vh - 120px);
+  height: calc(100vh - 100px);
   width: 100%;
 }
 
@@ -63,84 +66,81 @@ body {
   z-index: 1;
 }
 
-/* Custom marker styling */
+/* ---- Custom marker ---- */
 .custom-marker {
   background: none;
   border: none;
 }
 
 .marker-pin {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   position: relative;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0070f3 0%, #7928ca 100%);
   border-radius: 50%;
-  border: 3px solid white;
-  box-shadow: 0 2px 6px rgb(0 0 0 / 40%);
+  border: 2px solid rgb(255 255 255 / 20%);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 50%);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.15s ease;
 }
 
 .marker-pin::after {
   content: '';
   position: absolute;
-  bottom: -8px;
+  bottom: -7px;
   left: 50%;
   width: 0;
   height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-top: 12px solid #764ba2;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 10px solid #7928ca;
   transform: translateX(-50%);
-  filter: drop-shadow(0 2px 2px rgb(0 0 0 / 30%));
 }
 
 .custom-marker:hover .marker-pin {
   transform: scale(1.15);
-  box-shadow: 0 3px 10px rgb(0 0 0 / 50%);
 }
 
-/* Travel line styling */
+/* ---- Travel line ---- */
 .travel-line {
   filter: drop-shadow(0 2px 3px rgb(0 0 0 / 30%));
 }
 
-/* Arrow marker styling */
 .arrow-marker {
   background: none;
   border: none;
 }
 
-/* Cluster styling */
+/* ---- Marker clusters ---- */
 .marker-cluster-small,
 .marker-cluster-medium,
 .marker-cluster-large {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  background: linear-gradient(135deg, #0070f3 0%, #7928ca 100%) !important;
   box-shadow: 0 3px 8px rgb(0 0 0 / 40%) !important;
 }
 
 .marker-cluster-small div,
 .marker-cluster-medium div,
 .marker-cluster-large div {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-  color: white !important;
-  font-weight: bold !important;
+  background: linear-gradient(135deg, #0070f3 0%, #7928ca 100%) !important;
+  color: #fff !important;
+  font-weight: 600 !important;
   text-align: center !important;
   line-height: 1.4 !important;
 }
 
-/* Sidebar styles */
+/* ---- Sidebar ---- */
 .sidebar {
   position: absolute;
   top: 0;
   right: 0;
-  width: 400px;
+  width: 380px;
   height: 100%;
-  background-color: white;
-  box-shadow: -2px 0 8px rgb(0 0 0 / 20%);
+  background-color: var(--color-section-bg);
+  border-left: 1px solid var(--color-section-border);
   z-index: 1000;
   overflow-y: auto;
-  transition: transform 0.3s ease;
+  transition: transform 0.25s ease;
 }
 
 .sidebar.hidden {
@@ -148,9 +148,9 @@ body {
 }
 
 .sidebar-header {
-  padding: 20px;
-  background-color: #2c3e50;
-  color: white;
+  padding: 16px 20px;
+  background-color: var(--color-card-bg);
+  border-bottom: 1px solid var(--color-section-border);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -161,27 +161,29 @@ body {
 
 .sidebar-header h2 {
   margin: 0;
-  font-size: 1.5em;
+  font-size: 1.1rem;
+  color: var(--color-title-text);
   flex-grow: 1;
 }
 
 .sidebar-close {
   background: none;
   border: none;
-  color: white;
-  font-size: 30px;
+  color: var(--color-footer-text);
+  font-size: 24px;
   cursor: pointer;
   padding: 0;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
+  transition: color 0.15s ease;
 }
 
 .sidebar-close:hover {
-  opacity: 0.7;
+  color: var(--color-title-text);
 }
 
 .sidebar-content {
@@ -189,9 +191,9 @@ body {
 }
 
 .sidebar-picture {
-  margin-bottom: 30px;
-  padding-bottom: 30px;
-  border-bottom: 1px solid #ecf0f1;
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--color-section-border);
 }
 
 .sidebar-picture:last-child {
@@ -200,28 +202,28 @@ body {
 
 .sidebar-picture img {
   width: 100%;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: opacity 0.15s ease;
 }
 
 .sidebar-picture img:hover {
-  transform: scale(1.02);
+  opacity: 0.9;
 }
 
 .sidebar-picture .picture-description {
-  color: #555;
-  margin: 10px 0 5px;
+  color: var(--color-text);
+  margin: 8px 0 4px;
   font-style: italic;
 }
 
 .sidebar-picture .picture-date {
-  color: #8e44ad;
-  font-size: 0.9em;
-  margin: 5px 0 0;
+  color: var(--color-yellow);
+  font-size: 0.875rem;
+  margin: 4px 0 0;
 }
 
-/* Modal styles for full-size image viewing */
+/* ---- Modal ---- */
 .modal {
   display: none;
   position: fixed;
@@ -248,17 +250,16 @@ body {
   position: absolute;
   top: 20px;
   right: 35px;
-  color: white;
+  color: var(--color-title-text);
   font-size: 40px;
   font-weight: bold;
   cursor: pointer;
 }
 
 .modal-close:hover {
-  color: #ccc;
+  color: var(--color-footer-text);
 }
 
-/* Responsive design */
 @media (width <= 768px) {
   .sidebar {
     width: 100%;
@@ -266,22 +267,22 @@ body {
   }
 
   .header h1 {
-    font-size: 1.5em;
+    font-size: 1.2rem;
   }
 
   .header p {
-    font-size: 0.9em;
+    font-size: 0.85rem;
   }
 
   .admin-link,
   .gallery-link {
     position: static;
     display: inline-block;
-    margin: 10px 10px 0 0;
-    font-size: 0.9em;
+    margin: 8px 10px 0 0;
+    font-size: 0.875rem;
   }
 
   .map-container {
-    height: calc(100vh - 140px);
+    height: calc(100vh - 120px);
   }
 }
