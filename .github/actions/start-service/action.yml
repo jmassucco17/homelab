@@ -1,0 +1,18 @@
+name: Start service
+description: Creates the docker web network and starts a service using its start.sh
+
+inputs:
+  service:
+    description: Service directory name (e.g. blog, homepage, travel-site)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Create docker web network
+      shell: bash
+      run: docker network create web 2>/dev/null || true
+
+    - name: Start service via start.sh
+      shell: bash
+      run: bash "${{ github.workspace }}/${{ inputs.service }}/start.sh"

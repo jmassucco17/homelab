@@ -1,0 +1,270 @@
+name: Docker integration tests
+
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  blog:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Start blog service
+        uses: ./.github/actions/start-service
+        with:
+          service: blog
+
+      - name: Test health endpoint
+        run: |
+          docker exec blog python3 -c '
+          import json, urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/health")
+          assert json.loads(resp.read())["status"] == "healthy"
+          '
+
+      - name: Test index endpoint returns HTML
+        run: |
+          docker exec blog python3 -c '
+          import urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/")
+          assert b"<html" in resp.read().lower()
+          '
+
+      - name: Test blog post endpoint returns content
+        run: |
+          docker exec blog python3 -c '
+          import urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/posts/starting-a-homelab")
+          assert b"Starting a Homelab" in resp.read()
+          '
+
+      - name: Test RSS endpoint returns XML
+        run: |
+          docker exec blog python3 -c '
+          import urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/rss.xml")
+          content = resp.read()
+          assert b"<rss" in content and b"<channel>" in content
+          '
+
+      - name: Test invalid post returns 404
+        run: |
+          docker exec blog python3 -c "
+          import urllib.request, urllib.error
+          try:
+              urllib.request.urlopen('http://127.0.0.1:8000/posts/nonexistent-post')
+              raise AssertionError('Expected 404 but got 200')
+          except urllib.error.HTTPError as e:
+              assert e.code == 404, f'Expected 404, got {e.code}'
+          "
+
+      - name: Stop blog service
+        uses: ./.github/actions/stop-service
+        if: always()
+        with:
+          service: blog
+
+  homepage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Start homepage service
+        uses: ./.github/actions/start-service
+        with:
+          service: homepage
+
+      - name: Test index endpoint returns HTML
+        run: |
+          result=$(docker exec homepage wget -qO- http://127.0.0.1/)
+          echo "$result" | grep -qi '<html'
+
+      - name: Stop homepage service
+        uses: ./.github/actions/stop-service
+        if: always()
+        with:
+          service: homepage
+
+  travel-site:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Start travel-site service
+        uses: ./.github/actions/start-service
+        with:
+          service: travel-site
+
+      - name: Test health endpoint
+        run: |
+          docker exec travel-site python3 -c '
+          import json, urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/health")
+          assert json.loads(resp.read())["status"] == "healthy"
+          '
+
+      - name: Test root endpoint returns HTML
+        run: |
+          docker exec travel-site python3 -c '
+          import urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/")
+          assert b"<html" in resp.read().lower()
+          '
+
+      - name: Test gallery endpoint returns HTML
+        run: |
+          docker exec travel-site python3 -c '
+          import urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/gallery")
+          assert b"<html" in resp.read().lower()
+          '
+
+      - name: Stop travel-site service
+        uses: ./.github/actions/stop-service
+        if: always()
+        with:
+          service: travel-site
+
+  networking:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Create networking/.env with test credentials
+        run: |
+          COOKIE_SECRET=$(python3 -c "import secrets; print(secrets.token_hex(16))")
+          cat > networking/.env << EOF
+          CLOUDFLARE_API_EMAIL=test@example.com
+          CLOUDFLARE_API_TOKEN=test-token
+          CLOUDFLARE_TRUSTED_IPS=0.0.0.0/0
+          GOOGLE_OAUTH2_CLIENT_ID=test-client-id
+          GOOGLE_OAUTH2_CLIENT_SECRET=test-client-secret
+          GOOGLE_OAUTH2_COOKIE_SECRET=${COOKIE_SECRET}
+          OAUTH2_AUTHORIZED_EMAILS=test@example.com
+          EOF
+
+      - name: Create acme.json with correct permissions
+        run: |
+          touch networking/acme.json
+          chmod 600 networking/acme.json
+
+      - name: Create docker web network
+        run: docker network create web 2>/dev/null || true
+
+      - name: Start networking services (excluding cloudflare-ddns)
+        run: |
+          cd networking
+          docker compose up -d --wait traefik oauth2-proxy whoami
+
+      - name: Test traefik ping endpoint
+        run: docker exec traefik wget -qO- http://127.0.0.1:8080/ping
+
+      - name: Test oauth2-proxy is listening
+        run: |
+          PROXY_IP=$(docker inspect oauth2-proxy --format='{{.NetworkSettings.Networks.web.IPAddress}}')
+          docker run --rm --network web alpine wget -qO- "http://${PROXY_IP}:4180/ping"
+
+      - name: Test whoami is responding
+        run: |
+          WHOAMI_IP=$(docker inspect whoami --format='{{.NetworkSettings.Networks.web.IPAddress}}')
+          docker run --rm --network web alpine wget -qO- "http://${WHOAMI_IP}/"
+
+      - name: Stop networking services
+        uses: ./.github/actions/stop-service
+        if: always()
+        with:
+          service: networking
+
+  shared-assets:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Start shared-assets service
+        uses: ./.github/actions/start-service
+        with:
+          service: shared-assets
+
+      - name: Test CSS file is served
+        run: |
+          result=$(docker exec shared-assets wget -qO- http://127.0.0.1/styles/main.css)
+          echo "$result" | grep -q '@import'
+
+      - name: Test JS file is served
+        run: |
+          result=$(docker exec shared-assets wget -qO- http://127.0.0.1/scripts/theme-toggle.js)
+          echo "$result" | grep -q 'function'
+
+      - name: Test missing file returns 404
+        run: |
+          docker exec shared-assets wget -qO- http://127.0.0.1/nonexistent.txt 2>&1 | grep -q '404'
+
+      - name: Stop shared-assets service
+        uses: ./.github/actions/stop-service
+        if: always()
+        with:
+          service: shared-assets
+
+  games:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Start games service
+        uses: ./.github/actions/start-service
+        with:
+          service: games
+
+      - name: Test health endpoint
+        run: |
+          docker exec games python3 -c '
+          import json, urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/health")
+          assert json.loads(resp.read())["status"] == "healthy"
+          '
+
+      - name: Test index endpoint returns HTML
+        run: |
+          docker exec games python3 -c '
+          import urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/")
+          assert b"<html" in resp.read().lower()
+          '
+
+      - name: Test snake endpoint returns HTML
+        run: |
+          docker exec games python3 -c '
+          import urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/snake")
+          assert b"<html" in resp.read().lower()
+          '
+
+      - name: Test snake.js is served
+        run: |
+          docker exec games python3 -c '
+          import urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/static/snake/snake.js")
+          assert b"requestAnimationFrame" in resp.read()
+          '
+
+      - name: Stop games service
+        uses: ./.github/actions/stop-service
+        if: always()
+        with:
+          service: games

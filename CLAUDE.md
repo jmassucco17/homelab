@@ -6,7 +6,13 @@ This file provides guidance to Claude Code (and GitHub Copilot) agents interacti
 
 This repo is primarily focused on deploying a public personal website at `jamesmassucco.com` and its sub-domains. The `networking/` directory contains core technologies (like `traefik` reverse proxy, oauth, and Cloudflare DDNS configuration) and other top-level directories contain containerized "services" which handle various pages within the site.
 
-When creating a new module (i.e. a new page or new sub-site), make a new top-level folder and populate it with a `docker-compose.yml` and `start.sh`. Make sure to update `scripts/start_all.sh` to reference the new `start.sh`, update `networking/` to create a new sub-domain, and update `dependabot.yml` to ensure we track updates for the new docker image
+When creating a new module (i.e. a new page or new sub-site), make a new top-level folder and populate it with a `docker-compose.yml` and `start.sh`. Make sure to:
+
+- Update `scripts/start_local.sh` to include the service in `ALL_SERVICES`
+- Create a `docker-compose.local.yml` in the new module directory (see existing examples for the pattern)
+- Update `networking/` to create a new sub-domain
+- Update `dependabot.yml` to ensure we track updates for the new docker image
+- Update `docker-integration.yml` to add integration tests for the new service
 
 ## Details
 
@@ -24,6 +30,7 @@ Run `bootstrap.sh` to fully initialize a new environment, including installing a
 Before committing changes, run the following checks to ensure they will pass CI:
 
 #### Linting (Python)
+
 ```bash
 # Check for XXX comments (run from repo root on changed files)
 git diff --name-only main...HEAD | xargs -r python scripts/check_xxx_comments.py
@@ -38,12 +45,14 @@ ruff format .
 ```
 
 #### Type checking (Python)
+
 ```bash
 # Run Pyright (requires npm packages installed)
 npx pyright
 ```
 
 #### Unit tests
+
 ```bash
 # Run all tests with pytest
 pytest -v
@@ -53,6 +62,7 @@ cd travel/maps && python -m unittest discover -s app -p "*_test.py"
 ```
 
 #### Complete pre-commit workflow
+
 ```bash
 # 1. Lint and format
 ruff check --fix . && ruff format .
@@ -79,3 +89,8 @@ git add . && git commit -m "Your commit message"
 - Tests should always be housed in the same directory as the file they test, and be named `<module>_test.py` (e.g. test for `main.py` should be `main_test.py`)
 - Use modern type hints (`X | None` instead of `Optional[X]`)
 - Use `datetime.now(UTC)` instead of deprecated `datetime.utcnow()`
+- Whenever you create a new Python file, you must also create an associated `<module>_test.py` in the same directory
+
+### Bash
+
+- Make sure that new shell scripts (`.sh` files) have executable permissions (run `chmod +x <script>.sh`)

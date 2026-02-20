@@ -27,6 +27,10 @@ on:
         description: 'Deploy travel maps'
         type: boolean
         default: true
+      games:
+        description: 'Deploy games'
+        type: boolean
+        default: true
   push:
     branches:
       - main
@@ -35,10 +39,10 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Connect to Tailscale
-        uses: tailscale/github-action@v3
+        uses: tailscale/github-action@v4
         with:
           oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
@@ -78,11 +82,12 @@ jobs:
           DEPLOY_BLOG: ${{ github.event_name == 'push' || inputs.blog }}
           DEPLOY_TRAVEL_PHOTOS: ${{ github.event_name == 'push' || inputs['travel-photos'] }}
           DEPLOY_TRAVEL_MAPS: ${{ github.event_name == 'push' || inputs['travel-maps'] }}
+          DEPLOY_GAMES: ${{ github.event_name == 'push' || inputs.games }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             -o StrictHostKeyChecking=no \
             "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" \
-            "DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' DEPLOY_SHARED_ASSETS='${DEPLOY_SHARED_ASSETS}' DEPLOY_HOMEPAGE='${DEPLOY_HOMEPAGE}' DEPLOY_BLOG='${DEPLOY_BLOG}' DEPLOY_TRAVEL_PHOTOS='${DEPLOY_TRAVEL_PHOTOS}' DEPLOY_TRAVEL_MAPS='${DEPLOY_TRAVEL_MAPS}' bash -s" << 'REMOTE'
+            "DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' DEPLOY_SHARED_ASSETS='${DEPLOY_SHARED_ASSETS}' DEPLOY_HOMEPAGE='${DEPLOY_HOMEPAGE}' DEPLOY_BLOG='${DEPLOY_BLOG}' DEPLOY_TRAVEL_PHOTOS='${DEPLOY_TRAVEL_PHOTOS}' DEPLOY_TRAVEL_MAPS='${DEPLOY_TRAVEL_MAPS}' DEPLOY_GAMES='${DEPLOY_GAMES}' bash -s" << 'REMOTE'
           set -euo pipefail
           mkdir -p /opt/homelab
           cd /opt/homelab
@@ -113,6 +118,7 @@ jobs:
           deploy_if_enabled blog            "$DEPLOY_BLOG"
           deploy_if_enabled travel/photos   "$DEPLOY_TRAVEL_PHOTOS"
           deploy_if_enabled travel/maps     "$DEPLOY_TRAVEL_MAPS"
+          deploy_if_enabled games         "$DEPLOY_GAMES"
 
           rm -f /tmp/homelab-deploy.tar.gz
           echo "Deployment complete."
