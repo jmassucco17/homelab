@@ -50,3 +50,30 @@
 ## Misc.
 
 - Update python deployment file to fix at 3.12
+
+## Misc. improvement ideas
+
+### High Priority (Quick Wins)
+- Create shared utilities module for FastAPI boilerplate (app initialization, static files, Jinja2, health endpoints)
+- Consolidate Dockerfiles with multi-stage builds or base image
+- Per-service requirements.txt or migrate to Poetry/uv for dependency management
+- Consolidate all CSS into shared-assets (remove per-service CSS directories)
+
+### Medium Priority (Architecture)
+- Refactor travel modules to share code or merge into single app with sub-routers
+- Add database migrations with Alembic
+- Add observability stack (Prometheus + Grafana for metrics, Loki for logs)
+- Implement automated backup strategy for SQLite databases (rsync/rclone to S3/Backblaze)
+- Move Traefik configuration from Docker labels to file-based config for better visibility
+- Add CI/CD deployment workflow (build/push images, deploy to production, smoke tests)
+- Implement proper secret management (Docker Secrets, Vault, or managed service)
+
+### Low Priority (Modernization)
+- Evaluate HTMX for progressive enhancement or migrate to modern SSG/framework
+- Consider PostgreSQL for production (keep SQLite for local dev)
+- Migrate to Kubernetes (K3s) or Docker Swarm for orchestration
+- Evaluate headless CMS for blog (Strapi, Payload, Directus)
+- Switch to commercial geocoding API (Mapbox or Google Maps) for travel/maps
+- Use Testcontainers for integration tests instead of custom GitHub Actions
+- Consider Tailwind CSS instead of custom PostCSS architecture
+- Upgrade from OAuth2-Proxy to Authelia or Authentik for better auth features
