@@ -5,8 +5,6 @@ services:
     build:
       context: ..
       dockerfile: games/Dockerfile
-    volumes:
-      - ./app:/app/app
     labels:
       # Use traefik to provide HTTP endpoint
       - 'traefik.enable=true'

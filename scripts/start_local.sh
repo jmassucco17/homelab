@@ -86,7 +86,8 @@ popd > /dev/null
 for service in "${SERVICES[@]}"; do
   echo "Starting $service..."
   pushd "$service" > /dev/null
-  sudo docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build --wait
+  sudo docker compose -f docker-compose.yml -f docker-compose.local.yml pull
+  sudo docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --wait
   popd > /dev/null
 done
 

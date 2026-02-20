@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-# Start a single homelab service by name.
-# If the service directory contains a Dockerfile, images are built locally.
-# Otherwise (e.g. networking, which uses pre-built images), images are pulled.
+# Start a single homelab service by name, pulling the image from GHCR.
 #
 # Usage: scripts/start_service.sh <service>
 # Examples:
@@ -34,12 +32,7 @@ fi
 echo "Shutting down containers..."
 sudo docker compose down --remove-orphans
 
-if [[ -f "$SERVICE_DIR/Dockerfile" ]]; then
-  echo "Building and starting containers..."
-  sudo docker compose up -d --build --wait
-else
-  echo "Pulling latest images..."
-  sudo docker compose pull
-  echo "Starting up containers..."
-  sudo docker compose up -d --wait
-fi
+echo "Pulling latest images..."
+sudo docker compose pull
+echo "Starting containers..."
+sudo docker compose up -d --wait
