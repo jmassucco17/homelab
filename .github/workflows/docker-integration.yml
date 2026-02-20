@@ -189,6 +189,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Create travel data volume
+        run: docker volume create travel-site_data-volume
+
       - name: Start travel service
         uses: ./.github/actions/start-service
         with:
