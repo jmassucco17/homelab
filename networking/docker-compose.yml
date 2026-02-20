@@ -154,6 +154,7 @@ services:
         traefik.jamesmassucco.com,
         whoami.jamesmassucco.com,
         travel.jamesmassucco.com,
+        games.jamesmassucco.com,
       PROXIED: true
       TZ: America/Los_Angeles
     restart: unless-stopped

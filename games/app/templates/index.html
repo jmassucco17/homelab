@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Games{% endblock %}
+
+{% block content %}
+  <h1>Games</h1>
+  <p>Welcome to the games section. Choose a game to play:</p>
+
+  <section>
+    <div class="grid">
+      <a href="/snake" class="card" style="text-decoration: none">
+        <h3>🐍 Snake</h3>
+        <p>Classic Snake game. Eat food, grow longer, don't hit the walls!</p>
+      </a>
+      <a href="/pong" class="card" style="text-decoration: none">
+        <h3>🏓 Pong</h3>
+        <p>Classic Pong — 1-player vs AI or 2-player local.</p>
+      </a>
+      <a href="/catan" class="card" style="text-decoration: none">
+        <h3>🏝️ Catan</h3>
+        <p>Settlers of Catan emulator with AI opponents.</p>
+      </a>
+    </div>
+  </section>
+{% endblock %}
