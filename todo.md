@@ -9,7 +9,7 @@
 
 ## Testing improvements
 
-- Call pytest with `-W error` to raise warnings as errors
+- Pre-hook linting should only check changed files, but PR linting (and main linting) should check everything
 - Add non-python testing wherever appropriate
 
 ## Deployment improvements:
