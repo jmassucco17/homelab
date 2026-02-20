@@ -234,7 +234,7 @@ class LocationService:
         name: str,
         latitude: float | None,
         longitude: float | None,
-    ) -> models.Location | None:
+    ) -> models.PhotoLocation | None:
         """Create a new location."""
         if latitude is None or longitude is None:
             return None
@@ -254,7 +254,7 @@ class LocationService:
             str(location_result.address) if location_result else None  # type: ignore
         )
 
-        location = models.Location(
+        location = models.PhotoLocation(
             name=name,
             latitude=latitude,
             longitude=longitude,
@@ -270,7 +270,7 @@ class LocationService:
     def get_all_locations(
         self,
         session: sqlmodel.Session,
-    ) -> list[models.Location]:
+    ) -> list[models.PhotoLocation]:
         """Get all locations."""
-        statement = sqlmodel.select(models.Location).order_by(models.Location.name)
+        statement = sqlmodel.select(models.PhotoLocation).order_by(models.PhotoLocation.name)
         return list(session.exec(statement).all())

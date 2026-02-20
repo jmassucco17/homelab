@@ -72,7 +72,7 @@ class TestLocationModel(unittest.TestCase):
             assert map_obj.id is not None
 
             # Create a location
-            location = models.Location(
+            location = models.MapLocation(
                 map_id=map_obj.id,
                 name='Paris, France',
                 latitude=48.8566,
@@ -113,14 +113,14 @@ class TestMapLocationRelationship(unittest.TestCase):
             assert map_obj.id is not None
 
             # Add locations
-            location1 = models.Location(
+            location1 = models.MapLocation(
                 map_id=map_obj.id,
                 name='Paris, France',
                 latitude=48.8566,
                 longitude=2.3522,
                 order_index=0,
             )
-            location2 = models.Location(
+            location2 = models.MapLocation(
                 map_id=map_obj.id,
                 name='Rome, Italy',
                 latitude=41.9028,
@@ -148,7 +148,7 @@ class TestMapLocationRelationship(unittest.TestCase):
             session.refresh(map_obj)
             assert map_obj.id is not None
 
-            location = models.Location(
+            location = models.MapLocation(
                 map_id=map_obj.id,
                 name='Paris, France',
                 latitude=48.8566,
@@ -166,7 +166,7 @@ class TestMapLocationRelationship(unittest.TestCase):
 
             # Verify locations are also deleted
             remaining_locations = session.exec(
-                sqlmodel.select(models.Location).where(models.Location.map_id == map_id)
+                sqlmodel.select(models.MapLocation).where(models.MapLocation.map_id == map_id)
             ).all()
             self.assertEqual(len(remaining_locations), 0)
 
@@ -180,13 +180,13 @@ class TestMapLocationRelationship(unittest.TestCase):
             assert map_obj.id is not None
 
             # Add locations out of order
-            location2 = models.Location(
+            location2 = models.MapLocation(
                 map_id=map_obj.id, name='Second', latitude=0, longitude=0, order_index=2
             )
-            location1 = models.Location(
+            location1 = models.MapLocation(
                 map_id=map_obj.id, name='First', latitude=0, longitude=0, order_index=1
             )
-            location3 = models.Location(
+            location3 = models.MapLocation(
                 map_id=map_obj.id, name='Third', latitude=0, longitude=0, order_index=3
             )
 

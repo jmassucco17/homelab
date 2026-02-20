@@ -24,3 +24,12 @@ select = ["I", "E", "F", "UP", "B"]
 unfixable = ["F401"]
 # Ignore B008
 ignore = ["B008"]
+
+[tool.pytest.ini_options]
+# Filter out SQLAlchemy warnings about duplicate class names in registry
+# This occurs when multiple modules define models with the same class name (e.g., Location)
+# but with different table names (e.g., maps_location vs photos_location)
+filterwarnings = [
+    "default::DeprecationWarning",
+    "ignore::sqlalchemy.exc.SAWarning",
+]

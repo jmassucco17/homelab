@@ -229,7 +229,7 @@ class TestLocationService(unittest.TestCase):
     def test_get_all_locations_sorted_by_name(self) -> None:
         """Test get_all_locations returns locations sorted by name."""
         for name in ['Zurich', 'Amsterdam', 'Berlin']:
-            location = models.Location(name=name, latitude=0.0, longitude=0.0)
+            location = models.PhotoLocation(name=name, latitude=0.0, longitude=0.0)
             self.session.add(location)
         self.session.commit()
 

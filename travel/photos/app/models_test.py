@@ -11,7 +11,7 @@ class TestLocation(unittest.TestCase):
 
     def test_location_fields(self) -> None:
         """Test that Location model stores fields correctly."""
-        location = models.Location(
+        location = models.PhotoLocation(
             name='Paris',
             latitude=48.8566,
             longitude=2.3522,
@@ -25,7 +25,7 @@ class TestLocation(unittest.TestCase):
 
     def test_location_optional_fields(self) -> None:
         """Test that Location model optional fields default to None."""
-        location = models.Location(
+        location = models.PhotoLocation(
             name='Unknown',
             latitude=0.0,
             longitude=0.0,
@@ -36,7 +36,7 @@ class TestLocation(unittest.TestCase):
     def test_location_created_date_defaults_to_now(self) -> None:
         """Test that created_date defaults to current UTC time."""
         before = datetime.now(UTC)
-        location = models.Location(
+        location = models.PhotoLocation(
             name='Test',
             latitude=0.0,
             longitude=0.0,

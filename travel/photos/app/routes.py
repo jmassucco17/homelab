@@ -102,7 +102,7 @@ async def update_picture(
     return serialize_picture(picture)
 
 
-@admin_router.post('/locations', response_model=models.Location)
+@admin_router.post('/locations', response_model=models.PhotoLocation)
 async def create_location(
     name: str = Form(...),
     latitude: float = Form(...),
@@ -160,7 +160,7 @@ async def get_picture_file(
     )
 
 
-@public_router.get('/locations', response_model=list[models.Location])
+@public_router.get('/locations', response_model=list[models.PhotoLocation])
 async def get_locations(
     session: Session = Depends(get_session),
     location_service: services.LocationService = Depends(get_location_service),

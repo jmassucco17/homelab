@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 import httpx
 from sqlmodel import Session, select
 
-from .models import Location, Map
+from .models import Map, MapLocation
 
 
 async def geocode_location(query: str) -> list[dict[str, str | float]]:
@@ -90,20 +90,20 @@ def add_location_to_map(
     longitude: float,
     nickname: str | None = None,
     description: str | None = None,
-) -> Location | None:
+) -> MapLocation | None:
     """Add a location to a map."""
     map_obj = session.get(Map, map_id)
     if not map_obj:
         return None
 
     max_order = session.exec(
-        select(Location.order_index)
-        .where(Location.map_id == map_id)
-        .order_by(Location.order_index.desc())  # type: ignore[attr-defined]
+        select(MapLocation.order_index)
+        .where(MapLocation.map_id == map_id)
+        .order_by(MapLocation.order_index.desc())  # type: ignore[attr-defined]
     ).first()
     order_index = (max_order + 1) if max_order is not None else 0
 
-    location = Location(
+    location = MapLocation(
         map_id=map_id,
         name=name,
         latitude=latitude,
@@ -127,9 +127,9 @@ def update_location(
     location_id: int,
     nickname: str | None = None,
     description: str | None = None,
-) -> Location | None:
+) -> MapLocation | None:
     """Update a location's nickname and description."""
-    location = session.get(Location, location_id)
+    location = session.get(MapLocation, location_id)
     if not location:
         return None
 
@@ -149,7 +149,7 @@ def update_location(
 
 def delete_location(session: Session, location_id: int) -> bool:
     """Delete a location from a map."""
-    location = session.get(Location, location_id)
+    location = session.get(MapLocation, location_id)
     if not location:
         return False
 
@@ -168,7 +168,7 @@ def delete_location(session: Session, location_id: int) -> bool:
 def reorder_locations(session: Session, location_ids: list[int]) -> bool:
     """Reorder locations based on provided list of IDs."""
     for index, location_id in enumerate(location_ids):
-        location = session.get(Location, location_id)
+        location = session.get(MapLocation, location_id)
         if location:
             location.order_index = index
             session.add(location)

@@ -28,7 +28,7 @@ class TestCreateDbAndTables(unittest.TestCase):
         engine = make_in_memory_engine()
         # Verify tables were created by inserting a row
         with sqlmodel.Session(engine) as session:
-            location = models.Location(name='Test', latitude=0.0, longitude=0.0)
+            location = models.PhotoLocation(name='Test', latitude=0.0, longitude=0.0)
             session.add(location)
             session.commit()
 
@@ -75,7 +75,7 @@ class TestInMemoryDatabase(unittest.TestCase):
 
     def test_location_crud(self) -> None:
         """Test creating and retrieving a Location record."""
-        location = models.Location(
+        location = models.PhotoLocation(
             name='Tokyo',
             latitude=35.6762,
             longitude=139.6503,
@@ -86,7 +86,7 @@ class TestInMemoryDatabase(unittest.TestCase):
         self.session.refresh(location)
 
         self.assertIsNotNone(location.id)
-        fetched = self.session.get(models.Location, location.id)
+        fetched = self.session.get(models.PhotoLocation, location.id)
         self.assertIsNotNone(fetched)
         self.assertEqual(fetched.name, 'Tokyo')  # type: ignore[union-attr]
 

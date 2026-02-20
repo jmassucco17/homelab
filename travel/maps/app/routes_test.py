@@ -214,12 +214,12 @@ class TestLocationAPI(unittest.TestCase):
             assert map_obj.id is not None
             loc1 = services.add_location_to_map(session, map_obj.id, 'First', 0, 0)
             loc2 = services.add_location_to_map(session, map_obj.id, 'Second', 0, 0)
-        assert loc1 is not None
-        assert loc2 is not None
-        assert loc1.id is not None
-        assert loc2.id is not None
-        loc1_id = loc1.id
-        loc2_id = loc2.id
+            assert loc1 is not None
+            assert loc2 is not None
+            assert loc1.id is not None
+            assert loc2.id is not None
+            loc1_id = loc1.id
+            loc2_id = loc2.id
 
         response = self.client.post(
             '/api/locations/reorder', json={'location_ids': [loc2_id, loc1_id]}

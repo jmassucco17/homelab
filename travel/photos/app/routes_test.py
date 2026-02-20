@@ -24,7 +24,7 @@ class TestSerializePicture(unittest.TestCase):
 
     def test_serialize_picture_with_location(self) -> None:
         """Test serializing a picture that has an associated location."""
-        location = models.Location(
+        location = models.PhotoLocation(
             name='Rome',
             latitude=41.9028,
             longitude=12.4964,
