@@ -4,11 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Travel Maps{% endblock %}</title>
+    <link rel="stylesheet" href="https://assets.jamesmassucco.com/styles/main.css?v=2.0">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="/static/css/styles.css">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    <div id="theme-toggle-container"></div>
     <header class="site-header">
         <div class="container">
             <h1><a href="/">🗺️ Travel Maps</a></h1>
@@ -29,6 +31,12 @@
     </footer>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module">
+      import { insertThemeToggle } from 'https://assets.jamesmassucco.com/scripts/theme-toggle.js?v=2.0'
+      window.addEventListener('DOMContentLoaded', () => {
+        insertThemeToggle()
+      })
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>
