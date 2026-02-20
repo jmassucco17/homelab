@@ -13,8 +13,6 @@ permissions:
 jobs:
   lint:
     uses: ./.github/workflows/linting.yml
-    with:
-      base_sha: ${{ github.event.pull_request.base.sha || '' }}
 
   test:
     uses: ./.github/workflows/unit-testing.yml
