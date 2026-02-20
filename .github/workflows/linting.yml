@@ -93,3 +93,39 @@ jobs:
       - name: Run Ruff formatter
         if: steps.changes.outputs.python == 'true'
         run: ruff format --check
+  lint-css:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install npm dependencies
+        run: npm ci
+      - name: Run stylelint
+        run: npm run lint:css
+  prettier:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install npm dependencies
+        run: npm ci
+      - name: Check HTML formatting
+        run: npx prettier --check '**/*.html'
+  shellcheck:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Run ShellCheck
+        run: find . -name '*.sh' -not -path './node_modules/*' | xargs shellcheck
+  actionlint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Run actionlint
+        uses: rhysd/actionlint@v1.7.7
