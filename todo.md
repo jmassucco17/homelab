@@ -15,6 +15,7 @@
 ## Deployment improvements:
 
 - Finish package based deployment, remove plan doc, and test for both local and prod deployments
+    - Make a note somewhere that newly added docker images will need to go to github.com/jmassucco17?tab=packages, open package → Package settings → "Change visibility" → Public
 - Setup a proper staging environment that both me and AI agents can interact with, for testing major changes in a full environment (need to figure out domain structure)
 - Restructure the CI checks to have fewer top-level items (to make it easier to maintain the "required" checks list)
 - Teach Claude Code how to manage the deployment: how to ssh into the server, how to check the webpage from the public internet, how to run a local deployment, etc.
