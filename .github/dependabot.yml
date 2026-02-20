@@ -1,53 +1,8 @@
 version: 2
 updates:
-  # Python packages (requirements.txt) - root dev deps + each service
+  # Python packages (requirements.txt)
   - package-ecosystem: 'pip'
     directory: '/'
-    schedule:
-      interval: 'weekly'
-      day: 'monday'
-    groups:
-      python-packages:
-        patterns: ['*']
-
-  - package-ecosystem: 'pip'
-    directory: '/blog'
-    schedule:
-      interval: 'weekly'
-      day: 'monday'
-    groups:
-      python-packages:
-        patterns: ['*']
-
-  - package-ecosystem: 'pip'
-    directory: '/games'
-    schedule:
-      interval: 'weekly'
-      day: 'monday'
-    groups:
-      python-packages:
-        patterns: ['*']
-
-  - package-ecosystem: 'pip'
-    directory: '/travel/landing'
-    schedule:
-      interval: 'weekly'
-      day: 'monday'
-    groups:
-      python-packages:
-        patterns: ['*']
-
-  - package-ecosystem: 'pip'
-    directory: '/travel/maps'
-    schedule:
-      interval: 'weekly'
-      day: 'monday'
-    groups:
-      python-packages:
-        patterns: ['*']
-
-  - package-ecosystem: 'pip'
-    directory: '/travel/photos'
     schedule:
       interval: 'weekly'
       day: 'monday'

@@ -1,6 +1,6 @@
 FROM python:3.12-slim
 WORKDIR /app
-COPY travel/maps/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY travel/maps/app ./app
 RUN mkdir -p /data

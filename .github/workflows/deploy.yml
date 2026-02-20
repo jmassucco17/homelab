@@ -108,9 +108,7 @@ jobs:
             local flag="$2"
             if [ "$flag" = "true" ]; then
               echo "--- Starting $svc ---"
-              cd /opt/homelab/$svc
-              ./start.sh
-              cd /opt/homelab
+              /opt/homelab/scripts/start_service.sh "$svc"
             else
               echo "--- Skipping $svc ---"
             fi
