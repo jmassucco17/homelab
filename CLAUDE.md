@@ -15,6 +15,7 @@ When creating a new module (i.e. a new page or new sub-site), make a new top-lev
 - Update `docker-integration.yml` to add integration tests for the new service
 - Add an `image: ghcr.io/jmassucco17/homelab/<service>:latest` field to the service's `docker-compose.yml`
 - Add a matrix entry to `.github/workflows/build-and-push.yml` following the standard service order
+- Add a link to the new service from the homepage (`homepage/site/index.html`) in the "Content and Projects" section
 
 ### Standard service order
 
