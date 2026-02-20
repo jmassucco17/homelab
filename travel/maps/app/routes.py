@@ -1,13 +1,18 @@
-from app import services
-from app.database import get_session
+import pathlib
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from sqlmodel import Session
 
+from . import services
+from .database import get_session
+
+APP_DIR = pathlib.Path(__file__).resolve().parent
+
 router = APIRouter()
-templates = Jinja2Templates(directory='app/templates')
+templates = Jinja2Templates(directory=APP_DIR / 'templates')
 
 
 class MapCreate(BaseModel):

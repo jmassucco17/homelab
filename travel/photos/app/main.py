@@ -1,6 +1,7 @@
 """Main FastAPI application for the travel picture site."""
 
 import os
+import pathlib
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -9,6 +10,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from . import database, routes
+
+APP_DIR = pathlib.Path(__file__).resolve().parent
 
 
 @asynccontextmanager
@@ -31,7 +34,7 @@ app.include_router(routes.admin_router)
 app.include_router(routes.public_router)
 
 # Mount static files for CSS and other assets
-app.mount('/assets', StaticFiles(directory='app/static'), name='assets')
+app.mount('/assets', StaticFiles(directory=APP_DIR / 'static'), name='assets')
 
 # Mount uploaded pictures
 data_dir = os.environ.get('DATA_DIR', 'data')

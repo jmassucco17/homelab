@@ -6,6 +6,8 @@ from sqlmodel import Field, Relationship, SQLModel
 class Map(SQLModel, table=True):
     """Represents a travel map with multiple locations."""
 
+    __tablename__ = 'maps_map'  # type: ignore[misc]
+
     id: int | None = Field(default=None, primary_key=True)
     name: str = Field(max_length=200, index=True)
     description: str | None = Field(default=None, max_length=1000)
@@ -16,7 +18,7 @@ class Map(SQLModel, table=True):
         back_populates='map',
         sa_relationship_kwargs={
             'cascade': 'all, delete-orphan',
-            'order_by': 'Location.order_index',
+            'order_by': 'maps_location.c.order_index',
         },
     )
 
@@ -24,8 +26,10 @@ class Map(SQLModel, table=True):
 class Location(SQLModel, table=True):
     """Represents a location within a travel map."""
 
+    __tablename__ = 'maps_location'  # type: ignore[misc]
+
     id: int | None = Field(default=None, primary_key=True)
-    map_id: int = Field(foreign_key='map.id', index=True)
+    map_id: int = Field(foreign_key='maps_map.id', index=True)
     order_index: int = Field(default=0)
 
     name: str = Field(max_length=200)

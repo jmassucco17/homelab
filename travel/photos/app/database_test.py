@@ -5,7 +5,8 @@ import unittest
 import sqlalchemy
 import sqlalchemy.pool
 import sqlmodel
-from app import database, models
+
+from travel.photos.app import database, models
 
 
 def make_in_memory_engine() -> sqlalchemy.Engine:

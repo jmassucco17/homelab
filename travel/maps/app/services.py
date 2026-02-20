@@ -1,8 +1,9 @@
 from datetime import UTC, datetime
 
 import httpx
-from app.models import Location, Map
 from sqlmodel import Session, select
+
+from .models import Location, Map
 
 
 async def geocode_location(query: str) -> list[dict]:

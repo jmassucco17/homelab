@@ -8,6 +8,8 @@ from sqlmodel import Field, Relationship, SQLModel
 class Location(SQLModel, table=True):
     """Model for storing location information."""
 
+    __tablename__ = 'photos_location'  # type: ignore[misc]
+
     id: int | None = Field(default=None, primary_key=True)
     name: str = Field(index=True)
     latitude: float
@@ -20,12 +22,14 @@ class Location(SQLModel, table=True):
 class Picture(SQLModel, table=True):
     """Model for storing travel pictures with metadata."""
 
+    __tablename__ = 'photos_picture'  # type: ignore[misc]
+
     id: int | None = Field(default=None, primary_key=True)
     filename: str = Field(index=True)
     original_filename: str
     upload_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
     date_taken: datetime | None = None
-    location_id: int | None = Field(default=None, foreign_key='location.id')
+    location_id: int | None = Field(default=None, foreign_key='photos_location.id')
     location: Location | None = Relationship(back_populates='pictures')
     description: str | None = None
     file_size: int

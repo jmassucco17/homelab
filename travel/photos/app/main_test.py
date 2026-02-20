@@ -6,7 +6,8 @@ import fastapi.testclient
 import sqlalchemy
 import sqlalchemy.pool
 import sqlmodel
-from app import database, main
+
+from travel.photos.app import database, main
 
 
 def make_in_memory_engine() -> sqlalchemy.Engine:

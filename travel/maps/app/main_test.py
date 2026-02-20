@@ -5,8 +5,9 @@ import unittest
 import sqlalchemy
 import sqlalchemy.pool
 import sqlmodel
-from app import database, main
 from fastapi.testclient import TestClient
+
+from travel.maps.app import database, main
 
 
 def make_in_memory_engine() -> sqlalchemy.Engine:

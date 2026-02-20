@@ -10,7 +10,8 @@ from unittest import mock
 import sqlalchemy
 import sqlalchemy.pool
 import sqlmodel
-from app import models, services
+
+from travel.photos.app import models, services
 
 
 def make_in_memory_engine() -> sqlalchemy.Engine:
