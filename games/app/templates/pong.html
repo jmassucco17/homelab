@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Pong{% endblock %}
+
+{% block extra_head %}{% endblock %}
+
+{% block content %}
+  <h1>🏓 Pong</h1>
+
+  <!-- Mode selection screen -->
+  <div id="pong-mode-screen" class="pong-mode-screen">
+    <h2>Select Mode</h2>
+    <div class="pong-mode-buttons">
+      <button id="btn-1p" class="pong-mode-btn">1 Player vs AI</button>
+      <button id="btn-2p" class="pong-mode-btn">2 Players Local</button>
+    </div>
+    <p class="pong-controls-hint">
+      Left paddle: <strong>W / S</strong>&nbsp;&nbsp;|&nbsp;&nbsp;Right paddle: <strong>↑ / ↓</strong> (2P)
+    </p>
+    <p class="pong-controls-hint">Mobile: drag on your side of the screen to move your paddle.</p>
+  </div>
+
+  <!-- Game screen (hidden until mode is chosen) -->
+  <div id="pong-game-screen" class="pong-game-screen" style="display:none">
+    <div class="pong-hud">
+      <span id="mode-label" class="pong-mode-label"></span>
+      <span id="pong-score" class="pong-score">0  —  0</span>
+    </div>
+
+    <div id="pong-canvas-wrapper" class="pong-canvas-wrapper">
+      <canvas id="pong-canvas"></canvas>
+      <button id="rematch-btn" class="pong-rematch-btn" style="display:none">Rematch</button>
+    </div>
+
+    <p class="pong-controls-hint">
+      Left: <strong>W / S</strong>&nbsp;&nbsp;|&nbsp;&nbsp;Right: <strong>↑ / ↓</strong> (2P) &nbsp;|&nbsp; <strong>R</strong> = rematch
+    </p>
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script src="/static/pong/pong.js"></script>
+{% endblock %}
