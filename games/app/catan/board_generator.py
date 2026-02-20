@@ -8,7 +8,9 @@ re-deriving spatial relationships.
 Cube-coordinate geometry
 ------------------------
 Each hex is identified by integer cube coordinates (q, r, s) with the
-invariant q + r + s == 0.  The six neighbour directions in order are::
+invariant q + r + s == 0.  See
+https://www.redblobgames.com/grids/hexagons/#coordinates-cube for a full
+explanation.  The six neighbour directions in order are::
 
     0: (+1, -1,  0)   east
     1: (+1,  0, -1)   north-east
@@ -29,6 +31,11 @@ where N[i] is the neighbour in direction i.  Some hexes in the set may not
 exist on the board; that is fine — the frozenset still uniquely locates the
 vertex.
 
+Example: for H = (0, 0, 0) and direction i = 0 (east), N[0] = (1, -1, 0)
+and N[1] = (1, 0, -1), giving::
+
+    v[0] = frozenset({ (0,0,0), (1,-1,0), (1,0,-1) })
+
 Edge identification
 -------------------
 An edge is the side shared by (up to) two hexes.  Its key is::
@@ -36,6 +43,14 @@ An edge is the side shared by (up to) two hexes.  Its key is::
     e[i] = frozenset({ H, N[i] })
 
 Edge e[i] of H connects vertex v[(i-1) % 6] to vertex v[i].
+
+Example: for H = (0, 0, 0) and direction i = 0 (east), N[0] = (1, -1, 0),
+giving::
+
+    e[0] = frozenset({ (0,0,0), (1,-1,0) })
+
+This edge connects v[5] = frozenset({(0,0,0),(0,-1,1),(1,-1,0)}) to
+v[0] = frozenset({(0,0,0),(1,-1,0),(1,0,-1)}).
 
 A standard Catan board has **54 vertices** and **72 edges**.
 """
