@@ -24,6 +24,7 @@
 - Consolidate `start.sh` scripts to just a single script that works for any package
 - (add to CLAUDE.md) new subdomains should have a link from the homepage
 - Explain CSS strategy (have Copilot do this based on #24)
+- Apply a fixed order for all the subdomains wherever they appear (networking -> shared-assets -> homepage -> etc)
 
 ## Security
 
