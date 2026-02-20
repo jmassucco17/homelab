@@ -2,6 +2,7 @@ name: Docker integration tests
 
 on:
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   networking:

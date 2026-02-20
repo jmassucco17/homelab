@@ -2,10 +2,13 @@ name: Unit testing
 
 on:
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   pytest:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6
         with:

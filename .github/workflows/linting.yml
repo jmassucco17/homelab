@@ -2,10 +2,18 @@ name: Linting
 
 on:
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      base_sha:
+        required: false
+        type: string
+        default: ''
 
 jobs:
   no-xxx-comments:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6
         with:
@@ -18,13 +26,16 @@ jobs:
         run: pip install -r requirements.txt
       - name: Check for XXX comments
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          BASE_SHA="${{ inputs.base_sha }}"
+          if [ -z "$BASE_SHA" ]; then
             git ls-files -z | xargs -0 -r python scripts/check_xxx_comments.py
           else
-            git diff -z --name-only ${{ github.event.pull_request.base.sha }}...HEAD | xargs -0 -r python scripts/check_xxx_comments.py
+            git diff -z --name-only ${BASE_SHA}...HEAD | xargs -0 -r python scripts/check_xxx_comments.py
           fi
   pyright:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6
         with:
@@ -32,12 +43,13 @@ jobs:
       - name: Check for changed Python files
         id: changes
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          BASE_SHA="${{ inputs.base_sha }}"
+          if [ -z "$BASE_SHA" ]; then
             git ls-files | grep -qE '(\.py$|pyrightconfig\.json$)' \
               && echo "python=true" >> $GITHUB_OUTPUT \
               || echo "python=false" >> $GITHUB_OUTPUT
           else
-            git diff --name-only ${{ github.event.pull_request.base.sha }}...HEAD \
+            git diff --name-only ${BASE_SHA}...HEAD \
               | grep -qE '(\.py$|pyrightconfig\.json$)' \
               && echo "python=true" >> $GITHUB_OUTPUT \
               || echo "python=false" >> $GITHUB_OUTPUT
@@ -58,6 +70,8 @@ jobs:
         run: npx pyright
   ruff:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6
         with:
@@ -65,12 +79,13 @@ jobs:
       - name: Check for changed Python files
         id: changes
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          BASE_SHA="${{ inputs.base_sha }}"
+          if [ -z "$BASE_SHA" ]; then
             git ls-files | grep -qE '(\.py$|pyproject\.toml$)' \
               && echo "python=true" >> $GITHUB_OUTPUT \
               || echo "python=false" >> $GITHUB_OUTPUT
           else
-            git diff --name-only ${{ github.event.pull_request.base.sha }}...HEAD \
+            git diff --name-only ${BASE_SHA}...HEAD \
               | grep -qE '(\.py$|pyproject\.toml$)' \
               && echo "python=true" >> $GITHUB_OUTPUT \
               || echo "python=false" >> $GITHUB_OUTPUT
