@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Start a single homelab service by name.
-# Handles service-specific logic (networking uses pull instead of build;
-# travel includes a one-time container migration step).
+# If the service directory contains a Dockerfile, images are built locally.
+# Otherwise (e.g. networking, which uses pre-built images), images are pulled.
 #
 # Usage: scripts/start_service.sh <service>
 # Examples:
@@ -34,12 +34,12 @@ fi
 echo "Shutting down containers..."
 sudo docker compose down --remove-orphans
 
-if [[ "$SERVICE" == "networking" ]]; then
+if [[ -f "$SERVICE_DIR/Dockerfile" ]]; then
+  echo "Building and starting containers..."
+  sudo docker compose up -d --build --wait
+else
   echo "Pulling latest images..."
   sudo docker compose pull
   echo "Starting up containers..."
   sudo docker compose up -d --wait
-else
-  echo "Building and starting containers..."
-  sudo docker compose up -d --build --wait
 fi
