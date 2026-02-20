@@ -2,7 +2,7 @@
 
 import unittest
 
-from travel.app import models, routes
+from travel.app.photos import models, routes
 
 
 class TestSerializePicture(unittest.TestCase):

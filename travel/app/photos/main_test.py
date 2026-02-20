@@ -7,9 +7,9 @@ import sqlalchemy
 import sqlalchemy.pool
 import sqlmodel
 
-from travel.app import database as photos_db
 from travel.app import main
 from travel.app.maps import database as maps_db
+from travel.app.photos import database as photos_db
 
 
 def make_in_memory_engine() -> sqlalchemy.Engine:

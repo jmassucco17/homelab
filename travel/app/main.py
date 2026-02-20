@@ -10,10 +10,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.responses import Response
 
-from travel.app import database as photos_db
-from travel.app import routes as photos_routes
 from travel.app.maps import database as maps_db
 from travel.app.maps import routes as maps_routes
+from travel.app.photos import database as photos_db
+from travel.app.photos import routes as photos_routes
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
 
@@ -28,20 +28,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title='Travel', lifespan=lifespan)
 
-# Static files
-app.mount(
-    '/static', StaticFiles(directory=APP_DIR / 'static' / 'landing'), name='static'
-)
-app.mount(
-    '/photos/assets',
-    StaticFiles(directory=APP_DIR / 'static' / 'photos'),
-    name='photos-assets',
-)
-app.mount(
-    '/maps/static',
-    StaticFiles(directory=APP_DIR / 'static' / 'maps'),
-    name='maps-static',
-)
+# Static files - single mount covering all CSS and JS
+app.mount('/static', StaticFiles(directory=APP_DIR / 'static'), name='static')
 
 # Photos uploads (if available)
 data_dir = os.environ.get('DATA_DIR', 'data')

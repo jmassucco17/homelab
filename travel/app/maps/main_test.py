@@ -7,10 +7,10 @@ import sqlalchemy.pool
 import sqlmodel
 from fastapi.testclient import TestClient
 
-from travel.app import database as photos_db
 from travel.app import main
 from travel.app.maps import database as maps_db
 from travel.app.maps import services
+from travel.app.photos import database as photos_db
 
 
 def make_in_memory_engine() -> sqlalchemy.Engine:
