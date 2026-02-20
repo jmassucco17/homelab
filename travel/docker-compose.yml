@@ -1,6 +1,7 @@
 services:
   travel:
     container_name: travel
+    image: ghcr.io/jmassucco17/homelab/travel:latest
     build:
       context: ..
       dockerfile: travel/Dockerfile

@@ -1,6 +1,7 @@
 services:
   shared-assets:
     build: .
+    image: ghcr.io/jmassucco17/homelab/shared-assets:latest
     container_name: shared-assets
     labels:
       # Use traefik to provide HTTPS endpoint

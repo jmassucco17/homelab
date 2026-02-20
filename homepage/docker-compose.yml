@@ -2,6 +2,7 @@ services:
   homepage:
     container_name: homepage
     # Use custom dockerfile (imports from nginx:alpine)
+    image: ghcr.io/jmassucco17/homelab/homepage:latest
     build:
       context: .
       dockerfile: Dockerfile
