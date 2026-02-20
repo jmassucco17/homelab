@@ -42,3 +42,7 @@
 - Check for new Python version
 - Check for new ruff version
 - Check VPS for apt updates and OS updates
+
+## Misc.
+
+- Update python deployment file to fix at 3.12
