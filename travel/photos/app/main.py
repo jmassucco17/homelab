@@ -50,8 +50,7 @@ templates = Jinja2Templates(directory=APP_DIR / 'templates')
 async def root(request: Request):
     """Root endpoint - serve the interactive map."""
     return templates.TemplateResponse(
-        'public/map.html.jinja2',
-        {'request': request},
+        request=request, name='public/map.html.jinja2'
     )
 
 
@@ -59,8 +58,7 @@ async def root(request: Request):
 async def gallery(request: Request):
     """Gallery endpoint - serve the public gallery."""
     return templates.TemplateResponse(
-        'public/gallery.html.jinja2',
-        {'request': request},
+        request=request, name='public/gallery.html.jinja2'
     )
 
 
@@ -68,8 +66,7 @@ async def gallery(request: Request):
 async def admin_root(request: Request):
     """Admin root endpoint - serve the admin upload interface."""
     return templates.TemplateResponse(
-        'admin/upload.html.jinja2',
-        {'request': request},
+        request=request, name='admin/upload.html.jinja2'
     )
 
 

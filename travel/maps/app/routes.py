@@ -52,7 +52,7 @@ async def index(request: Request, session: Session = Depends(get_session)):
         for m in maps
     ]
     return templates.TemplateResponse(
-        'index.html.jinja2', {'request': request, 'maps': maps_list}
+        request=request, name='index.html.jinja2', context={'maps': maps_list}
     )
 
 
@@ -60,7 +60,7 @@ async def index(request: Request, session: Session = Depends(get_session)):
 async def new_map_form(request: Request):
     """Display form to create a new map."""
     return templates.TemplateResponse(
-        'map-edit.html.jinja2', {'request': request, 'map': None}
+        request=request, name='map-edit.html.jinja2', context={'map': None}
     )
 
 
@@ -92,7 +92,7 @@ async def view_map(
     }
 
     return templates.TemplateResponse(
-        'map-view.html.jinja2', {'request': request, 'map': map_dict}
+        request=request, name='map-view.html.jinja2', context={'map': map_dict}
     )
 
 
@@ -124,7 +124,7 @@ async def edit_map_form(
     }
 
     return templates.TemplateResponse(
-        'map-edit.html.jinja2', {'request': request, 'map': map_dict}
+        request=request, name='map-edit.html.jinja2', context={'map': map_dict}
     )
 
 

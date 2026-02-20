@@ -16,7 +16,9 @@ class Location(SQLModel, table=True):
     longitude: float
     location_name: str | None = None
     created_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    pictures: list['Picture'] = Relationship(back_populates='location')
+    pictures: list['travel.photos.app.models.Picture'] = Relationship(  # noqa: F821  # type: ignore[name-defined]
+        back_populates='location'
+    )
 
 
 class Picture(SQLModel, table=True):

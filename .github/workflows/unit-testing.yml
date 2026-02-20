@@ -21,4 +21,4 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Run unit tests
-        run: pytest -v
+        run: pytest -v -W error
