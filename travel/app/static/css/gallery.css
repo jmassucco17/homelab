@@ -47,6 +47,19 @@ body {
   text-decoration: underline;
 }
 
+.travel-home-link {
+  position: absolute;
+  left: 20px;
+  top: 20px;
+  color: var(--color-accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.travel-home-link:hover {
+  text-decoration: underline;
+}
+
 .gallery {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -180,7 +193,8 @@ body {
   }
 
   .admin-link,
-  .map-link {
+  .map-link,
+  .travel-home-link {
     position: static;
     display: inline-block;
     margin: 10px 10px 0 0;
