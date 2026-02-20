@@ -14,10 +14,12 @@
 
 ## Deployment improvements:
 
+- Setup a proper staging environment that both me and AI agents can interact with, for testing major changes in a full environment (need to figure out domain structure)
 - Restructure the CI checks to have fewer top-level items (to make it easier to maintain the "required" checks list)
 - Teach Claude Code how to manage the deployment: how to ssh into the server, how to check the webpage from the public internet, how to run a local deployment, etc.
 - Make Tailscale remind me when Hetzner VPS is going to expire
-- Setup GitHub deployment checks of different site components
+- Database migration management (both at the schema layer and at the storage layer)
+    - enable backup / restore capability
 
 ## Organization
 
@@ -41,6 +43,7 @@
 
 ## Recurring Items
 
+- Periodic usability review - go through all sections on both browser and mobile and make a list of usability critiques to fix
 - Check for new Python version
 - Check for new ruff version
 - Check VPS for apt updates and OS updates
