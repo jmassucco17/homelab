@@ -27,18 +27,10 @@ jobs:
             image: ghcr.io/jmassucco17/homelab/homepage
             context: homepage
             file: homepage/Dockerfile
-          - service: travel-landing
-            image: ghcr.io/jmassucco17/homelab/travel-landing
-            context: travel/landing
-            file: travel/landing/Dockerfile
-          - service: travel-photos
-            image: ghcr.io/jmassucco17/homelab/travel-photos
+          - service: travel
+            image: ghcr.io/jmassucco17/homelab/travel
             context: .
-            file: travel/photos/Dockerfile
-          - service: travel-maps
-            image: ghcr.io/jmassucco17/homelab/travel-maps
-            context: .
-            file: travel/maps/Dockerfile
+            file: travel/Dockerfile
           - service: games
             image: ghcr.io/jmassucco17/homelab/games
             context: .
