@@ -9,15 +9,12 @@
 
 ## Testing improvements
 
-- Pre-hook linting should only check changed files, but PR linting (and main linting) should check everything
 - Add non-python testing wherever appropriate
 
 ## Deployment improvements:
 
 - Finish package based deployment, remove plan doc, and test for both local and prod deployments
-    - Make a note somewhere that newly added docker images will need to go to github.com/jmassucco17?tab=packages, open package → Package settings → "Change visibility" → Public
 - Setup a proper staging environment that both me and AI agents can interact with, for testing major changes in a full environment (need to figure out domain structure)
-- Restructure the CI checks to have fewer top-level items (to make it easier to maintain the "required" checks list)
 - Teach Claude Code how to manage the deployment: how to ssh into the server, how to check the webpage from the public internet, how to run a local deployment, etc.
 - Make Tailscale remind me when Hetzner VPS is going to expire
 - Database migration management (both at the schema layer and at the storage layer)
@@ -29,10 +26,8 @@
 
 - Add instructions about port management for local deployments
 - Reduce sources of truth for what packages are available (listed in a lot of places, see #23 for example)
-- (add to CLAUDE.md) new subdomains should have a link from the homepage
 - Explain CSS strategy (have Copilot do this based on #24)
-- Apply a fixed order for all the subdomains wherever they appear (networking -> shared-assets -> homepage -> etc)
-- Simplify the structure of travel maps / photos to just be a single site instead of two separate ones
+- Apply a fixed order for all the subdomains wherever they appear (networking -> shared-assets -> homepage -> others in alphabetical order)
 
 ## Security
 
