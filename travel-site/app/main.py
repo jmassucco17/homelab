@@ -46,28 +46,19 @@ templates = Jinja2Templates(directory='app/templates')
 @app.get('/', response_class=HTMLResponse)
 async def root(request: Request):
     """Root endpoint - serve the interactive map."""
-    return templates.TemplateResponse(
-        'public/map.html.jinja2',
-        {'request': request},
-    )
+    return templates.TemplateResponse(request=request, name='public/map.html.jinja2')
 
 
 @app.get('/gallery', response_class=HTMLResponse)
 async def gallery(request: Request):
     """Gallery endpoint - serve the public gallery."""
-    return templates.TemplateResponse(
-        'public/gallery.html.jinja2',
-        {'request': request},
-    )
+    return templates.TemplateResponse(request=request, name='public/gallery.html.jinja2')
 
 
 @app.get('/admin', response_class=HTMLResponse)
 async def admin_root(request: Request):
     """Admin root endpoint - serve the admin upload interface."""
-    return templates.TemplateResponse(
-        'admin/upload.html.jinja2',
-        {'request': request},
-    )
+    return templates.TemplateResponse(request=request, name='admin/upload.html.jinja2')
 
 
 @app.api_route('/health', methods=['GET', 'HEAD'])
