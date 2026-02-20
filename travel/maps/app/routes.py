@@ -119,7 +119,7 @@ async def edit_map_form(
                 'description': loc.description,
                 'order_index': loc.order_index,
             }
-            for loc in map_obj.locations
+            for loc in map_obj.locations  # type: ignore[attr-defined]
         ],
     }
 
@@ -158,7 +158,7 @@ async def get_map(map_id: int, session: Session = Depends(get_session)):
                 'description': loc.description,
                 'order_index': loc.order_index,
             }
-            for loc in map_obj.locations
+            for loc in map_obj.locations  # type: ignore[attr-defined]
         ],
     }
 
@@ -267,5 +267,5 @@ async def geocode(q: str):
     if not q or len(q) < 2:
         return []
 
-    results = await services.geocode_location(q)
+    results: list[dict[str, str | float]] = await services.geocode_location(q)
     return results

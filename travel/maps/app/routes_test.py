@@ -176,9 +176,11 @@ class TestLocationAPI(unittest.TestCase):
         """Test updating a location via API."""
         with sqlmodel.Session(database.engine) as session:
             map_obj = services.create_map(session, 'Test Map')
+            assert map_obj.id is not None
             location = services.add_location_to_map(
                 session, map_obj.id, 'Paris', 48.8566, 2.3522
             )
+        assert location.id is not None
 
         response = self.client.put(
             f'/api/locations/{location.id}',
@@ -193,9 +195,11 @@ class TestLocationAPI(unittest.TestCase):
         """Test deleting a location via API."""
         with sqlmodel.Session(database.engine) as session:
             map_obj = services.create_map(session, 'Test Map')
+            assert map_obj.id is not None
             location = services.add_location_to_map(
                 session, map_obj.id, 'Paris', 48.8566, 2.3522
             )
+        assert location.id is not None
 
         response = self.client.delete(f'/api/locations/{location.id}')
         self.assertEqual(response.status_code, 200)
@@ -205,10 +209,13 @@ class TestLocationAPI(unittest.TestCase):
         """Test reordering locations via API."""
         with sqlmodel.Session(database.engine) as session:
             map_obj = services.create_map(session, 'Test Map')
+            assert map_obj.id is not None
             loc1 = services.add_location_to_map(session, map_obj.id, 'First', 0, 0)
             loc2 = services.add_location_to_map(session, map_obj.id, 'Second', 0, 0)
-            loc1_id = loc1.id
-            loc2_id = loc2.id
+        assert loc1.id is not None
+        assert loc2.id is not None
+        loc1_id = loc1.id
+        loc2_id = loc2.id
 
         response = self.client.post(
             '/api/locations/reorder', json={'location_ids': [loc2_id, loc1_id]}

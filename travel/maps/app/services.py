@@ -6,7 +6,7 @@ from sqlmodel import Session, select
 from .models import Location, Map
 
 
-async def geocode_location(query: str) -> list[dict]:
+async def geocode_location(query: str) -> list[dict[str, str | float]]:
     """
     Search for locations using Nominatim geocoding API.
 
@@ -23,13 +23,13 @@ async def geocode_location(query: str) -> list[dict]:
             headers={'User-Agent': 'TravelMapsApp/1.0'},
         )
         response.raise_for_status()
-        results = response.json()
+        results: list[dict[str, str | float]] = response.json()  # type: ignore[assignment]
 
         return [
             {
-                'name': result.get('display_name'),
-                'latitude': float(result.get('lat')),
-                'longitude': float(result.get('lon')),
+                'name': result.get('display_name', ''),
+                'latitude': float(result.get('lat', 0)),
+                'longitude': float(result.get('lon', 0)),
             }
             for result in results
         ]
@@ -37,7 +37,7 @@ async def geocode_location(query: str) -> list[dict]:
 
 def get_all_maps(session: Session) -> list[Map]:
     """Get all maps."""
-    return session.exec(select(Map).order_by(Map.updated_at.desc())).all()
+    return list(session.exec(select(Map).order_by(Map.updated_at.desc())).all())  # type: ignore[attr-defined]
 
 
 def get_map_by_id(session: Session, map_id: int) -> Map | None:
@@ -99,7 +99,7 @@ def add_location_to_map(
     max_order = session.exec(
         select(Location.order_index)
         .where(Location.map_id == map_id)
-        .order_by(Location.order_index.desc())
+        .order_by(Location.order_index.desc())  # type: ignore[attr-defined]
     ).first()
     order_index = (max_order + 1) if max_order is not None else 0
 
