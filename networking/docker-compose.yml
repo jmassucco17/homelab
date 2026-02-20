@@ -137,7 +137,7 @@ services:
 
   # Automatically updates public IP DNS in Cloudflare
   cloudflare-ddns:
-    image: favonia/cloudflare-ddns:latest
+    image: favonia/cloudflare-ddns:1.15.1
     container_name: cloudflare-ddns
     network_mode: host
     read_only: true

@@ -36,6 +36,11 @@ jobs:
       - name: Create docker web network
         run: docker network create web 2>/dev/null || true
 
+      - name: Pull cloudflare-ddns image (validates tag exists)
+        run: |
+          cd networking
+          docker compose pull cloudflare-ddns
+
       - name: Start networking services (excluding cloudflare-ddns)
         run: |
           cd networking
