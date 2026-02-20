@@ -20,6 +20,8 @@
 - Make Tailscale remind me when Hetzner VPS is going to expire
 - Database migration management (both at the schema layer and at the storage layer)
     - enable backup / restore capability
+    - Fix -> time="2026-02-20T16:21:51Z" level=warning msg="volume \"travel-site_data-volume\" already exists but was created for project \"travel-site\" (expected \"travel\"). Use `external: true` to use an existing volume"
+
 
 ## Organization
 
