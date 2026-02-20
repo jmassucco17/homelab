@@ -83,7 +83,7 @@ footer {
 }
 
 /* ---- Responsive ---- */
-@media (width <= 600px) {
+@media (max-width: 600px) {
   header h1 {
     font-size: 2.5rem;
   }
