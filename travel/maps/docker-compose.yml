@@ -1,0 +1,45 @@
+services:
+  travel-maps:
+    container_name: travel-maps
+    build:
+      context: ../..
+      dockerfile: travel/maps/Dockerfile
+    environment:
+      - DATA_DIR=/data
+    ports:
+      - '8002:8000'
+    volumes:
+      - data-volume:/data
+      - ./app:/app/app
+    networks:
+      - web
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.travel-maps.rule=Host(`travel.jamesmassucco.com`) && PathPrefix(`/maps`)
+      - traefik.http.routers.travel-maps.entrypoints=websecure
+      - traefik.http.routers.travel-maps.tls.certresolver=cloudflare
+      - traefik.http.routers.travel-maps.middlewares=ratelimit,travel-maps-strip
+      - traefik.http.routers.travel-maps.priority=50
+      # Strip /maps prefix before forwarding to service
+      - traefik.http.middlewares.travel-maps-strip.stripprefix.prefixes=/maps
+      - traefik.http.services.travel-maps.loadbalancer.server.port=8000
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python3',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')",
+        ]
+      interval: 5s
+      timeout: 1s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+volumes:
+  data-volume:
+
+networks:
+  web:
+    external: true

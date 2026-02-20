@@ -25,6 +25,58 @@ Run `bootstrap.sh` to fully initialize a new environment, including installing a
 - Commit regularly during work, including during interactive sessions. Commit messages must be a single line - no multi-line messages, no body, no footers
 - Never commit to the `main` branch. If work is requested while on the `main` branch, checkout a new branch with a concise but informative name. When work is complete, or is ready for feedback, create a PR through GitHub
 
+### Pre-commit checks
+
+Before committing changes, run the following checks to ensure they will pass CI:
+
+#### Linting (Python)
+
+```bash
+# Check for XXX comments (run from repo root on changed files)
+git diff --name-only main...HEAD | xargs -r python scripts/check_xxx_comments.py
+
+# Run Ruff linter and formatter
+ruff check .
+ruff format --check .
+
+# Auto-fix issues where possible
+ruff check --fix .
+ruff format .
+```
+
+#### Type checking (Python)
+
+```bash
+# Run Pyright (requires npm packages installed)
+npx pyright
+```
+
+#### Unit tests
+
+```bash
+# Run all tests with pytest
+pytest -v
+
+# Run tests for a specific module (e.g., travel/maps)
+cd travel/maps && python -m unittest discover -s app -p "*_test.py"
+```
+
+#### Complete pre-commit workflow
+
+```bash
+# 1. Lint and format
+ruff check --fix . && ruff format .
+
+# 2. Run type checker
+npx pyright
+
+# 3. Run tests
+pytest -v
+
+# 4. If all pass, commit
+git add . && git commit -m "Your commit message"
+```
+
 ## Style Guide
 
 ### Python
@@ -35,6 +87,8 @@ Run `bootstrap.sh` to fully initialize a new environment, including installing a
 - Include comments for operations that need additional explanation
 - Use the `unittest` module when writing tests, but run them with `pytest` in command line
 - Tests should always be housed in the same directory as the file they test, and be named `<module>_test.py` (e.g. test for `main.py` should be `main_test.py`)
+- Use modern type hints (`X | None` instead of `Optional[X]`)
+- Use `datetime.now(UTC)` instead of deprecated `datetime.utcnow()`
 - Whenever you create a new Python file, you must also create an associated `<module>_test.py` in the same directory
 
 ### Bash

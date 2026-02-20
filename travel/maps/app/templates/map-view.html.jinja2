@@ -1,0 +1,61 @@
+{% extends "base.html.jinja2" %}
+
+{% block title %}{{ map.name }} - Travel Maps{% endblock %}
+
+{% block content %}
+<div class="map-view-page">
+    <div class="map-header">
+        <div>
+            <h2>{{ map.name }}</h2>
+            {% if map.description %}
+            <p class="description">{{ map.description }}</p>
+            {% endif %}
+        </div>
+        <div class="map-actions">
+            <button onclick="exportMap()" class="btn">Export as JPG</button>
+            <a href="/maps/{{ map.id }}/edit" class="btn">Edit Map</a>
+            <a href="/" class="btn btn-secondary">Back to Maps</a>
+        </div>
+    </div>
+
+    <div id="map-container" style="height: 70vh;"></div>
+
+    {% if map.locations %}
+    <aside class="location-list">
+        <h3>Journey Route</h3>
+        <ol>
+            {% for location in map.locations %}
+            <li>
+                <strong>{{ location.nickname or location.name }}</strong>
+                {% if location.description %}
+                <p>{{ location.description }}</p>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ol>
+    </aside>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<script src="/static/js/map-viewer.js"></script>
+<script>
+const mapData = {{ map|tojson }};
+initMapViewer(mapData);
+
+async function exportMap() {
+    const mapElement = document.getElementById('map-container');
+    const canvas = await html2canvas(mapElement, {
+        useCORS: true,
+        allowTaint: true
+    });
+    
+    const link = document.createElement('a');
+    link.download = `${mapData.name.replace(/\s+/g, '_')}.jpg`;
+    link.href = canvas.toDataURL('image/jpeg', 0.95);
+    link.click();
+}
+</script>
+{% endblock %}
