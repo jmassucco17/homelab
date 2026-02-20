@@ -85,29 +85,7 @@ updates:
         versions: ['>=3.13']
 
   - package-ecosystem: 'docker'
-    directory: '/travel/landing'
-    schedule:
-      interval: 'weekly'
-      day: 'monday'
-    groups:
-      docker-images:
-        patterns: ['*']
-
-  - package-ecosystem: 'docker'
-    directory: '/travel/maps'
-    schedule:
-      interval: 'weekly'
-      day: 'monday'
-    groups:
-      docker-images:
-        patterns: ['*']
-    # Hold at Python 3.12
-    ignore:
-      - dependency-name: 'python'
-        versions: ['>=3.13']
-
-  - package-ecosystem: 'docker'
-    directory: '/travel/photos'
+    directory: '/travel'
     schedule:
       interval: 'weekly'
       day: 'monday'

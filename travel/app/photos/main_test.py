@@ -1,4 +1,4 @@
-"""Unit tests for main.py FastAPI application."""
+"""Unit tests for the combined travel FastAPI application."""
 
 import unittest
 
@@ -7,7 +7,9 @@ import sqlalchemy
 import sqlalchemy.pool
 import sqlmodel
 
-from travel.photos.app import database, main
+from travel.app import main
+from travel.app.maps import database as maps_db
+from travel.app.photos import database as photos_db
 
 
 def make_in_memory_engine() -> sqlalchemy.Engine:
@@ -22,18 +24,20 @@ def make_in_memory_engine() -> sqlalchemy.Engine:
 
 
 class TestApp(unittest.TestCase):
-    """Tests for travel-photos FastAPI application."""
+    """Tests for combined travel FastAPI application."""
 
     def setUp(self) -> None:
-        """Set up test client with an in-memory database."""
+        """Set up test client with in-memory databases."""
         self.engine = make_in_memory_engine()
 
         def override_get_session():
             with sqlmodel.Session(self.engine) as session:
                 yield session
 
-        main.app.dependency_overrides[database.get_session] = override_get_session
-        main.app.dependency_overrides[database.get_admin_session] = override_get_session
+        overrides = main.app.dependency_overrides
+        overrides[photos_db.get_session] = override_get_session
+        overrides[photos_db.get_admin_session] = override_get_session
+        overrides[maps_db.get_session] = override_get_session
         self.client = fastapi.testclient.TestClient(main.app)
 
     def tearDown(self) -> None:
@@ -51,58 +55,76 @@ class TestApp(unittest.TestCase):
         response = self.client.head('/health')
         self.assertEqual(response.status_code, 200)
 
-    def test_root_endpoint(self) -> None:
-        """Test root endpoint serves the map page."""
+    def test_landing_root_endpoint(self) -> None:
+        """Test root endpoint serves the landing page."""
         response = self.client.get('/')
         self.assertEqual(response.status_code, 200)
         self.assertIn('text/html', response.headers['content-type'])
 
-    def test_gallery_endpoint(self) -> None:
-        """Test gallery endpoint serves the gallery page."""
-        response = self.client.get('/gallery')
+    def test_photos_index_endpoint(self) -> None:
+        """Test photos index serves the map page."""
+        response = self.client.get('/photos')
         self.assertEqual(response.status_code, 200)
         self.assertIn('text/html', response.headers['content-type'])
 
-    def test_admin_endpoint(self) -> None:
-        """Test admin root endpoint serves the admin upload page."""
-        response = self.client.get('/admin')
+    def test_photos_gallery_endpoint(self) -> None:
+        """Test gallery endpoint serves the gallery page."""
+        response = self.client.get('/photos/gallery')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('text/html', response.headers['content-type'])
+
+    def test_photos_admin_endpoint(self) -> None:
+        """Test admin endpoint serves the admin upload page."""
+        response = self.client.get('/photos/admin')
         self.assertEqual(response.status_code, 200)
         self.assertIn('text/html', response.headers['content-type'])
 
     def test_get_public_pictures_empty(self) -> None:
         """Test public pictures endpoint returns empty list when no pictures."""
-        response = self.client.get('/pictures')
+        response = self.client.get('/photos/pictures')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), [])
 
     def test_get_locations_empty(self) -> None:
         """Test public locations endpoint returns empty list when no locations."""
-        response = self.client.get('/locations')
+        response = self.client.get('/photos/locations')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), [])
 
     def test_get_picture_not_found(self) -> None:
         """Test getting a non-existent picture returns 404."""
-        response = self.client.get('/pictures/9999')
+        response = self.client.get('/photos/pictures/9999')
         self.assertEqual(response.status_code, 404)
         self.assertIn('Picture not found', response.json()['detail'])
 
     def test_get_admin_pictures_empty(self) -> None:
         """Test admin pictures endpoint returns empty list when no pictures."""
-        response = self.client.get('/admin/pictures')
+        response = self.client.get('/photos/admin/pictures')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), [])
 
     def test_delete_picture_not_found(self) -> None:
         """Test deleting a non-existent picture returns 404."""
-        response = self.client.delete('/admin/pictures/9999')
+        response = self.client.delete('/photos/admin/pictures/9999')
         self.assertEqual(response.status_code, 404)
         self.assertIn('Picture not found', response.json()['detail'])
 
     def test_get_picture_file_not_found(self) -> None:
         """Test getting file for a non-existent picture returns 404."""
-        response = self.client.get('/pictures/9999/file')
+        response = self.client.get('/photos/pictures/9999/file')
         self.assertEqual(response.status_code, 404)
+
+    def test_maps_index_endpoint(self) -> None:
+        """Test maps index serves the maps list page."""
+        response = self.client.get('/maps/')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('text/html', response.headers['content-type'])
+
+    def test_maps_new_page_exists(self) -> None:
+        """Test that the new map form page is accessible."""
+        response = self.client.get('/maps/new')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('text/html', response.headers['content-type'])
 
 
 if __name__ == '__main__':

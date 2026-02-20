@@ -1,4 +1,4 @@
-"""Unit tests for travel-maps API routes."""
+"""Unit tests for travel-maps API routes through the combined app."""
 
 import unittest
 
@@ -7,7 +7,9 @@ import sqlalchemy.pool
 import sqlmodel
 from fastapi.testclient import TestClient
 
-from travel.maps.app import database, main, services
+from travel.app import main
+from travel.app.maps import database, services
+from travel.app.photos import database as photos_db
 
 
 def make_in_memory_engine() -> sqlalchemy.Engine:
@@ -21,19 +23,28 @@ def make_in_memory_engine() -> sqlalchemy.Engine:
     return engine
 
 
-class TestHealthEndpoint(unittest.TestCase):
-    """Tests for health check endpoint."""
+class _MapsTestBase(unittest.TestCase):
+    """Base class that wires both DB dependencies to an in-memory engine."""
 
     def setUp(self) -> None:
-        """Set up test client."""
-        # Replace database engine with in-memory for testing
-        self.original_engine = database.engine
-        database.engine = make_in_memory_engine()
+        self.engine = make_in_memory_engine()
+
+        def override_get_session():
+            with sqlmodel.Session(self.engine) as session:
+                yield session
+
+        overrides = main.app.dependency_overrides
+        overrides[photos_db.get_session] = override_get_session
+        overrides[photos_db.get_admin_session] = override_get_session
+        overrides[database.get_session] = override_get_session
         self.client = TestClient(main.app)
 
     def tearDown(self) -> None:
-        """Restore original database engine."""
-        database.engine = self.original_engine
+        main.app.dependency_overrides.clear()
+
+
+class TestHealthEndpoint(_MapsTestBase):
+    """Tests for health check endpoint."""
 
     def test_health_endpoint(self) -> None:
         """Test the health check endpoint."""
@@ -42,52 +53,33 @@ class TestHealthEndpoint(unittest.TestCase):
         self.assertEqual(response.json(), {'status': 'healthy'})
 
 
-class TestIndexPage(unittest.TestCase):
-    """Tests for index page routes."""
-
-    def setUp(self) -> None:
-        """Set up test client and database."""
-        self.original_engine = database.engine
-        database.engine = make_in_memory_engine()
-        self.client = TestClient(main.app)
-
-    def tearDown(self) -> None:
-        """Restore original database engine."""
-        database.engine = self.original_engine
+class TestIndexPage(_MapsTestBase):
+    """Tests for maps index page routes."""
 
     def test_index_page_empty(self) -> None:
         """Test the index page with no maps."""
-        response = self.client.get('/')
+        response = self.client.get('/maps/')
         self.assertEqual(response.status_code, 200)
         self.assertIn('No maps yet', response.text)
 
     def test_index_page_with_maps(self) -> None:
         """Test the index page with maps."""
-        with sqlmodel.Session(database.engine) as session:
+        with sqlmodel.Session(self.engine) as session:
             services.create_map(session, 'Test Map', 'A test map')
 
-        response = self.client.get('/')
+        response = self.client.get('/maps/')
         self.assertEqual(response.status_code, 200)
         self.assertIn('Test Map', response.text)
 
 
-class TestMapAPI(unittest.TestCase):
+class TestMapAPI(_MapsTestBase):
     """Tests for map API endpoints."""
-
-    def setUp(self) -> None:
-        """Set up test client and database."""
-        self.original_engine = database.engine
-        database.engine = make_in_memory_engine()
-        self.client = TestClient(main.app)
-
-    def tearDown(self) -> None:
-        """Restore original database engine."""
-        database.engine = self.original_engine
 
     def test_create_map_api(self) -> None:
         """Test creating a map via API."""
         response = self.client.post(
-            '/api/maps', json={'name': 'New Map', 'description': 'Test description'}
+            '/maps/api/maps',
+            json={'name': 'New Map', 'description': 'Test description'},
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -97,10 +89,10 @@ class TestMapAPI(unittest.TestCase):
 
     def test_get_map_api(self) -> None:
         """Test getting a map via API."""
-        with sqlmodel.Session(database.engine) as session:
+        with sqlmodel.Session(self.engine) as session:
             map_obj = services.create_map(session, 'Test Map')
 
-        response = self.client.get(f'/api/maps/{map_obj.id}')
+        response = self.client.get(f'/maps/api/maps/{map_obj.id}')
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(data['id'], map_obj.id)
@@ -109,16 +101,16 @@ class TestMapAPI(unittest.TestCase):
 
     def test_get_map_not_found(self) -> None:
         """Test getting a non-existent map."""
-        response = self.client.get('/api/maps/999')
+        response = self.client.get('/maps/api/maps/999')
         self.assertEqual(response.status_code, 404)
 
     def test_update_map_api(self) -> None:
         """Test updating a map via API."""
-        with sqlmodel.Session(database.engine) as session:
+        with sqlmodel.Session(self.engine) as session:
             map_obj = services.create_map(session, 'Original Name')
 
         response = self.client.put(
-            f'/api/maps/{map_obj.id}',
+            f'/maps/api/maps/{map_obj.id}',
             json={'name': 'Updated Name', 'description': 'Updated description'},
         )
         self.assertEqual(response.status_code, 200)
@@ -128,34 +120,24 @@ class TestMapAPI(unittest.TestCase):
 
     def test_delete_map_api(self) -> None:
         """Test deleting a map via API."""
-        with sqlmodel.Session(database.engine) as session:
+        with sqlmodel.Session(self.engine) as session:
             map_obj = services.create_map(session, 'To Delete')
 
-        response = self.client.delete(f'/api/maps/{map_obj.id}')
+        response = self.client.delete(f'/maps/api/maps/{map_obj.id}')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['success'], True)
 
 
-class TestLocationAPI(unittest.TestCase):
+class TestLocationAPI(_MapsTestBase):
     """Tests for location API endpoints."""
-
-    def setUp(self) -> None:
-        """Set up test client and database."""
-        self.original_engine = database.engine
-        database.engine = make_in_memory_engine()
-        self.client = TestClient(main.app)
-
-    def tearDown(self) -> None:
-        """Restore original database engine."""
-        database.engine = self.original_engine
 
     def test_add_location_api(self) -> None:
         """Test adding a location via API."""
-        with sqlmodel.Session(database.engine) as session:
+        with sqlmodel.Session(self.engine) as session:
             map_obj = services.create_map(session, 'Test Map')
 
         response = self.client.post(
-            f'/api/maps/{map_obj.id}/locations',
+            f'/maps/api/maps/{map_obj.id}/locations',
             json={
                 'name': 'Paris, France',
                 'latitude': 48.8566,
@@ -174,7 +156,7 @@ class TestLocationAPI(unittest.TestCase):
 
     def test_update_location_api(self) -> None:
         """Test updating a location via API."""
-        with sqlmodel.Session(database.engine) as session:
+        with sqlmodel.Session(self.engine) as session:
             map_obj = services.create_map(session, 'Test Map')
             assert map_obj.id is not None
             location = services.add_location_to_map(
@@ -184,7 +166,7 @@ class TestLocationAPI(unittest.TestCase):
         assert location.id is not None
 
         response = self.client.put(
-            f'/api/locations/{location.id}',
+            f'/maps/api/locations/{location.id}',
             json={'nickname': 'City of Light', 'description': 'Beautiful city'},
         )
         self.assertEqual(response.status_code, 200)
@@ -194,7 +176,7 @@ class TestLocationAPI(unittest.TestCase):
 
     def test_delete_location_api(self) -> None:
         """Test deleting a location via API."""
-        with sqlmodel.Session(database.engine) as session:
+        with sqlmodel.Session(self.engine) as session:
             map_obj = services.create_map(session, 'Test Map')
             assert map_obj.id is not None
             location = services.add_location_to_map(
@@ -203,13 +185,13 @@ class TestLocationAPI(unittest.TestCase):
         assert location is not None
         assert location.id is not None
 
-        response = self.client.delete(f'/api/locations/{location.id}')
+        response = self.client.delete(f'/maps/api/locations/{location.id}')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['success'], True)
 
     def test_reorder_locations_api(self) -> None:
         """Test reordering locations via API."""
-        with sqlmodel.Session(database.engine) as session:
+        with sqlmodel.Session(self.engine) as session:
             map_obj = services.create_map(session, 'Test Map')
             assert map_obj.id is not None
             loc1 = services.add_location_to_map(session, map_obj.id, 'First', 0, 0)
@@ -222,7 +204,7 @@ class TestLocationAPI(unittest.TestCase):
             loc2_id = loc2.id
 
         response = self.client.post(
-            '/api/locations/reorder', json={'location_ids': [loc2_id, loc1_id]}
+            '/maps/api/locations/reorder', json={'location_ids': [loc2_id, loc1_id]}
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['success'], True)

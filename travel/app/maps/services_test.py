@@ -6,7 +6,7 @@ import sqlalchemy
 import sqlalchemy.pool
 import sqlmodel
 
-from travel.maps.app import models, services
+from travel.app.maps import models, services
 
 
 def make_in_memory_engine() -> sqlalchemy.Engine:

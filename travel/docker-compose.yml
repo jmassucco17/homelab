@@ -1,0 +1,54 @@
+services:
+  travel:
+    container_name: travel
+    build:
+      context: ..
+      dockerfile: travel/Dockerfile
+    environment:
+      - DATA_DIR=/data
+    ports:
+      - '8000:8000'
+    volumes:
+      - data-volume:/data
+    networks:
+      - web
+    labels:
+      - traefik.enable=true
+
+      # Admin routes - require OAuth
+      - traefik.http.routers.travel-admin.rule=Host(`travel.jamesmassucco.com`) && PathPrefix(`/photos/admin`)
+      - traefik.http.routers.travel-admin.entrypoints=websecure
+      - traefik.http.routers.travel-admin.tls.certresolver=cloudflare
+      - traefik.http.routers.travel-admin.middlewares=oauth-auth,ratelimit
+      - traefik.http.routers.travel-admin.priority=100
+
+      # Public routes - no authentication required
+      - traefik.http.routers.travel-public.rule=Host(`travel.jamesmassucco.com`)
+      - traefik.http.routers.travel-public.entrypoints=websecure
+      - traefik.http.routers.travel-public.tls.certresolver=cloudflare
+      - traefik.http.routers.travel-public.middlewares=ratelimit
+      - traefik.http.routers.travel-public.priority=50
+
+      # Service configuration
+      - traefik.http.services.travel.loadbalancer.server.port=8000
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python3',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')",
+        ]
+      interval: 5s
+      timeout: 1s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+volumes:
+  data-volume:
+    name: travel-site_data-volume  # Preserve existing photos database
+
+networks:
+  web:
+    external: true

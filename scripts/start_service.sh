@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Start a single homelab service by name.
 # Handles service-specific logic (networking uses pull instead of build;
-# travel/photos includes a one-time container migration step).
+# travel includes a one-time container migration step).
 #
 # Usage: scripts/start_service.sh <service>
 # Examples:
 #   scripts/start_service.sh networking
 #   scripts/start_service.sh blog
-#   scripts/start_service.sh travel/photos
+#   scripts/start_service.sh travel
 set -euo pipefail
 
 SERVICE="${1:?Usage: $0 <service>}"
@@ -21,12 +21,14 @@ fi
 
 cd "$SERVICE_DIR"
 
-# One-time migration: remove the old travel-site container if it still exists
-if [[ "$SERVICE" == "travel/photos" ]]; then
-  if sudo docker ps -a --format '{{.Names}}' | grep -q '^travel-site$'; then
-    echo "Removing old travel-site container..."
-    sudo docker rm -f travel-site 2>/dev/null || true
-  fi
+# One-time migration: remove old travel sub-containers if they exist
+if [[ "$SERVICE" == "travel" ]]; then
+  for old_container in travel-landing travel-photos travel-maps travel-site; do
+    if sudo docker ps -a --format '{{.Names}}' | grep -q "^${old_container}$"; then
+      echo "Removing old ${old_container} container..."
+      sudo docker rm -f "${old_container}" 2>/dev/null || true
+    fi
+  done
 fi
 
 echo "Shutting down containers..."
