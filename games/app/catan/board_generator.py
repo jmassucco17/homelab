@@ -27,12 +27,13 @@ surround it.  For hex H = (q, r, s), the six vertex keys are::
 
     v[i] = frozenset({ H, N[i], N[(i+1) % 6] })
 
-where N[i] is the neighbour in direction i.  Some hexes in the set may not
-exist on the board; that is fine — the frozenset still uniquely locates the
-vertex.
+where N[i] is the neighbour in direction i and N[(i+1) % 6] is the neighbour
+in the *next* clockwise direction.  The vertex v[i] sits at the corner shared
+by H, N[i], and N[(i+1) % 6].  Some hexes may not exist on the board; that
+is fine — the frozenset still uniquely locates the vertex.
 
 Example: for H = (0, 0, 0) and direction i = 0 (east), N[0] = (1, -1, 0)
-and N[1] = (1, 0, -1), giving::
+and N[(0+1)%6 = 1] = N[1] = (1, 0, -1) (the north-east neighbour), giving::
 
     v[0] = frozenset({ (0,0,0), (1,-1,0), (1,0,-1) })
 
@@ -51,6 +52,22 @@ giving::
 
 This edge connects v[5] = frozenset({(0,0,0),(0,-1,1),(1,-1,0)}) to
 v[0] = frozenset({(0,0,0),(1,-1,0),(1,0,-1)}).
+
+Layout diagram (flat-top hex, indices run clockwise from upper-right)::
+
+              v[1]
+             /    \\
+          e[2]    e[1]
+           /   H    \\
+         v[2]        v[0]
+          |            |
+         e[3]         e[0]
+          |            |
+         v[3]        v[5]
+           \\   H    /
+          e[4]    e[5]
+             \\    /
+              v[4]
 
 A standard Catan board has **54 vertices** and **72 edges**.
 """
