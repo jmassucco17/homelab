@@ -52,9 +52,11 @@ class TestMapServices(unittest.TestCase):
             session.add(map_obj)
             session.commit()
             session.refresh(map_obj)
+            assert map_obj.id is not None
 
             retrieved = services.get_map_by_id(session, map_obj.id)
             self.assertIsNotNone(retrieved)
+            assert retrieved is not None
             self.assertEqual(retrieved.id, map_obj.id)
             self.assertEqual(retrieved.name, 'Test Map')
 
@@ -86,6 +88,7 @@ class TestMapServices(unittest.TestCase):
         """Test updating a map."""
         with sqlmodel.Session(self.engine) as session:
             map_obj = services.create_map(session, 'Original Name')
+            assert map_obj.id is not None
             map_id = map_obj.id
 
             updated = services.update_map(
@@ -93,6 +96,7 @@ class TestMapServices(unittest.TestCase):
             )
 
             self.assertIsNotNone(updated)
+            assert updated is not None
             self.assertEqual(updated.id, map_id)
             self.assertEqual(updated.name, 'New Name')
             self.assertEqual(updated.description, 'New Description')
@@ -107,6 +111,7 @@ class TestMapServices(unittest.TestCase):
         """Test deleting a map."""
         with sqlmodel.Session(self.engine) as session:
             map_obj = services.create_map(session, 'To Delete')
+            assert map_obj.id is not None
             map_id = map_obj.id
 
             success = services.delete_map(session, map_id)
@@ -134,6 +139,7 @@ class TestLocationServices(unittest.TestCase):
         """Test adding a location to a map."""
         with sqlmodel.Session(self.engine) as session:
             map_obj = services.create_map(session, 'Map with Locations')
+            assert map_obj.id is not None
 
             location = services.add_location_to_map(
                 session,
@@ -146,6 +152,7 @@ class TestLocationServices(unittest.TestCase):
             )
 
             self.assertIsNotNone(location)
+            assert location is not None
             self.assertEqual(location.map_id, map_obj.id)
             self.assertEqual(location.name, 'Paris, France')
             self.assertEqual(location.latitude, 48.8566)
@@ -166,11 +173,15 @@ class TestLocationServices(unittest.TestCase):
         """Test that multiple locations get correct order_index."""
         with sqlmodel.Session(self.engine) as session:
             map_obj = services.create_map(session, 'Ordered Map')
+            assert map_obj.id is not None
 
             loc1 = services.add_location_to_map(session, map_obj.id, 'First', 0, 0)
             loc2 = services.add_location_to_map(session, map_obj.id, 'Second', 0, 0)
             loc3 = services.add_location_to_map(session, map_obj.id, 'Third', 0, 0)
 
+            assert loc1 is not None
+            assert loc2 is not None
+            assert loc3 is not None
             self.assertEqual(loc1.order_index, 0)
             self.assertEqual(loc2.order_index, 1)
             self.assertEqual(loc3.order_index, 2)
@@ -179,15 +190,19 @@ class TestLocationServices(unittest.TestCase):
         """Test updating a location."""
         with sqlmodel.Session(self.engine) as session:
             map_obj = services.create_map(session, 'Test Map')
+            assert map_obj.id is not None
             location = services.add_location_to_map(
                 session, map_obj.id, 'Paris', 48.8566, 2.3522
             )
+            assert location is not None
+            assert location.id is not None
 
             updated = services.update_location(
                 session, location.id, 'City of Light', 'Beautiful city'
             )
 
             self.assertIsNotNone(updated)
+            assert updated is not None
             self.assertEqual(updated.nickname, 'City of Light')
             self.assertEqual(updated.description, 'Beautiful city')
 
@@ -201,9 +216,12 @@ class TestLocationServices(unittest.TestCase):
         """Test deleting a location."""
         with sqlmodel.Session(self.engine) as session:
             map_obj = services.create_map(session, 'Test Map')
+            assert map_obj.id is not None
             location = services.add_location_to_map(
                 session, map_obj.id, 'Paris', 48.8566, 2.3522
             )
+            assert location is not None
+            assert location.id is not None
 
             success = services.delete_location(session, location.id)
             self.assertTrue(success)
@@ -234,6 +252,6 @@ class TestLocationServices(unittest.TestCase):
             # Verify new order
             map_obj = services.get_map_by_id(session, map_obj.id)
             assert map_obj is not None
-            self.assertEqual(map_obj.locations[0].name, 'Third')
-            self.assertEqual(map_obj.locations[1].name, 'First')
-            self.assertEqual(map_obj.locations[2].name, 'Second')
+            self.assertEqual(map_obj.locations[0].name, 'Third')  # type: ignore[index]
+            self.assertEqual(map_obj.locations[1].name, 'First')  # type: ignore[index]
+            self.assertEqual(map_obj.locations[2].name, 'Second')  # type: ignore[index]

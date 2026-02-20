@@ -74,3 +74,4 @@ async def admin_root(request: Request):
 async def health_check():
     """Health check endpoint."""
     return {'status': 'healthy'}
+
