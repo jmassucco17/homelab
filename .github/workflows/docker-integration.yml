@@ -304,6 +304,59 @@ jobs:
         with:
           service: games
 
+  tools:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Start tools service
+        uses: ./.github/actions/start-service
+        with:
+          service: tools
+
+      - name: Test health endpoint
+        run: |
+          docker exec tools python3 -c '
+          import json, urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/health")
+          assert json.loads(resp.read())["status"] == "healthy"
+          '
+
+      - name: Test index endpoint returns HTML
+        run: |
+          docker exec tools python3 -c '
+          import urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/")
+          assert b"<html" in resp.read().lower()
+          '
+
+      - name: Test movie-picker endpoint returns HTML
+        run: |
+          docker exec tools python3 -c '
+          import urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/movie-picker")
+          assert b"<html" in resp.read().lower()
+          '
+
+      - name: Test search returns 503 without API key
+        run: |
+          docker exec tools python3 -c "
+          import urllib.request, urllib.error
+          try:
+              urllib.request.urlopen('http://127.0.0.1:8000/api/movies/search?q=inception')
+              raise AssertionError('Expected 503 but got 200')
+          except urllib.error.HTTPError as e:
+              assert e.code == 503, f'Expected 503, got {e.code}'
+          "
+
+      - name: Stop tools service
+        uses: ./.github/actions/stop-service
+        if: always()
+        with:
+          service: tools
+
   compose-validate:
     runs-on: ubuntu-latest
     permissions:
@@ -325,7 +378,7 @@ jobs:
 
       - name: Validate all Compose files
         run: |
-          for dir in networking shared-assets homepage blog travel games; do
+          for dir in networking shared-assets homepage blog travel games tools; do
             echo "--- $dir/docker-compose.yml ---"
             docker compose -f "$dir/docker-compose.yml" config --quiet
             echo "--- $dir/docker-compose.local.yml ---"
