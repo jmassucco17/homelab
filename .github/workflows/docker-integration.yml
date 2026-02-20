@@ -8,163 +8,6 @@ on:
       - main
 
 jobs:
-  blog:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Start blog service
-        uses: ./.github/actions/start-service
-        with:
-          service: blog
-
-      - name: Test health endpoint
-        run: |
-          docker exec blog python3 -c '
-          import json, urllib.request
-          resp = urllib.request.urlopen("http://127.0.0.1:8000/health")
-          assert json.loads(resp.read())["status"] == "healthy"
-          '
-
-      - name: Test index endpoint returns HTML
-        run: |
-          docker exec blog python3 -c '
-          import urllib.request
-          resp = urllib.request.urlopen("http://127.0.0.1:8000/")
-          assert b"<html" in resp.read().lower()
-          '
-
-      - name: Test blog post endpoint returns content
-        run: |
-          docker exec blog python3 -c '
-          import urllib.request
-          resp = urllib.request.urlopen("http://127.0.0.1:8000/posts/starting-a-homelab")
-          assert b"Starting a Homelab" in resp.read()
-          '
-
-      - name: Test RSS endpoint returns XML
-        run: |
-          docker exec blog python3 -c '
-          import urllib.request
-          resp = urllib.request.urlopen("http://127.0.0.1:8000/rss.xml")
-          content = resp.read()
-          assert b"<rss" in content and b"<channel>" in content
-          '
-
-      - name: Test invalid post returns 404
-        run: |
-          docker exec blog python3 -c "
-          import urllib.request, urllib.error
-          try:
-              urllib.request.urlopen('http://127.0.0.1:8000/posts/nonexistent-post')
-              raise AssertionError('Expected 404 but got 200')
-          except urllib.error.HTTPError as e:
-              assert e.code == 404, f'Expected 404, got {e.code}'
-          "
-
-      - name: Stop blog service
-        uses: ./.github/actions/stop-service
-        if: always()
-        with:
-          service: blog
-
-  homepage:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Start homepage service
-        uses: ./.github/actions/start-service
-        with:
-          service: homepage
-
-      - name: Test index endpoint returns HTML
-        run: |
-          result=$(docker exec homepage wget -qO- http://127.0.0.1/)
-          echo "$result" | grep -qi '<html'
-
-      - name: Stop homepage service
-        uses: ./.github/actions/stop-service
-        if: always()
-        with:
-          service: homepage
-
-  travel:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Start travel service
-        uses: ./.github/actions/start-service
-        with:
-          service: travel
-
-      - name: Test health endpoint
-        run: |
-          docker exec travel python3 -c '
-          import json, urllib.request
-          resp = urllib.request.urlopen("http://127.0.0.1:8000/health")
-          assert json.loads(resp.read())["status"] == "healthy"
-          '
-
-      - name: Test landing page returns HTML
-        run: |
-          docker exec travel python3 -c '
-          import urllib.request
-          resp = urllib.request.urlopen("http://127.0.0.1:8000/")
-          assert b"<html" in resp.read().lower()
-          '
-
-      - name: Test photos root endpoint returns HTML
-        run: |
-          docker exec travel python3 -c '
-          import urllib.request
-          resp = urllib.request.urlopen("http://127.0.0.1:8000/photos")
-          assert b"<html" in resp.read().lower()
-          '
-
-      - name: Test photos gallery endpoint returns HTML
-        run: |
-          docker exec travel python3 -c '
-          import urllib.request
-          resp = urllib.request.urlopen("http://127.0.0.1:8000/photos/gallery")
-          assert b"<html" in resp.read().lower()
-          '
-
-      - name: Test maps root endpoint returns HTML
-        run: |
-          docker exec travel python3 -c '
-          import urllib.request
-          resp = urllib.request.urlopen("http://127.0.0.1:8000/maps/")
-          assert b"<html" in resp.read().lower()
-          '
-
-      - name: Test maps API endpoint
-        run: |
-          docker exec travel python3 -c '
-          import json, urllib.request
-          req = urllib.request.Request("http://127.0.0.1:8000/maps/api/maps",
-                                      data=b"{\"name\":\"Test Map\"}",
-                                      headers={"Content-Type":"application/json"},
-                                      method="POST")
-          resp = urllib.request.urlopen(req)
-          data = json.loads(resp.read())
-          assert data["name"] == "Test Map"
-          assert "id" in data
-          '
-
-      - name: Stop travel service
-        uses: ./.github/actions/stop-service
-        if: always()
-        with:
-          service: travel
-
   networking:
     runs-on: ubuntu-latest
     permissions:
@@ -248,6 +91,163 @@ jobs:
         if: always()
         with:
           service: shared-assets
+
+  homepage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Start homepage service
+        uses: ./.github/actions/start-service
+        with:
+          service: homepage
+
+      - name: Test index endpoint returns HTML
+        run: |
+          result=$(docker exec homepage wget -qO- http://127.0.0.1/)
+          echo "$result" | grep -qi '<html'
+
+      - name: Stop homepage service
+        uses: ./.github/actions/stop-service
+        if: always()
+        with:
+          service: homepage
+
+  blog:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Start blog service
+        uses: ./.github/actions/start-service
+        with:
+          service: blog
+
+      - name: Test health endpoint
+        run: |
+          docker exec blog python3 -c '
+          import json, urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/health")
+          assert json.loads(resp.read())["status"] == "healthy"
+          '
+
+      - name: Test index endpoint returns HTML
+        run: |
+          docker exec blog python3 -c '
+          import urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/")
+          assert b"<html" in resp.read().lower()
+          '
+
+      - name: Test blog post endpoint returns content
+        run: |
+          docker exec blog python3 -c '
+          import urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/posts/starting-a-homelab")
+          assert b"Starting a Homelab" in resp.read()
+          '
+
+      - name: Test RSS endpoint returns XML
+        run: |
+          docker exec blog python3 -c '
+          import urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/rss.xml")
+          content = resp.read()
+          assert b"<rss" in content and b"<channel>" in content
+          '
+
+      - name: Test invalid post returns 404
+        run: |
+          docker exec blog python3 -c "
+          import urllib.request, urllib.error
+          try:
+              urllib.request.urlopen('http://127.0.0.1:8000/posts/nonexistent-post')
+              raise AssertionError('Expected 404 but got 200')
+          except urllib.error.HTTPError as e:
+              assert e.code == 404, f'Expected 404, got {e.code}'
+          "
+
+      - name: Stop blog service
+        uses: ./.github/actions/stop-service
+        if: always()
+        with:
+          service: blog
+
+  travel:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Start travel service
+        uses: ./.github/actions/start-service
+        with:
+          service: travel
+
+      - name: Test health endpoint
+        run: |
+          docker exec travel python3 -c '
+          import json, urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/health")
+          assert json.loads(resp.read())["status"] == "healthy"
+          '
+
+      - name: Test landing page returns HTML
+        run: |
+          docker exec travel python3 -c '
+          import urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/")
+          assert b"<html" in resp.read().lower()
+          '
+
+      - name: Test photos root endpoint returns HTML
+        run: |
+          docker exec travel python3 -c '
+          import urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/photos")
+          assert b"<html" in resp.read().lower()
+          '
+
+      - name: Test photos gallery endpoint returns HTML
+        run: |
+          docker exec travel python3 -c '
+          import urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/photos/gallery")
+          assert b"<html" in resp.read().lower()
+          '
+
+      - name: Test maps root endpoint returns HTML
+        run: |
+          docker exec travel python3 -c '
+          import urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/maps/")
+          assert b"<html" in resp.read().lower()
+          '
+
+      - name: Test maps API endpoint
+        run: |
+          docker exec travel python3 -c '
+          import json, urllib.request
+          req = urllib.request.Request("http://127.0.0.1:8000/maps/api/maps",
+                                      data=b"{\"name\":\"Test Map\"}",
+                                      headers={"Content-Type":"application/json"},
+                                      method="POST")
+          resp = urllib.request.urlopen(req)
+          data = json.loads(resp.read())
+          assert data["name"] == "Test Map"
+          assert "id" in data
+          '
+
+      - name: Stop travel service
+        uses: ./.github/actions/stop-service
+        if: always()
+        with:
+          service: travel
 
   games:
     runs-on: ubuntu-latest
