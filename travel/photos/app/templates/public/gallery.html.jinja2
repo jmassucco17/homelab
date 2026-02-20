@@ -27,6 +27,13 @@
     </div>
 
     <script>
+      // Escape HTML to prevent XSS
+      function escapeHtml(str) {
+        const div = document.createElement('div')
+        div.textContent = str
+        return div.innerHTML
+      }
+
       // Load and display pictures
       async function loadGallery() {
         const galleryDiv = document.getElementById('gallery')
@@ -46,12 +53,12 @@
               (picture) => `
                     <div class="picture-card">
                         <img src="/photos/pictures/${picture.id}/file" 
-                             alt="${picture.original_filename}" 
+                             alt="${escapeHtml(picture.original_filename)}" 
                              class="picture-image"
-                             onclick="openModal('/photos/pictures/${picture.id}/file', '${picture.original_filename}')">
+                             onclick="openModal('/photos/pictures/${picture.id}/file', '${escapeHtml(picture.original_filename).replace(/'/g, '&#39;')}')">
                         <div class="picture-info">
-                            <div class="picture-filename">${picture.location.location_name}</div>
-                            ${picture.description ? `<div class="picture-description">"${picture.description}"</div>` : ''}
+                            <div class="picture-filename">${escapeHtml(picture.location.location_name)}</div>
+                            ${picture.description ? `<div class="picture-description">"${escapeHtml(picture.description)}"</div>` : ''}
                             <div class="picture-meta">
                                 ${
                                   picture.date_taken

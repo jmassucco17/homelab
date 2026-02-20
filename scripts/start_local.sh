@@ -19,7 +19,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"/..
 
-ALL_SERVICES=("networking" "shared-assets" "homepage" "blog" "travel" "games")
+ALL_SERVICES=("shared-assets" "homepage" "blog" "travel" "games")
 LOCAL_HOSTS="jamesmassucco.com blog.jamesmassucco.com travel.jamesmassucco.com assets.jamesmassucco.com games.jamesmassucco.com"
 
 # Parse arguments: extract --stop flag and service names (order-independent)

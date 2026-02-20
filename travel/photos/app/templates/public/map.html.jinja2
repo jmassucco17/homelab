@@ -57,6 +57,13 @@
       let allPictures = []
       let travelLines = []  // Store polylines for travel paths
 
+      // Escape HTML to prevent XSS
+      function escapeHtml(str) {
+        const div = document.createElement('div')
+        div.textContent = str
+        return div.innerHTML
+      }
+
       // Initialize the map
       function initMap() {
         // Create map centered on world view
@@ -265,9 +272,9 @@
         content.innerHTML = pictures.map(picture => `
           <div class="sidebar-picture">
             <img src="/photos/pictures/${picture.id}/file"
-                 alt="${picture.original_filename}"
-                 onclick="openModal('/photos/pictures/${picture.id}/file', '${picture.original_filename}')">
-            ${picture.description ? `<p class="picture-description">${picture.description}</p>` : ''}
+                 alt="${escapeHtml(picture.original_filename)}"
+                 onclick="openModal('/photos/pictures/${picture.id}/file', '${escapeHtml(picture.original_filename).replace(/'/g, '&#39;')}')">
+            ${picture.description ? `<p class="picture-description">${escapeHtml(picture.description)}</p>` : ''}
             ${picture.date_taken ? `<p class="picture-date">${formatDate(picture.date_taken)}</p>` : ''}
           </div>
         `).join('')

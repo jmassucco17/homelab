@@ -42,6 +42,13 @@
     </div>
 
     <script>
+      // Escape HTML to prevent XSS
+      function escapeHtml(str) {
+        const div = document.createElement('div')
+        div.textContent = str
+        return div.innerHTML
+      }
+
       // Show file count when files are selected
       document.getElementById('picture').addEventListener('change', (e) => {
         const fileCount = e.target.files.length
@@ -148,15 +155,15 @@
             .map(
               (picture) => `
                     <div class="picture-item" id="picture-${picture.id}">
-                        <img src="/photos/pictures/${picture.id}/file" alt="${picture.original_filename}" class="picture-thumbnail">
+                        <img src="/photos/pictures/${picture.id}/file" alt="${escapeHtml(picture.original_filename)}" class="picture-thumbnail">
                         <div class="picture-info">
-                            <div class="picture-title">${picture.original_filename}</div>
+                            <div class="picture-title">${escapeHtml(picture.original_filename)}</div>
                             <div class="picture-meta">
                                 <div id="description-display-${picture.id}" class="description-display">
-                                    ${picture.description ? `<div class="description-text">${picture.description}</div>` : '<div class="no-description">No description</div>'}
+                                    ${picture.description ? `<div class="description-text">${escapeHtml(picture.description)}</div>` : '<div class="no-description">No description</div>'}
                                 </div>
                                 <div id="description-edit-${picture.id}" class="description-edit hidden">
-                                    <textarea id="description-input-${picture.id}" class="description-input" placeholder="Enter description...">${picture.description || ''}</textarea>
+                                    <textarea id="description-input-${picture.id}" class="description-input" placeholder="Enter description...">${escapeHtml(picture.description || '')}</textarea>
                                     <div class="edit-actions">
                                         <button class="save-btn" onclick="saveDescription(${picture.id})">Save</button>
                                         <button class="cancel-btn" onclick="cancelEdit(${picture.id})">Cancel</button>
@@ -164,7 +171,7 @@
                                 </div>
                                 <div>Uploaded: ${new Date(picture.upload_date).toLocaleDateString()}</div>
                                 ${picture.date_taken ? `<div>Taken: ${new Date(picture.date_taken).toLocaleDateString()}</div>` : ''}
-                                ${picture.location ? `<div>Location: ${picture.location.location_name}</div>` : ''}
+                                ${picture.location ? `<div>Location: ${escapeHtml(picture.location.location_name)}</div>` : ''}
                                 <div>Size: ${(picture.file_size / 1024 / 1024).toFixed(2)} MB</div>
                             </div>
                         </div>
