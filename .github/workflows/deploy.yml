@@ -56,10 +56,11 @@ jobs:
 
       - name: Transfer config files to server
         run: |
-          mkdir -p /tmp/homelab-config/{networking,shared-assets,homepage,blog,travel,games}
+          mkdir -p /tmp/homelab-config/networking
           cp networking/docker-compose.yml /tmp/homelab-config/networking/
           cp networking/.env /tmp/homelab-config/networking/
           for svc in shared-assets homepage blog travel games; do
+            mkdir -p "/tmp/homelab-config/$svc"
             cp "$svc/docker-compose.yml" "/tmp/homelab-config/$svc/"
           done
           tar -czf /tmp/homelab-config.tar.gz -C /tmp/homelab-config .
