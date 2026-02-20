@@ -15,10 +15,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - service: blog
-            image: ghcr.io/jmassucco17/homelab/blog
-            context: .
-            file: blog/Dockerfile
           - service: shared-assets
             image: ghcr.io/jmassucco17/homelab/shared-assets
             context: shared-assets
@@ -27,6 +23,10 @@ jobs:
             image: ghcr.io/jmassucco17/homelab/homepage
             context: homepage
             file: homepage/Dockerfile
+          - service: blog
+            image: ghcr.io/jmassucco17/homelab/blog
+            context: .
+            file: blog/Dockerfile
           - service: travel
             image: ghcr.io/jmassucco17/homelab/travel
             context: .

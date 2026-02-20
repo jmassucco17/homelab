@@ -7,7 +7,7 @@ import fastapi.responses
 import fastapi.staticfiles
 import fastapi.templating
 
-from .routers import pong, snake
+from .routers import snake
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
 
@@ -22,7 +22,6 @@ app.mount(
 templates = fastapi.templating.Jinja2Templates(directory=APP_DIR / 'templates')
 
 app.include_router(snake.router)
-app.include_router(pong.router)
 
 
 @app.get('/', response_class=fastapi.responses.HTMLResponse)

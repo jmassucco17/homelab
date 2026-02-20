@@ -13,6 +13,18 @@ When creating a new module (i.e. a new page or new sub-site), make a new top-lev
 - Update `networking/` to create a new sub-domain
 - Update `dependabot.yml` to ensure we track updates for the new docker image
 - Update `docker-integration.yml` to add integration tests for the new service
+- Add an `image: ghcr.io/jmassucco17/homelab/<service>:latest` field to the service's `docker-compose.yml`
+- Add a matrix entry to `.github/workflows/build-and-push.yml` following the standard service order
+
+### Standard service order
+
+Whenever services are listed (in `start_local.sh`, `deploy.yml`, `build-and-push.yml`, or any other context), always use this order:
+
+```
+networking > shared-assets > homepage > blog > travel > games
+```
+
+Networking is excluded from `build-and-push.yml` since it uses only pre-built upstream images.
 
 ## Details
 
@@ -57,8 +69,8 @@ npx pyright
 # Run all tests with pytest
 pytest -v
 
-# Run tests for a specific module (e.g., travel/maps)
-cd travel/maps && python -m unittest discover -s app -p "*_test.py"
+# Run tests for a specific module (e.g., travel)
+cd travel && python -m unittest discover -s app -p "*_test.py"
 ```
 
 #### Complete pre-commit workflow
