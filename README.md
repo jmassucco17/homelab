@@ -6,6 +6,7 @@ Welcome to my homelab project!
 
 - Homepage: [jamesmassucco.com](https://jamesmassucco.com)
 - Blog: [blog.jamesmassucco.com](https://blog.jamesmassucco.com/)
+- Travel Maps: [maps.jamesmassucco.com](https://maps.jamesmassucco.com)
 
 ## Service Dashboards
 
@@ -24,7 +25,7 @@ requested services.
 
 # Start specific services
 ./scripts/start_local.sh blog
-./scripts/start_local.sh blog travel-site
+./scripts/start_local.sh blog travel/photos
 ```
 
 Services can be accessed at `http://localhost:<port>` where `<port>` can be found in the

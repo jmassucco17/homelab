@@ -93,21 +93,21 @@ jobs:
         with:
           service: homepage
 
-  travel-site:
+  travel-photos:
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v6
 
-      - name: Start travel-site service
+      - name: Start travel-photos service
         uses: ./.github/actions/start-service
         with:
-          service: travel-site
+          service: travel/photos
 
       - name: Test health endpoint
         run: |
-          docker exec travel-site python3 -c '
+          docker exec travel-photos python3 -c '
           import json, urllib.request
           resp = urllib.request.urlopen("http://127.0.0.1:8000/health")
           assert json.loads(resp.read())["status"] == "healthy"
@@ -115,7 +115,7 @@ jobs:
 
       - name: Test root endpoint returns HTML
         run: |
-          docker exec travel-site python3 -c '
+          docker exec travel-photos python3 -c '
           import urllib.request
           resp = urllib.request.urlopen("http://127.0.0.1:8000/")
           assert b"<html" in resp.read().lower()
@@ -123,17 +123,100 @@ jobs:
 
       - name: Test gallery endpoint returns HTML
         run: |
-          docker exec travel-site python3 -c '
+          docker exec travel-photos python3 -c '
           import urllib.request
           resp = urllib.request.urlopen("http://127.0.0.1:8000/gallery")
           assert b"<html" in resp.read().lower()
           '
 
-      - name: Stop travel-site service
+      - name: Stop travel-photos service
         uses: ./.github/actions/stop-service
         if: always()
         with:
-          service: travel-site
+          service: travel/photos
+
+  travel-landing:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Start travel-landing service
+        uses: ./.github/actions/start-service
+        with:
+          service: travel/landing
+
+      - name: Test health endpoint
+        run: |
+          docker exec travel-landing python3 -c '
+          import json, urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:80/health")
+          assert json.loads(resp.read())["status"] == "healthy"
+          '
+
+      - name: Test root endpoint returns HTML
+        run: |
+          docker exec travel-landing python3 -c '
+          import urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:80/")
+          assert b"<html" in resp.read().lower()
+          '
+
+      - name: Stop travel-landing service
+        uses: ./.github/actions/stop-service
+        if: always()
+        with:
+          service: travel/landing
+
+  travel-maps:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Start travel-maps service
+        uses: ./.github/actions/start-service
+        with:
+          service: travel/maps
+
+      - name: Test health endpoint
+        run: |
+          docker exec travel-maps python3 -c '
+          import json, urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/health")
+          assert json.loads(resp.read())["status"] == "healthy"
+          '
+
+      - name: Test root endpoint returns HTML
+        run: |
+          docker exec travel-maps python3 -c '
+          import urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:8000/")
+          assert b"<html" in resp.read().lower()
+          '
+
+      - name: Test API endpoints
+        run: |
+          docker exec travel-maps python3 -c '
+          import json, urllib.request
+          # Test creating a map
+          req = urllib.request.Request("http://127.0.0.1:8000/api/maps", 
+                                      data=b"{\"name\":\"Test Map\"}", 
+                                      headers={"Content-Type":"application/json"},
+                                      method="POST")
+          resp = urllib.request.urlopen(req)
+          data = json.loads(resp.read())
+          assert data["name"] == "Test Map"
+          assert "id" in data
+          '
+
+      - name: Stop travel-maps service
+        uses: ./.github/actions/stop-service
+        if: always()
+        with:
+          service: travel/maps
 
   networking:
     runs-on: ubuntu-latest

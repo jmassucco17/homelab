@@ -1,0 +1,98 @@
+/* ===== TRAVEL LANDING PAGE =====
+ * Overrides and additions on top of shared main.css.
+ */
+
+/* ---- Page layout ---- */
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.container {
+  max-width: 800px;
+  width: 100%;
+}
+
+/* ---- Header ---- */
+header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+header h1 {
+  font-size: 3.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--color-title-text);
+}
+
+.tagline {
+  font-size: 1.2rem;
+  color: var(--color-text);
+}
+
+/* ---- Links grid ---- */
+.links {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+/* ---- Link cards ---- */
+.link-card {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-lg);
+  padding: 2rem 1.5rem;
+  text-align: center;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--shadow-card);
+}
+
+.link-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 20%);
+}
+
+.icon {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+}
+
+.link-card h2 {
+  font-size: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: var(--color-title-text);
+}
+
+.link-card p {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--color-text);
+}
+
+/* ---- Footer ---- */
+footer {
+  text-align: center;
+  color: var(--color-footer-text);
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 600px) {
+  header h1 {
+    font-size: 2.5rem;
+  }
+
+  .links {
+    grid-template-columns: 1fr;
+  }
+
+  .icon {
+    font-size: 3rem;
+  }
+}

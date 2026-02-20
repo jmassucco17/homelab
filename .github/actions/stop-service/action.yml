@@ -3,7 +3,7 @@ description: Stops a service and removes its containers
 
 inputs:
   service:
-    description: Service directory name (e.g. blog, homepage, travel-site)
+    description: Service directory name (e.g. blog, homepage, travel/maps)
     required: true
 
 runs:

@@ -1,0 +1,11 @@
+# Local development override for travel-landing service.
+# Merges with docker-compose.yml to add HTTP routing and direct port access.
+# Used by scripts/start_local.sh via: docker compose -f docker-compose.yml -f docker-compose.local.yml
+services:
+  travel-landing:
+    ports:
+      - '8003:80'
+    labels:
+      - 'traefik.http.routers.travel-landing-local.rule=Host(`travel.jamesmassucco.com`)'
+      - 'traefik.http.routers.travel-landing-local.entrypoints=web'
+      - 'traefik.http.services.travel-landing.loadbalancer.server.port=80'

@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Travel Map</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Leaflet MarkerCluster CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+
+    <link rel="stylesheet" href="/assets/css/tokens.css" />
+    <link rel="stylesheet" href="/assets/css/map.css?v=2.0" />
+  </head>
+  <body>
+    <a href="/admin" class="admin-link">Admin Panel →</a>
+    <a href="/gallery" class="gallery-link">Gallery View →</a>
+
+    <div class="header">
+      <h1>Travel Map</h1>
+      <p>Exploring the world, one picture at a time</p>
+    </div>
+
+    <div class="map-container">
+      <div id="map"></div>
+
+      <!-- Sidebar for displaying photos -->
+      <div id="sidebar" class="sidebar hidden">
+        <div class="sidebar-header">
+          <h2 id="sidebar-title">Location</h2>
+          <button class="sidebar-close" onclick="closeSidebar()">&times;</button>
+        </div>
+        <div id="sidebar-content" class="sidebar-content">
+          <!-- Photos will be loaded here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal for full-size image viewing -->
+    <div id="imageModal" class="modal">
+      <span class="modal-close">&times;</span>
+      <img class="modal-content" id="modalImage" />
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Leaflet MarkerCluster JS -->
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+    <script>
+      let map
+      let markerClusterGroup
+      let allPictures = []
+      let travelLines = []  // Store polylines for travel paths
+
+      // Initialize the map
+      function initMap() {
+        // Create map centered on world view
+        map = L.map('map', {
+          center: [20, 0],
+          zoom: 2,
+          minZoom: 2,
+          maxZoom: 18
+        })
+
+        // Add colorful map tile layer (Esri World Imagery with labels)
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+          attribution: 'Tiles © Esri',
+          maxZoom: 19
+        }).addTo(map)
+
+        // Initialize marker cluster group
+        markerClusterGroup = L.markerClusterGroup({
+          maxClusterRadius: 80,
+          spiderfyOnMaxZoom: true,
+          showCoverageOnHover: false,
+          zoomToBoundsOnClick: false  // Disable auto-zoom, we'll handle clicks manually
+        })
+
+        // Handle cluster clicks to show all photos in that cluster
+        markerClusterGroup.on('clusterclick', function(event) {
+          const cluster = event.layer
+          const childMarkers = cluster.getAllChildMarkers()
+
+          // Collect all pictures from all markers in the cluster
+          const allPictures = []
+          const locationNames = new Set()
+
+          childMarkers.forEach(marker => {
+            const markerData = marker.markerData
+            if (markerData && markerData.pictures) {
+              allPictures.push(...markerData.pictures)
+              locationNames.add(markerData.location.location_name)
+            }
+          })
+
+          // Create a combined location object for the sidebar
+          const clusterLocation = {
+            location_name: locationNames.size === 1
+              ? Array.from(locationNames)[0]
+              : `${locationNames.size} locations (${childMarkers.length} photos)`
+          }
+
+          // Zoom to the cluster bounds, accounting for sidebar width (400px)
+          const bounds = cluster.getBounds()
+          map.fitBounds(bounds, {
+            paddingTopLeft: [100, 100],
+            paddingBottomRight: [500, 100]  // Extra padding on right for sidebar
+          })
+
+          openSidebar(clusterLocation, allPictures)
+        })
+
+        map.addLayer(markerClusterGroup)
+      }
+
+      // Load pictures and create markers
+      async function loadPictures() {
+        try {
+          const response = await fetch('/pictures')
+          allPictures = await response.json()
+
+          if (allPictures.length === 0) {
+            console.log('No pictures available')
+            return
+          }
+
+          // Group pictures by location
+          const locationGroups = new Map()
+
+          allPictures.forEach(picture => {
+            if (picture.location && picture.location.latitude && picture.location.longitude) {
+              const locationKey = `${picture.location.latitude},${picture.location.longitude}`
+
+              if (!locationGroups.has(locationKey)) {
+                locationGroups.set(locationKey, {
+                  location: picture.location,
+                  pictures: []
+                })
+              }
+
+              locationGroups.get(locationKey).pictures.push(picture)
+            }
+          })
+
+          // Create custom colored icon
+          const customIcon = L.divIcon({
+            className: 'custom-marker',
+            html: '<div class="marker-pin"></div>',
+            iconSize: [38, 48],
+            iconAnchor: [19, 48],
+            popupAnchor: [0, -48]
+          })
+
+          // Create markers for each location
+          locationGroups.forEach((data, locationKey) => {
+            const { location, pictures } = data
+            const marker = L.marker([location.latitude, location.longitude], {
+              icon: customIcon
+            })
+
+            // Store data on the marker for cluster access
+            marker.markerData = { location, pictures }
+
+            marker.on('click', () => {
+              openSidebar(location, pictures)
+            })
+
+            markerClusterGroup.addLayer(marker)
+          })
+
+          // Fit map to show all markers
+          if (locationGroups.size > 0) {
+            map.fitBounds(markerClusterGroup.getBounds(), { padding: [50, 50] })
+          }
+
+          // Draw travel lines connecting locations chronologically
+          drawTravelLines()
+
+        } catch (error) {
+          console.error('Error loading pictures:', error)
+        }
+      }
+
+      // Draw curved travel lines between locations based on photo dates
+      function drawTravelLines() {
+        // Clear existing lines
+        travelLines.forEach(line => map.removeLayer(line))
+        travelLines = []
+
+        // Get all pictures with dates and locations, sorted by date
+        const sortedPictures = allPictures
+          .filter(p => p.date_taken && p.location && p.location.latitude && p.location.longitude)
+          .sort((a, b) => new Date(a.date_taken) - new Date(b.date_taken))
+
+        if (sortedPictures.length < 2) return
+
+        // Draw lines between consecutive photos
+        for (let i = 0; i < sortedPictures.length - 1; i++) {
+          const from = sortedPictures[i]
+          const to = sortedPictures[i + 1]
+
+          const fromLatLng = [from.location.latitude, from.location.longitude]
+          const toLatLng = [to.location.latitude, to.location.longitude]
+
+          // Create curved line
+          const curvedPath = createCurvedPath(fromLatLng, toLatLng)
+
+          const line = L.polyline(curvedPath, {
+            color: '#667eea',
+            weight: 3,
+            opacity: 0.7,
+            smoothFactor: 1,
+            className: 'travel-line'
+          }).addTo(map)
+
+          travelLines.push(line)
+        }
+      }
+
+      // Create curved path between two points with subtle northward curve
+      function createCurvedPath(from, to, numPoints = 50) {
+        const [lat1, lng1] = from
+        const [lat2, lng2] = to
+
+        const path = []
+
+        // Calculate the midpoint and add height for the curve
+        const latDiff = lat2 - lat1
+        const lngDiff = lng2 - lng1
+        const distance = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff)
+
+        // Subtle curve height (reduced from 0.3 to 0.1)
+        const curveHeight = distance * 0.1
+
+        for (let i = 0; i <= numPoints; i++) {
+          const t = i / numPoints
+
+          // Linear interpolation
+          const lat = lat1 + latDiff * t
+          const lng = lng1 + lngDiff * t
+
+          // Add parabolic curve - always curve northward (positive latitude)
+          const curveFactor = Math.sin(t * Math.PI) * curveHeight
+
+          // Curve northward by adding to latitude
+          path.push([lat + curveFactor, lng])
+        }
+
+        return path
+      }
+
+      // Open sidebar with location photos
+      function openSidebar(location, pictures) {
+        const sidebar = document.getElementById('sidebar')
+        const title = document.getElementById('sidebar-title')
+        const content = document.getElementById('sidebar-content')
+
+        title.textContent = location.location_name || 'Unknown Location'
+
+        content.innerHTML = pictures.map(picture => `
+          <div class="sidebar-picture">
+            <img src="/pictures/${picture.id}/file"
+                 alt="${picture.original_filename}"
+                 onclick="openModal('/pictures/${picture.id}/file', '${picture.original_filename}')">
+            ${picture.description ? `<p class="picture-description">${picture.description}</p>` : ''}
+            ${picture.date_taken ? `<p class="picture-date">${formatDate(picture.date_taken)}</p>` : ''}
+          </div>
+        `).join('')
+
+        sidebar.classList.remove('hidden')
+      }
+
+      // Close sidebar
+      function closeSidebar() {
+        document.getElementById('sidebar').classList.add('hidden')
+      }
+
+      // Format date function
+      function formatDate(dateString) {
+        const date = new Date(dateString)
+        return date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })
+      }
+
+      // Modal functionality
+      function openModal(imageSrc, altText) {
+        const modal = document.getElementById('imageModal')
+        const modalImg = document.getElementById('modalImage')
+
+        modal.style.display = 'block'
+        modalImg.src = imageSrc
+        modalImg.alt = altText
+      }
+
+      // Close modal functionality
+      document.querySelector('.modal-close').addEventListener('click', function () {
+        document.getElementById('imageModal').style.display = 'none'
+      })
+
+      // Close modal when clicking outside the image
+      document.getElementById('imageModal').addEventListener('click', function (e) {
+        if (e.target === this) {
+          this.style.display = 'none'
+        }
+      })
+
+      // Close modal with Escape key
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+          document.getElementById('imageModal').style.display = 'none'
+          closeSidebar()
+        }
+      })
+
+      // Initialize on page load
+      initMap()
+      loadPictures()
+    </script>
+  </body>
+</html>
