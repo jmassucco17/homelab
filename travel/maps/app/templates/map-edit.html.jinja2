@@ -1,0 +1,145 @@
+{% extends "base.html.jinja2" %}
+
+{% block title %}{% if map %}Edit {{ map.name }}{% else %}New Map{% endif %} - Travel Maps{% endblock %}
+
+{% block content %}
+<div class="map-edit-page">
+    <div class="page-header">
+        <h2>{% if map %}Edit Map{% else %}Create New Map{% endif %}</h2>
+    </div>
+
+    <form id="map-form">
+        <div class="form-group">
+            <label for="map-name">Map Name *</label>
+            <input type="text" id="map-name" name="name" required 
+                   value="{% if map %}{{ map.name }}{% endif %}" 
+                   placeholder="e.g., European Adventure">
+        </div>
+
+        <div class="form-group">
+            <label for="map-description">Description (optional)</label>
+            <textarea id="map-description" name="description" rows="3" 
+                      placeholder="Tell us about your journey...">{% if map %}{{ map.description or '' }}{% endif %}</textarea>
+        </div>
+    </form>
+
+    <div class="editor-layout">
+        <div class="editor-sidebar">
+            <div class="search-section">
+                <h3>Add Location</h3>
+                <div class="search-box">
+                    <input type="text" id="location-search" placeholder="Search for a place...">
+                    <div id="search-results" class="search-results"></div>
+                </div>
+            </div>
+
+            <div class="locations-section">
+                <h3>Locations <span id="location-count">(0)</span></h3>
+                <div id="locations-list" class="locations-list">
+                    <p class="empty-message">No locations yet. Search and add a location to get started.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="editor-map">
+            <div id="map-container" style="height: 100%;"></div>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button onclick="saveMap()" class="btn btn-primary">Save Map</button>
+        <a href="/" class="btn btn-secondary">Cancel</a>
+        {% if map %}
+        <button onclick="exportMap()" class="btn">Export as JPG</button>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Location Edit Modal -->
+<div id="location-modal" class="modal">
+    <div class="modal-content">
+        <h3>Edit Location</h3>
+        <form id="location-form">
+            <input type="hidden" id="edit-location-id">
+            <div class="form-group">
+                <label>Place: <span id="edit-location-name"></span></label>
+            </div>
+            <div class="form-group">
+                <label for="edit-nickname">Nickname (optional)</label>
+                <input type="text" id="edit-nickname" placeholder="e.g., City of Light">
+            </div>
+            <div class="form-group">
+                <label for="edit-description">Description (optional)</label>
+                <textarea id="edit-description" rows="3" placeholder="Tell us about this place..."></textarea>
+            </div>
+            <div class="modal-actions">
+                <button type="button" onclick="saveLocationEdit()" class="btn btn-primary">Save</button>
+                <button type="button" onclick="closeLocationModal()" class="btn btn-secondary">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<script src="/static/js/location-search.js"></script>
+<script src="/static/js/map-editor.js"></script>
+<script>
+const mapId = {% if map %}{{ map.id }}{% else %}null{% endif %};
+const initialMapData = {% if map %}{{ map|tojson }}{% else %}null{% endif %};
+initMapEditor(mapId, initialMapData);
+
+async function saveMap() {
+    const name = document.getElementById('map-name').value;
+    const description = document.getElementById('map-description').value;
+    
+    if (!name) {
+        alert('Please enter a map name');
+        return;
+    }
+    
+    try {
+        let response;
+        if (mapId) {
+            response = await fetch(`/api/maps/${mapId}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name, description})
+            });
+        } else {
+            response = await fetch('/api/maps', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name, description})
+            });
+        }
+        
+        if (response.ok) {
+            const data = await response.json();
+            window.location.href = `/maps/${data.id}/edit`;
+        } else {
+            alert('Failed to save map');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to save map');
+    }
+}
+
+async function exportMap() {
+    const mapElement = document.getElementById('map-container');
+    const canvas = await html2canvas(mapElement, {
+        useCORS: true,
+        allowTaint: true
+    });
+    
+    const name = document.getElementById('map-name').value || 'map';
+    const link = document.createElement('a');
+    link.download = `${name.replace(/\s+/g, '_')}.jpg`;
+    link.href = canvas.toDataURL('image/jpeg', 0.95);
+    link.click();
+}
+</script>
+{% endblock %}
