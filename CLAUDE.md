@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (and GitHub Copilot) agents interacti
 
 This repo is primarily focused on deploying a public personal website at `jamesmassucco.com` and its sub-domains. The `networking/` directory contains core technologies (like `traefik` reverse proxy, oauth, and Cloudflare DDNS configuration) and other top-level directories contain containerized "services" which handle various pages within the site.
 
-When creating a new module (i.e. a new page or new sub-site), make a new top-level folder and populate it with a `docker-compose.yml` and `start.sh`. Make sure to:
+When creating a new module (i.e. a new page or new sub-site), make a new top-level folder and populate it with a `docker-compose.yml`. Make sure to:
 
 - Update `scripts/start_local.sh` to include the service in `ALL_SERVICES`
 - Create a `docker-compose.local.yml` in the new module directory (see existing examples for the pattern)
