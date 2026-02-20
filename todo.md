@@ -2,7 +2,7 @@
 
 ## New features/projects:
 
-- Replace travel-site with travel-maps, a site designed for creating annotated travel maps showing the destinations with brief descriptions / estimated visit dates
+- Mortgage calculator based on GSheet with ability to save locations, with common shared values that can be overridden for each property; if not overridden, it also keeps track of what the values were when you last viewed the item and shows you the changes
 - New project (TBD) that requires creating an iOS app
 - Setup nice colored logging for Python
 
