@@ -1,0 +1,39 @@
+services:
+  tools:
+    container_name: tools
+    image: ghcr.io/jmassucco17/homelab/tools:latest
+    build:
+      context: ..
+      dockerfile: tools/Dockerfile
+    volumes:
+      - ./app:/app/app
+    labels:
+      # Use traefik to provide HTTP endpoint
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.tools.rule=Host(`tools.jamesmassucco.com`)'
+      - 'traefik.http.routers.tools.entrypoints=websecure'
+      - 'traefik.http.routers.tools.tls=true'
+      - 'traefik.http.routers.tools.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.tools.middlewares=ratelimit'
+      - 'traefik.http.services.tools.loadbalancer.server.port=8000'
+    environment:
+      - TMDB_API_KEY=${TMDB_API_KEY:-}
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python3',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')",
+        ]
+      interval: 5s
+      timeout: 1s
+      retries: 3
+      start_period: 5s
+    networks:
+      - web
+    restart: unless-stopped
+
+networks:
+  web:
+    external: true
