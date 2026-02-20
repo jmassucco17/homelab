@@ -27,6 +27,10 @@ on:
         description: 'Deploy games'
         type: boolean
         default: true
+      tools:
+        description: 'Deploy tools'
+        type: boolean
+        default: true
   push:
     branches:
       - main
@@ -78,11 +82,12 @@ jobs:
           DEPLOY_BLOG: ${{ github.event_name == 'push' || inputs.blog }}
           DEPLOY_TRAVEL: ${{ github.event_name == 'push' || inputs.travel }}
           DEPLOY_GAMES: ${{ github.event_name == 'push' || inputs.games }}
+          DEPLOY_TOOLS: ${{ github.event_name == 'push' || inputs.tools }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             -o StrictHostKeyChecking=no \
             "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" \
-            "DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' DEPLOY_SHARED_ASSETS='${DEPLOY_SHARED_ASSETS}' DEPLOY_HOMEPAGE='${DEPLOY_HOMEPAGE}' DEPLOY_BLOG='${DEPLOY_BLOG}' DEPLOY_TRAVEL='${DEPLOY_TRAVEL}' DEPLOY_GAMES='${DEPLOY_GAMES}' bash -s" << 'REMOTE'
+            "DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' DEPLOY_SHARED_ASSETS='${DEPLOY_SHARED_ASSETS}' DEPLOY_HOMEPAGE='${DEPLOY_HOMEPAGE}' DEPLOY_BLOG='${DEPLOY_BLOG}' DEPLOY_TRAVEL='${DEPLOY_TRAVEL}' DEPLOY_GAMES='${DEPLOY_GAMES}' DEPLOY_TOOLS='${DEPLOY_TOOLS}' bash -s" << 'REMOTE'
           set -euo pipefail
           mkdir -p /opt/homelab
           cd /opt/homelab
@@ -111,6 +116,7 @@ jobs:
           deploy_if_enabled blog            "$DEPLOY_BLOG"
           deploy_if_enabled travel          "$DEPLOY_TRAVEL"
           deploy_if_enabled games           "$DEPLOY_GAMES"
+          deploy_if_enabled tools           "$DEPLOY_TOOLS"
 
           rm -f /tmp/homelab-deploy.tar.gz
           echo "Deployment complete."
