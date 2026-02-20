@@ -4,13 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Travel Pictures - Admin</title>
-    <link rel="stylesheet" href="/assets/css/tokens.css" />
-    <link rel="stylesheet" href="/assets/css/admin.css?v=2.0" />
+    <link rel="stylesheet" href="/photos/assets/css/tokens.css" />
+    <link rel="stylesheet" href="/photos/assets/css/admin.css?v=2.0" />
   </head>
   <body>
     <div class="header">
       <h1>Travel Pictures - Admin Panel</h1>
-      <a href="/" class="nav-link">← Home</a>
+      <a href="/photos" class="nav-link">← Home</a>
     </div>
 
     <div class="upload-section">
@@ -86,7 +86,7 @@
           progressBar.style.width = `${((i + 1) / totalFiles) * 100}%`
 
           try {
-            const response = await fetch('/admin/upload', {
+            const response = await fetch('/photos/admin/upload', {
               method: 'POST',
               body: formData,
             })
@@ -134,7 +134,7 @@
       // Load pictures list
       async function loadPictures() {
         try {
-          const response = await fetch('/admin/pictures')
+          const response = await fetch('/photos/admin/pictures')
           const pictures = await response.json()
 
           const picturesListDiv = document.getElementById('picturesList')
@@ -148,7 +148,7 @@
             .map(
               (picture) => `
                     <div class="picture-item" id="picture-${picture.id}">
-                        <img src="/pictures/${picture.id}/file" alt="${picture.original_filename}" class="picture-thumbnail">
+                        <img src="/photos/pictures/${picture.id}/file" alt="${picture.original_filename}" class="picture-thumbnail">
                         <div class="picture-info">
                             <div class="picture-title">${picture.original_filename}</div>
                             <div class="picture-meta">
@@ -188,7 +188,7 @@
         }
 
         try {
-          const response = await fetch(`/admin/pictures/${pictureId}`, {
+          const response = await fetch(`/photos/admin/pictures/${pictureId}`, {
             method: 'DELETE',
           })
 
@@ -231,7 +231,7 @@
         formData.append('description', description)
 
         try {
-          const response = await fetch(`/admin/pictures/${pictureId}`, {
+          const response = await fetch(`/photos/admin/pictures/${pictureId}`, {
             method: 'PATCH',
             body: formData,
           })

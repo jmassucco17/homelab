@@ -40,7 +40,7 @@
 
 {% block extra_js %}
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-<script src="/static/js/map-viewer.js"></script>
+<script src="/maps/static/js/map-viewer.js"></script>
 <script>
 const mapData = {{ map|tojson }};
 initMapViewer(mapData);

@@ -19,16 +19,8 @@ on:
         description: 'Deploy blog'
         type: boolean
         default: true
-      travel-landing:
-        description: 'Deploy travel landing'
-        type: boolean
-        default: true
-      travel-photos:
-        description: 'Deploy travel photos'
-        type: boolean
-        default: true
-      travel-maps:
-        description: 'Deploy travel maps'
+      travel:
+        description: 'Deploy travel'
         type: boolean
         default: true
       games:
@@ -84,15 +76,13 @@ jobs:
           DEPLOY_SHARED_ASSETS: ${{ github.event_name == 'push' || inputs['shared-assets'] }}
           DEPLOY_HOMEPAGE: ${{ github.event_name == 'push' || inputs.homepage }}
           DEPLOY_BLOG: ${{ github.event_name == 'push' || inputs.blog }}
-          DEPLOY_TRAVEL_LANDING: ${{ github.event_name == 'push' || inputs['travel-landing'] }}
-          DEPLOY_TRAVEL_PHOTOS: ${{ github.event_name == 'push' || inputs['travel-photos'] }}
-          DEPLOY_TRAVEL_MAPS: ${{ github.event_name == 'push' || inputs['travel-maps'] }}
+          DEPLOY_TRAVEL: ${{ github.event_name == 'push' || inputs.travel }}
           DEPLOY_GAMES: ${{ github.event_name == 'push' || inputs.games }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             -o StrictHostKeyChecking=no \
             "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" \
-            "DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' DEPLOY_SHARED_ASSETS='${DEPLOY_SHARED_ASSETS}' DEPLOY_HOMEPAGE='${DEPLOY_HOMEPAGE}' DEPLOY_BLOG='${DEPLOY_BLOG}' DEPLOY_TRAVEL_LANDING='${DEPLOY_TRAVEL_LANDING}' DEPLOY_TRAVEL_PHOTOS='${DEPLOY_TRAVEL_PHOTOS}' DEPLOY_TRAVEL_MAPS='${DEPLOY_TRAVEL_MAPS}' DEPLOY_GAMES='${DEPLOY_GAMES}' bash -s" << 'REMOTE'
+            "DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' DEPLOY_SHARED_ASSETS='${DEPLOY_SHARED_ASSETS}' DEPLOY_HOMEPAGE='${DEPLOY_HOMEPAGE}' DEPLOY_BLOG='${DEPLOY_BLOG}' DEPLOY_TRAVEL='${DEPLOY_TRAVEL}' DEPLOY_GAMES='${DEPLOY_GAMES}' bash -s" << 'REMOTE'
           set -euo pipefail
           mkdir -p /opt/homelab
           cd /opt/homelab
@@ -121,9 +111,7 @@ jobs:
           deploy_if_enabled shared-assets   "$DEPLOY_SHARED_ASSETS"
           deploy_if_enabled homepage        "$DEPLOY_HOMEPAGE"
           deploy_if_enabled blog            "$DEPLOY_BLOG"
-          deploy_if_enabled travel/landing  "$DEPLOY_TRAVEL_LANDING"
-          deploy_if_enabled travel/photos   "$DEPLOY_TRAVEL_PHOTOS"
-          deploy_if_enabled travel/maps     "$DEPLOY_TRAVEL_MAPS"
+          deploy_if_enabled travel           "$DEPLOY_TRAVEL"
           deploy_if_enabled games         "$DEPLOY_GAMES"
 
           rm -f /tmp/homelab-deploy.tar.gz

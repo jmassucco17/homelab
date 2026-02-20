@@ -56,7 +56,7 @@ async def index(request: Request, session: Session = Depends(get_session)):
     )
 
 
-@router.get('/maps/new', response_class=HTMLResponse)
+@router.get('/new', response_class=HTMLResponse)
 async def new_map_form(request: Request):
     """Display form to create a new map."""
     return templates.TemplateResponse(
@@ -64,7 +64,7 @@ async def new_map_form(request: Request):
     )
 
 
-@router.get('/maps/{map_id}/view', response_class=HTMLResponse)
+@router.get('/{map_id}/view', response_class=HTMLResponse)
 async def view_map(
     request: Request, map_id: int, session: Session = Depends(get_session)
 ):
@@ -96,7 +96,7 @@ async def view_map(
     )
 
 
-@router.get('/maps/{map_id}/edit', response_class=HTMLResponse)
+@router.get('/{map_id}/edit', response_class=HTMLResponse)
 async def edit_map_form(
     request: Request, map_id: int, session: Session = Depends(get_session)
 ):

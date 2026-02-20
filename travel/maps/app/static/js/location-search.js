@@ -17,7 +17,7 @@ async function handleSearch(e) {
     
     searchTimeout = setTimeout(async () => {
         try {
-            const response = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`);
+            const response = await fetch(`/maps/api/geocode?q=${encodeURIComponent(query)}`);
             const results = await response.json();
             
             displaySearchResults(results);

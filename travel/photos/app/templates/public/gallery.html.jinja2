@@ -4,12 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Travel Pictures Gallery</title>
-    <link rel="stylesheet" href="/assets/css/tokens.css" />
-    <link rel="stylesheet" href="/assets/css/gallery.css?v=2.0" />
+    <link rel="stylesheet" href="/photos/assets/css/tokens.css" />
+    <link rel="stylesheet" href="/photos/assets/css/gallery.css?v=2.0" />
   </head>
   <body>
-    <a href="/admin" class="admin-link">Admin Panel →</a>
-    <a href="/" class="map-link">Map View →</a>
+    <a href="/photos/admin" class="admin-link">Admin Panel →</a>
+    <a href="/photos" class="map-link">Map View →</a>
 
     <div class="header">
       <h1>Travel Pictures</h1>
@@ -32,7 +32,7 @@
         const galleryDiv = document.getElementById('gallery')
 
         try {
-          const response = await fetch('/pictures')
+          const response = await fetch('/photos/pictures')
           const pictures = await response.json()
 
           if (pictures.length === 0) {
@@ -45,10 +45,10 @@
             .map(
               (picture) => `
                     <div class="picture-card">
-                        <img src="/pictures/${picture.id}/file" 
+                        <img src="/photos/pictures/${picture.id}/file" 
                              alt="${picture.original_filename}" 
                              class="picture-image"
-                             onclick="openModal('/pictures/${picture.id}/file', '${picture.original_filename}')">
+                             onclick="openModal('/photos/pictures/${picture.id}/file', '${picture.original_filename}')">
                         <div class="picture-info">
                             <div class="picture-filename">${picture.location.location_name}</div>
                             ${picture.description ? `<div class="picture-description">"${picture.description}"</div>` : ''}

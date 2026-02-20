@@ -50,5 +50,5 @@ class TestMainApplication(unittest.TestCase):
 
     def test_new_map_page_exists(self) -> None:
         """Test that new map form page is accessible."""
-        response = self.client.get('/maps/new')
+        response = self.client.get('/new')
         self.assertEqual(response.status_code, 200)

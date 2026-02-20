@@ -12,12 +12,12 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
-    <link rel="stylesheet" href="/assets/css/tokens.css" />
-    <link rel="stylesheet" href="/assets/css/map.css?v=2.0" />
+    <link rel="stylesheet" href="/photos/assets/css/tokens.css" />
+    <link rel="stylesheet" href="/photos/assets/css/map.css?v=2.0" />
   </head>
   <body>
-    <a href="/admin" class="admin-link">Admin Panel →</a>
-    <a href="/gallery" class="gallery-link">Gallery View →</a>
+    <a href="/photos/admin" class="admin-link">Admin Panel →</a>
+    <a href="/photos/gallery" class="gallery-link">Gallery View →</a>
 
     <div class="header">
       <h1>Travel Map</h1>
@@ -121,7 +121,7 @@
       // Load pictures and create markers
       async function loadPictures() {
         try {
-          const response = await fetch('/pictures')
+          const response = await fetch('/photos/pictures')
           allPictures = await response.json()
 
           if (allPictures.length === 0) {
@@ -264,9 +264,9 @@
 
         content.innerHTML = pictures.map(picture => `
           <div class="sidebar-picture">
-            <img src="/pictures/${picture.id}/file"
+            <img src="/photos/pictures/${picture.id}/file"
                  alt="${picture.original_filename}"
-                 onclick="openModal('/pictures/${picture.id}/file', '${picture.original_filename}')">
+                 onclick="openModal('/photos/pictures/${picture.id}/file', '${picture.original_filename}')">
             ${picture.description ? `<p class="picture-description">${picture.description}</p>` : ''}
             ${picture.date_taken ? `<p class="picture-date">${formatDate(picture.date_taken)}</p>` : ''}
           </div>
