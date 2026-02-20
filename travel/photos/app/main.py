@@ -43,7 +43,7 @@ if os.path.exists(uploads_dir):
     app.mount('/uploads', StaticFiles(directory=uploads_dir), name='uploads')
 
 # Setup templates
-templates = Jinja2Templates(directory='app/templates')
+templates = Jinja2Templates(directory=APP_DIR / 'templates')
 
 
 @app.get('/', response_class=HTMLResponse)
