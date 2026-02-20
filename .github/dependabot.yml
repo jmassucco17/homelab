@@ -85,6 +85,15 @@ updates:
         versions: ['>=3.13']
 
   - package-ecosystem: 'docker'
+    directory: '/travel/landing'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    groups:
+      docker-images:
+        patterns: ['*']
+
+  - package-ecosystem: 'docker'
     directory: '/travel/maps'
     schedule:
       interval: 'weekly'

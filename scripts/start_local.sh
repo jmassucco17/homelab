@@ -6,9 +6,9 @@
 # Usage:
 #   ./scripts/start_local.sh                          # Start all services
 #   ./scripts/start_local.sh blog                     # Start only blog
-#   ./scripts/start_local.sh blog travel-site         # Start specific services
-#   ./scripts/start_local.sh --stop                   # Stop all services
-#   ./scripts/start_local.sh blog travel-site --stop  # Stop specific services
+#   ./scripts/start_local.sh blog travel/photos        # Start specific services
+#   ./scripts/start_local.sh --stop                    # Stop all services
+#   ./scripts/start_local.sh blog travel/photos --stop # Stop specific services
 #
 # Services can be accessed at http://localhost:<port> where <port> can be found
 # in the associated docker-compose.local.yml for each service.
@@ -19,7 +19,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"/..
 
-ALL_SERVICES=("shared-assets" "homepage" "blog" "travel-site" "games")
+ALL_SERVICES=("shared-assets" "homepage" "blog" "travel/landing" "travel/photos" "travel/maps" "games")
 LOCAL_HOSTS="jamesmassucco.com blog.jamesmassucco.com travel.jamesmassucco.com assets.jamesmassucco.com games.jamesmassucco.com"
 
 # Parse arguments: extract --stop flag and service names (order-independent)

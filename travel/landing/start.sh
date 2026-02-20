@@ -1,9 +1,9 @@
-#!/bin/bash
-set -e
-
+#!/usr/bin/env bash
+set -euo pipefail
 cd "$(dirname "$0")"
 
-# Build and start the service
-docker compose up --build -d --remove-orphans
+echo "Shutting down containers..."
+sudo docker compose down --remove-orphans
 
-echo "Travel landing page started successfully"
+echo "Building and starting containers..."
+sudo docker compose up -d --build --wait

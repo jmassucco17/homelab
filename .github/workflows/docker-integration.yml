@@ -135,6 +135,40 @@ jobs:
         with:
           service: travel/photos
 
+  travel-landing:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Start travel-landing service
+        uses: ./.github/actions/start-service
+        with:
+          service: travel/landing
+
+      - name: Test health endpoint
+        run: |
+          docker exec travel-landing python3 -c '
+          import json, urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:80/health")
+          assert json.loads(resp.read())["status"] == "healthy"
+          '
+
+      - name: Test root endpoint returns HTML
+        run: |
+          docker exec travel-landing python3 -c '
+          import urllib.request
+          resp = urllib.request.urlopen("http://127.0.0.1:80/")
+          assert b"<html" in resp.read().lower()
+          '
+
+      - name: Stop travel-landing service
+        uses: ./.github/actions/stop-service
+        if: always()
+        with:
+          service: travel/landing
+
   travel-maps:
     runs-on: ubuntu-latest
     permissions:

@@ -22,7 +22,7 @@ def make_in_memory_engine() -> sqlalchemy.Engine:
 
 
 class TestApp(unittest.TestCase):
-    """Tests for travel-site FastAPI application."""
+    """Tests for travel-photos FastAPI application."""
 
     def setUp(self) -> None:
         """Set up test client with an in-memory database."""

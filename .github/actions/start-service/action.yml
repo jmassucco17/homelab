@@ -3,7 +3,7 @@ description: Creates the docker web network and starts a service using its start
 
 inputs:
   service:
-    description: Service directory name (e.g. blog, homepage, travel-site)
+    description: Service directory name (e.g. blog, homepage, travel/maps)
     required: true
 
 runs:

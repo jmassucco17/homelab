@@ -25,7 +25,7 @@ requested services.
 
 # Start specific services
 ./scripts/start_local.sh blog
-./scripts/start_local.sh blog travel-site
+./scripts/start_local.sh blog travel/photos
 ```
 
 Services can be accessed at `http://localhost:<port>` where `<port>` can be found in the
