@@ -36,9 +36,3 @@ repos:
     rev: v1.1.408
     hooks:
       - id: pyright
-
-  # NOTE: shellcheck-py version must stay in sync with the shellcheck apt package version
-  - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.10.0.1
-    hooks:
-      - id: shellcheck
