@@ -98,9 +98,7 @@ jobs:
             local flag="$2"
             if [ "$flag" = "true" ]; then
               echo "--- Starting $svc ---"
-              cd /opt/homelab/$svc
-              ./start.sh
-              cd /opt/homelab
+              /opt/homelab/scripts/start_service.sh "$svc"
             else
               echo "--- Skipping $svc ---"
             fi
@@ -111,8 +109,8 @@ jobs:
           deploy_if_enabled shared-assets   "$DEPLOY_SHARED_ASSETS"
           deploy_if_enabled homepage        "$DEPLOY_HOMEPAGE"
           deploy_if_enabled blog            "$DEPLOY_BLOG"
-          deploy_if_enabled travel           "$DEPLOY_TRAVEL"
-          deploy_if_enabled games         "$DEPLOY_GAMES"
+          deploy_if_enabled travel          "$DEPLOY_TRAVEL"
+          deploy_if_enabled games           "$DEPLOY_GAMES"
 
           rm -f /tmp/homelab-deploy.tar.gz
           echo "Deployment complete."
