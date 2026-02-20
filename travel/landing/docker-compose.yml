@@ -1,0 +1,13 @@
+services:
+  travel-landing:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: travel-landing
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.travel-landing.rule=Host(`travel.jamesmassucco.com`)"
+      - "traefik.http.routers.travel-landing.entrypoints=websecure"
+      - "traefik.http.routers.travel-landing.tls.certresolver=cloudflare"
+      - "traefik.http.services.travel-landing.loadbalancer.server.port=80"

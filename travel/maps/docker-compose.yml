@@ -15,10 +15,13 @@ services:
       - web
     labels:
       - traefik.enable=true
-      - traefik.http.routers.travel-maps.rule=Host(`maps.jamesmassucco.com`)
+      - traefik.http.routers.travel-maps.rule=Host(`travel.jamesmassucco.com`) && PathPrefix(`/maps`)
       - traefik.http.routers.travel-maps.entrypoints=websecure
       - traefik.http.routers.travel-maps.tls.certresolver=cloudflare
-      - traefik.http.routers.travel-maps.middlewares=ratelimit
+      - traefik.http.routers.travel-maps.middlewares=ratelimit,travel-maps-strip
+      - traefik.http.routers.travel-maps.priority=50
+      # Strip /maps prefix before forwarding to service
+      - traefik.http.middlewares.travel-maps-strip.stripprefix.prefixes=/maps
       - traefik.http.services.travel-maps.loadbalancer.server.port=8000
     healthcheck:
       test:
