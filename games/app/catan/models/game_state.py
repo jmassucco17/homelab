@@ -53,7 +53,7 @@ class TurnState(pydantic.BaseModel):
     # Remaining free resource picks from a Year of Plenty card.
     year_of_plenty_remaining: int = 0
     # Player indices who still need to discard after a 7 roll.
-    discard_player_indices: list[int] = pydantic.Field(default_factory=list)
+    discard_player_indices: list[int] = pydantic.Field(default_factory=lambda: [])
     # Active trade offer ID, if any.
     active_trade_id: str | None = None
 
@@ -66,13 +66,13 @@ class GameState(pydantic.BaseModel):
     phase: GamePhase = GamePhase.SETUP_FORWARD
     turn_state: TurnState
     # Remaining development cards in the draw pile (list of DevCardType values).
-    dev_card_deck: list[DevCardType] = pydantic.Field(default_factory=list)
+    dev_card_deck: list[DevCardType] = pydantic.Field(default_factory=lambda: [])
     # player_index of the current Longest Road holder, or None.
     longest_road_owner: int | None = None
     # player_index of the current Largest Army holder, or None.
     largest_army_owner: int | None = None
     # Full history of dice roll totals for this game.
-    dice_roll_history: list[int] = pydantic.Field(default_factory=list)
+    dice_roll_history: list[int] = pydantic.Field(default_factory=lambda: [])
     # Number of complete rounds played.
     turn_number: int = 0
     # player_index of the winner once phase == ENDED, or None.

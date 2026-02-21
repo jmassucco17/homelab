@@ -145,6 +145,6 @@ class Player(pydantic.BaseModel):
     new_dev_cards: DevCardHand = pydantic.Field(default_factory=DevCardHand)
     build_inventory: BuildInventory = pydantic.Field(default_factory=BuildInventory)
     victory_points: int = 0
-    ports_owned: list[PortType] = pydantic.Field(default_factory=list)
+    ports_owned: list[PortType] = pydantic.Field(default_factory=lambda: [])
     knights_played: int = 0
     longest_road_length: int = 0
