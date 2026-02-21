@@ -309,8 +309,7 @@ def _apply_build_dev_card(state: GameState, action: BuildDevCard) -> None:
         raise ValueError('No development cards remaining in the deck.')
 
     player.resources = player.resources.subtract(DEV_CARD_COST)
-    idx = random.randrange(len(state.dev_card_deck))
-    card_type = DevCardType(state.dev_card_deck.pop(idx))
+    card_type = DevCardType(state.dev_card_deck.pop())
     player.new_dev_cards = player.new_dev_cards.add(card_type)
 
 

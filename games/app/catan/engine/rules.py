@@ -104,7 +104,7 @@ def get_largest_army_holder(players: list[Player]) -> int | None:
     strict tie the function returns None, deferring tie-breaking to the caller
     (the existing holder retains the card).
     """
-    best_count = 2  # must exceed 2 to qualify
+    best_count = 2  # threshold: player must have > 2 knights (i.e. at least 3)
     holder: int | None = None
     for player in players:
         if player.knights_played > best_count:
