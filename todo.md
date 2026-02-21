@@ -1,9 +1,13 @@
 # TODO Items
 
+## In progress
+
+- Add secrets management (including new `TMDB_API_KEY`) for the server
+- Finish package based deployment, remove plan doc, and test for both local and prod deployments
+
 ## New features/projects:
 
-- Movie picker (or just a thing picker) with flair
-- Export google maps history into travel maps
+- Historical / future map viewer with ability to break down by city or state/country
 - Mortgage calculator based on GSheet with ability to save locations, with common shared values that can be overridden for each property; if not overridden, it also keeps track of what the values were when you last viewed the item and shows you the changes
 - New project (TBD) that requires creating an iOS app
 - Setup nice colored logging for Python
@@ -13,11 +17,7 @@
 
 - Make better use of GHCR, or investigate alternative deployment management technologies (e.g. FluxCD)
 - Learn how to use worktrees, and teach Claude how to do it
-- More cleanup to the workflows for PRs and commits to main
 - Use narrower requirements at build time for modules, to speed up builds
-- Add secrets management (including new `TMDB_API_KEY`) for the server
-- Finish package based deployment, remove plan doc, and test for both local and prod deployments
-- Setup a proper staging environment that both me and AI agents can interact with, for testing major changes in a full environment (need to figure out domain structure)
 - Make Tailscale remind me when Hetzner VPS is going to expire
 - Database migration management (both at the schema layer and at the storage layer)
     - enable backup / restore capability
@@ -26,16 +26,13 @@
 
 ## Organization
 
-- Create a `docs/` directory for splitting up the AI docs, and then make `CLAUDE.md` into just an "index"
 - Reduce sources of truth for what modules are available (listed in a lot of places, see #23 for example)
 - Explain CSS strategy (have Copilot do this based on #24)
-- Apply a fixed order for all the subdomains wherever they appear (networking -> shared-assets -> homepage -> others in alphabetical order)
 
 ## Security
 
 - Update Python to 3.13
 - Don't use `root` for managing the VPS
-- Better secrets handling (don't keep them in `.env` files on disk on VPS)
 
 ## Bug fixes:
 
@@ -51,8 +48,6 @@
 
 ## Misc.
 
-- Update python deployment file to fix at 3.12
-
 ### Non-Python testing (future, requires new dependencies):
 
 - **JS unit tests — theme-toggle.js**: Add Vitest + jsdom tests for `shared-assets/assets/scripts/theme-toggle.js` (cookie reading, `prefers-color-scheme`, toggle click, `data-theme` persistence). The function is already a clean ES module export so no refactor is needed.
@@ -61,7 +56,6 @@
 
 ### High Priority (Quick Wins)
 - Create shared utilities module for FastAPI boilerplate (app initialization, static files, Jinja2, health endpoints)
-- Consolidate Dockerfiles with multi-stage builds or base image
 - Per-service requirements.txt or migrate to Poetry/uv for dependency management
 - Consolidate all CSS into shared-assets (remove per-service CSS directories)
 
