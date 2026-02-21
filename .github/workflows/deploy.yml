@@ -78,6 +78,8 @@ jobs:
 
       - name: Deploy services on server
         env:
+          # On workflow_call (automatic), inputs are empty so || true deploys all services.
+          # On workflow_dispatch (manual), inputs reflect the user's checkbox selections.
           DEPLOY_NETWORKING: ${{ inputs.networking || true }}
           DEPLOY_SHARED_ASSETS: ${{ inputs['shared-assets'] || true }}
           DEPLOY_HOMEPAGE: ${{ inputs.homepage || true }}
