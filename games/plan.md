@@ -145,7 +145,7 @@ This phase produces the shared data models and API contracts that all other Cata
 
 **Agent: catan-engine-agent** — depends on Phase 3 contracts; runs in parallel with Phases 5–8
 
-- [ ] **Rules engine** (`games/app/catan/engine/rules.py`)
+- [x] **Rules engine** (`games/app/catan/engine/rules.py`)
   - `get_legal_actions(game_state, player_index) -> list[Action]`
   - Setup phase: initial placement rules (no adjacency), road adjacent to own settlement
   - Main phase: build cost checks, placement validity (vertex/edge ownership, connectivity)
@@ -153,16 +153,16 @@ This phase produces the shared data models and API contracts that all other Cata
   - Longest road calculation (DFS over edge graph)
   - Largest army tracking
   - Victory condition check (≥10 VP)
-- [ ] **Action processor** (`games/app/catan/engine/processor.py`)
+- [x] **Action processor** (`games/app/catan/engine/processor.py`)
   - `apply_action(game_state, action) -> ActionResult`
   - Pure function (no side effects); returns new `GameState`
   - Handles all action types defined in Phase 3
   - Resource bank validation (finite resource cards)
-- [ ] **Turn manager** (`games/app/catan/engine/turn_manager.py`)
+- [x] **Turn manager** (`games/app/catan/engine/turn_manager.py`)
   - Setup phase order (1→2→…→N→N→…→1 snake-draft)
   - Main phase turn cycling
   - Dice roll → distribute resources → check robber → await player actions
-- [ ] **Unit tests** (`games/tests/catan/test_engine.py`)
+- [x] **Unit tests** (`games/tests/catan/test_engine.py`)
   - Legal action generation edge cases (can't build where occupied, etc.)
   - Resource distribution on roll (including 7)
   - Robber placement and stealing
@@ -259,27 +259,27 @@ The trade system is complex enough to warrant its own workstream.
 
 **Agent: catan-ai-agent** — depends on Phase 4 engine; runs in parallel with Phases 5, 6, 7
 
-- [ ] **AI interface** (`games/app/catan/ai/base.py`)
+- [x] **AI interface** (`games/app/catan/ai/base.py`)
   - Abstract `CatanAI` class with `choose_action(game_state, player_index, legal_actions) -> Action`
   - Pluggable: multiple difficulty levels implement the same interface
-- [ ] **Rule-based AI — Easy** (`games/app/catan/ai/easy.py`)
+- [x] **Rule-based AI — Easy** (`games/app/catan/ai/easy.py`)
   - Always picks a random legal action
   - Used to sanity-test game-complete simulations
-- [ ] **Rule-based AI — Medium** (`games/app/catan/ai/medium.py`)
+- [x] **Rule-based AI — Medium** (`games/app/catan/ai/medium.py`)
   - Prioritizes building (settlement > road > city > dev card) using a simple heuristic priority queue
   - Prefers settlement spots with highest pip count and resource diversity
   - Trades with bank when stuck (4:1 if no port)
   - Plays knight when holding it and score is close
-- [ ] **Rule-based AI — Hard** (`games/app/catan/ai/hard.py`)
+- [x] **Rule-based AI — Hard** (`games/app/catan/ai/hard.py`)
   - Settlement placement: maximize expected resource income + port access using pip-count + resource-distribution scoring
   - Longest road strategy: tracks road count and chases the bonus when within reach
   - Largest army strategy: tracks knight counts across players
   - Adaptive trading: uses ports strategically; counter-offers player trades
   - Robber placement: targets the leader; avoids self-harm
-- [ ] **AI driver** (`games/app/catan/ai/driver.py`)
+- [x] **AI driver** (`games/app/catan/ai/driver.py`)
   - Runs AI turn asynchronously in the server (1–3 s simulated delay for UX)
   - Invoked by `ws_handler.py` when it is an AI player's turn
-- [ ] **Simulation runner** (`games/tests/catan/simulate.py`)
+- [x] **Simulation runner** (`games/tests/catan/simulate.py`)
   - Run 1000 full games AI-vs-AI to verify no infinite loops, check win-rate distribution
   - Output: average game length, win rates by seat position
 
