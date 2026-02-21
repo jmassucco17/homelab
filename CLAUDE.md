@@ -21,11 +21,10 @@ NOTE: From here on out, we'll refer to top-level directories that contain docker
 When creating a new module (i.e. a new subdomain):
 
 1. **Create module directory** - Follow the pattern of either `homepage` (static/nginx) or `blog` (Python/FastAPI)
-   - `Dockerfile`, `docker-compose.yml`, `docker-compose.local.yml`
+   - `Dockerfile`, `docker-compose.yml`
    - Application code (`site/` for static, `app/` for Python)
 
 2. **Update configuration files** - Look at how existing services are registered and follow the same pattern:
-   - `scripts/start_local.sh` - Add to `ALL_SERVICES` and `LOCAL_HOSTS`
    - `networking/docker-compose.yml` - Add subdomain to cloudflare-ddns `DOMAINS`
    - `.github/dependabot.yml` - Add docker ecosystem entry
    - `.github/workflows/docker-integration.yml` - Add test job

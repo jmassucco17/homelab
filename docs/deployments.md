@@ -182,8 +182,6 @@ Every service directory follows the same layout:
 | `<service>/docker-compose.yml` | Production, staging, CI | Base service definition (image, build, healthcheck, restart, `traefik.enable=true`) |
 | `<service>/docker-compose.prod.yml` | Production, CI | Production Traefik routing labels; named data volume for `travel` |
 | `<service>/docker-compose.staging.yml` | Staging | Staging routing labels; separate volume for `travel` |
-| `<service>/docker-compose.local.yml` | Local development | Host port mapping and local HTTP routing |
-| `networking/docker-compose.local.yml` | Local development | HTTP-only Traefik (no TLS/OAuth) |
 | `networking/docker-compose.staging.yml` | Staging | Staging OAuth2-proxy (standalone) |
 
 ---
