@@ -19,7 +19,7 @@ jobs:
 
   integration:
     needs: [lint, test]
-    uses: ./.github/workflows/_docker-integration.yml
+    uses: ./.github/workflows/_integration.yml
 
   ci:
     runs-on: ubuntu-latest
