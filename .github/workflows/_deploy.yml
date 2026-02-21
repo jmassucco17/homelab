@@ -102,9 +102,11 @@ jobs:
             /tmp/homelab-deploy.tar.gz \
             "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/homelab-deploy.tar.gz"
 
-      - name: Deploy services on server (prod)
-        if: inputs.environment == 'prod'
+      - name: Deploy services on server
         env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          STAGING_IMAGE_TAG: ${{ steps.image-tag.outputs.tag }}
+          SEED_FROM_PROD: ${{ inputs.seed_from_prod }}
           DEPLOY_NETWORKING: ${{ inputs.networking }}
           DEPLOY_SHARED_ASSETS: ${{ inputs['shared-assets'] }}
           DEPLOY_HOMEPAGE: ${{ inputs.homepage }}
@@ -116,56 +118,7 @@ jobs:
           ssh -i ~/.ssh/deploy_key \
             -o StrictHostKeyChecking=no \
             "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" \
-            "DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' DEPLOY_SHARED_ASSETS='${DEPLOY_SHARED_ASSETS}' DEPLOY_HOMEPAGE='${DEPLOY_HOMEPAGE}' DEPLOY_BLOG='${DEPLOY_BLOG}' DEPLOY_TRAVEL='${DEPLOY_TRAVEL}' DEPLOY_GAMES='${DEPLOY_GAMES}' DEPLOY_TOOLS='${DEPLOY_TOOLS}' bash -s" << 'REMOTE'
-          set -euo pipefail
-          mkdir -p /opt/homelab
-          cd /opt/homelab
-          echo "Extracting deployment archive..."
-          tar -xzf /tmp/homelab-deploy.tar.gz
-          touch networking/acme.json
-          chmod 600 networking/acme.json
-          docker network create web 2>/dev/null || true
-
-          deploy_if_enabled() {
-            local svc="$1"
-            local flag="$2"
-            if [ "$flag" = "true" ]; then
-              echo "--- Deploying $svc ---"
-              /opt/homelab/scripts/start_service.sh "$svc"
-            else
-              echo "--- Skipping $svc ---"
-            fi
-          }
-
-          # Deploy each service if its flag is true, in dependency order
-          deploy_if_enabled networking      "$DEPLOY_NETWORKING"
-          deploy_if_enabled shared-assets   "$DEPLOY_SHARED_ASSETS"
-          deploy_if_enabled homepage        "$DEPLOY_HOMEPAGE"
-          deploy_if_enabled blog            "$DEPLOY_BLOG"
-          deploy_if_enabled games           "$DEPLOY_GAMES"
-          deploy_if_enabled tools           "$DEPLOY_TOOLS"
-          deploy_if_enabled travel          "$DEPLOY_TRAVEL"
-
-          rm -f /tmp/homelab-deploy.tar.gz
-          echo "Deployment complete."
-          REMOTE
-
-      - name: Deploy services on server (staging)
-        if: inputs.environment == 'staging'
-        env:
-          STAGING_IMAGE_TAG: ${{ steps.image-tag.outputs.tag }}
-          SEED_FROM_PROD: ${{ inputs.seed_from_prod }}
-          DEPLOY_NETWORKING: ${{ inputs.networking }}
-          DEPLOY_SHARED_ASSETS: ${{ inputs['shared-assets'] }}
-          DEPLOY_HOMEPAGE: ${{ inputs.homepage }}
-          DEPLOY_BLOG: ${{ inputs.blog }}
-          DEPLOY_TRAVEL: ${{ inputs.travel }}
-          DEPLOY_GAMES: ${{ inputs.games }}
-        run: |
-          ssh -i ~/.ssh/deploy_key \
-            -o StrictHostKeyChecking=no \
-            "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" \
-            "STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' SEED_FROM_PROD='${SEED_FROM_PROD}' DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' DEPLOY_SHARED_ASSETS='${DEPLOY_SHARED_ASSETS}' DEPLOY_HOMEPAGE='${DEPLOY_HOMEPAGE}' DEPLOY_BLOG='${DEPLOY_BLOG}' DEPLOY_TRAVEL='${DEPLOY_TRAVEL}' DEPLOY_GAMES='${DEPLOY_GAMES}' bash -s" << 'REMOTE'
+            "ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' SEED_FROM_PROD='${SEED_FROM_PROD}' DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' DEPLOY_SHARED_ASSETS='${DEPLOY_SHARED_ASSETS}' DEPLOY_HOMEPAGE='${DEPLOY_HOMEPAGE}' DEPLOY_BLOG='${DEPLOY_BLOG}' DEPLOY_TRAVEL='${DEPLOY_TRAVEL}' DEPLOY_GAMES='${DEPLOY_GAMES}' DEPLOY_TOOLS='${DEPLOY_TOOLS}' bash -s" << 'REMOTE'
           set -euo pipefail
           mkdir -p /opt/homelab
           cd /opt/homelab
@@ -176,7 +129,7 @@ jobs:
           docker network create web 2>/dev/null || true
 
           # Optionally seed staging travel data from production before deploying
-          if [ "${SEED_FROM_PROD}" = "true" ]; then
+          if [ "${ENVIRONMENT}" = "staging" ] && [ "${SEED_FROM_PROD}" = "true" ]; then
             echo "--- Seeding staging travel data from production ---"
             docker run --rm \
               -v travel-site_data-volume:/src:ro \
@@ -185,27 +138,33 @@ jobs:
               sh -c "cp -a /src/. /dst/ && echo 'Seed complete.'"
           fi
 
-          # Deploy each staging service if its flag is true
+          # Deploy each service if its flag is true
           deploy_if_enabled() {
             local svc="$1"
             local flag="$2"
             if [ "$flag" = "true" ]; then
-              echo "--- Starting staging $svc ---"
-              STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" \
-                /opt/homelab/scripts/start_service.sh "$svc" --staging
+              if [ "${ENVIRONMENT}" = "staging" ]; then
+                echo "--- Starting staging $svc ---"
+                STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" \
+                  /opt/homelab/scripts/start_service.sh "$svc" --staging
+              else
+                echo "--- Deploying $svc ---"
+                /opt/homelab/scripts/start_service.sh "$svc"
+              fi
             else
-              echo "--- Skipping staging $svc ---"
+              echo "--- Skipping $svc ---"
             fi
           }
 
-          # Services deployed in dependency order
-          deploy_if_enabled networking    "${DEPLOY_NETWORKING}"
-          deploy_if_enabled shared-assets "${DEPLOY_SHARED_ASSETS}"
-          deploy_if_enabled homepage      "${DEPLOY_HOMEPAGE}"
-          deploy_if_enabled blog          "${DEPLOY_BLOG}"
-          deploy_if_enabled games         "${DEPLOY_GAMES}"
-          deploy_if_enabled travel        "${DEPLOY_TRAVEL}"
+          # Deploy services in dependency order
+          deploy_if_enabled networking      "$DEPLOY_NETWORKING"
+          deploy_if_enabled shared-assets   "$DEPLOY_SHARED_ASSETS"
+          deploy_if_enabled homepage        "$DEPLOY_HOMEPAGE"
+          deploy_if_enabled blog            "$DEPLOY_BLOG"
+          deploy_if_enabled games           "$DEPLOY_GAMES"
+          deploy_if_enabled tools           "$DEPLOY_TOOLS"
+          deploy_if_enabled travel          "$DEPLOY_TRAVEL"
 
           rm -f /tmp/homelab-deploy.tar.gz
-          echo "Staging deployment complete."
+          echo "Deployment complete."
           REMOTE
