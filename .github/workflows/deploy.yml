@@ -61,20 +61,20 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "${{ secrets.SERVER_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Transfer config files to server
+      - name: Create deployment archive
         run: |
-          mkdir -p /tmp/homelab-config/networking
-          cp networking/docker-compose.yml /tmp/homelab-config/networking/
-          cp networking/.env /tmp/homelab-config/networking/
-          for svc in shared-assets homepage blog travel games tools; do
-            mkdir -p "/tmp/homelab-config/$svc"
-            cp "$svc/docker-compose.yml" "/tmp/homelab-config/$svc/"
-          done
-          tar -czf /tmp/homelab-config.tar.gz -C /tmp/homelab-config .
+          grep -v '^#' .gitignore | grep -v '^$' > /tmp/exclude_list
+          printf '.git/\n*.tar.gz\n*.tar\n' >> /tmp/exclude_list
+          tar --exclude-from=/tmp/exclude_list -cf /tmp/homelab-deploy.tar .
+          tar --append -f /tmp/homelab-deploy.tar networking/.env tools/.env
+          gzip /tmp/homelab-deploy.tar
+
+      - name: Upload archive to server
+        run: |
           scp -i ~/.ssh/deploy_key \
             -o StrictHostKeyChecking=no \
-            /tmp/homelab-config.tar.gz \
-            "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/homelab-config.tar.gz"
+            /tmp/homelab-deploy.tar.gz \
+            "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/homelab-deploy.tar.gz"
 
       - name: Deploy services on server
         env:
@@ -95,8 +95,8 @@ jobs:
           set -euo pipefail
           mkdir -p /opt/homelab
           cd /opt/homelab
-          echo "Extracting config files..."
-          tar -xzf /tmp/homelab-config.tar.gz
+          echo "Extracting deployment archive..."
+          tar -xzf /tmp/homelab-deploy.tar.gz
           touch networking/acme.json
           chmod 600 networking/acme.json
           docker network create web 2>/dev/null || true
@@ -106,10 +106,7 @@ jobs:
             local flag="$2"
             if [ "$flag" = "true" ]; then
               echo "--- Deploying $svc ---"
-              cd "/opt/homelab/$svc"
-              docker compose pull
-              docker compose up -d --wait
-              cd /opt/homelab
+              /opt/homelab/scripts/start_service.sh "$svc"
             else
               echo "--- Skipping $svc ---"
             fi
@@ -124,6 +121,6 @@ jobs:
           deploy_if_enabled games           "$DEPLOY_GAMES"
           deploy_if_enabled tools           "$DEPLOY_TOOLS"
 
-          rm -f /tmp/homelab-config.tar.gz
+          rm -f /tmp/homelab-deploy.tar.gz
           echo "Deployment complete."
           REMOTE
