@@ -14,6 +14,7 @@
 
 ## Deployment improvements:
 
+- More cleanup to the workflows for PRs and commits to main
 - Use narrower requirements at build time for modules, to speed up builds
 - Add secrets management (including new `TMDB_API_KEY`) for the server
 - Finish package based deployment, remove plan doc, and test for both local and prod deployments
