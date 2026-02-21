@@ -1,11 +1,8 @@
 name: Docker integration tests
 
 on:
-  pull_request:
   workflow_dispatch:
-  push:
-    branches:
-      - main
+  workflow_call:
 
 jobs:
   networking:
