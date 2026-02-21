@@ -19,8 +19,8 @@
 set -euo pipefail
 cd "$(dirname "$0")"/..
 
-ALL_SERVICES=("shared-assets" "homepage" "blog" "travel" "games")
-LOCAL_HOSTS="jamesmassucco.com blog.jamesmassucco.com travel.jamesmassucco.com assets.jamesmassucco.com games.jamesmassucco.com"
+ALL_SERVICES=("shared-assets" "homepage" "blog" "travel" "games" "tools")
+LOCAL_HOSTS="jamesmassucco.com blog.jamesmassucco.com travel.jamesmassucco.com assets.jamesmassucco.com games.jamesmassucco.com tools.jamesmassucco.com"
 
 # Parse arguments: extract --stop flag and service names (order-independent)
 STOP=false
@@ -86,7 +86,8 @@ popd > /dev/null
 for service in "${SERVICES[@]}"; do
   echo "Starting $service..."
   pushd "$service" > /dev/null
-  sudo docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build --wait
+  sudo docker compose -f docker-compose.yml -f docker-compose.local.yml pull
+  sudo docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --wait
   popd > /dev/null
 done
 

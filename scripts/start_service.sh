@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Start a single homelab service by name.
+# Start a single homelab service by name, pulling the image from GHCR.
 #
 # Production (default): merges docker-compose.yml with docker-compose.prod.yml
-# (routing labels and bind-mounts), then builds or pulls and starts.
+# (routing labels and bind-mounts), then pulls and starts.
 #
 # Staging (--staging): merges docker-compose.yml with docker-compose.staging.yml
 # under a separate Docker Compose project (staging-<service>) so production
@@ -71,13 +71,8 @@ else
   echo "Shutting down containers..."
   sudo docker compose ${COMPOSE} down --remove-orphans
 
-  if [[ -f "$SERVICE_DIR/Dockerfile" ]]; then
-    echo "Building and starting containers..."
-    sudo docker compose ${COMPOSE} up -d --build --wait
-  else
-    echo "Pulling latest images..."
-    sudo docker compose ${COMPOSE} pull
-    echo "Starting up containers..."
-    sudo docker compose ${COMPOSE} up -d --wait
-  fi
+  echo "Pulling latest images..."
+  sudo docker compose ${COMPOSE} pull
+  echo "Starting containers..."
+  sudo docker compose ${COMPOSE} up -d --wait
 fi

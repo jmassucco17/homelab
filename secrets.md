@@ -19,6 +19,7 @@ repository.
 | `SERVER_USER` | `deploy.yml`, `deploy-staging.yml` | SSH username on the production server (typically `root` or a deploy user). |
 | `NETWORKING_ENV` | `deploy.yml` | Full contents of `networking/.env` for production. See [networking/.env fields](#networkingenv-fields) below. |
 | `STAGING_NETWORKING_ENV` | `deploy-staging.yml` | Full contents of `networking/.env` for staging. Same fields as `NETWORKING_ENV` plus `GOOGLE_OAUTH2_STAGING_COOKIE_SECRET`. See [staging additions](#staging-additions) below. |
+| `TMDB_API_KEY` | `deploy.yml`, `deploy-staging.yml` | API key for [The Movie Database (TMDB)](https://developer.themoviedb.org/). Used by the movie picker feature. Obtain one by registering at [themoviedb.org](https://www.themoviedb.org/settings/api). |
 
 ---
 

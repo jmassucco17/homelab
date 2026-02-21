@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Movie Picker{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="/static/css/movie_picker.css" />
+{% endblock %}
+
+{% block content %}
+  <h1>🎬 Movie Picker</h1>
+  <p>Add movies to your list, then let the picker decide what to watch tonight.</p>
+
+  <div class="picker-layout">
+    <!-- Left panel: build the list -->
+    <div class="picker-panel">
+      <h2>My Movie List</h2>
+
+      <div class="search-container">
+        <label for="movie-search" class="sr-only">Search for a movie</label>
+        <input
+          id="movie-search"
+          type="text"
+          placeholder="Search for a movie…"
+          autocomplete="off"
+          aria-autocomplete="list"
+          aria-controls="search-results"
+          aria-expanded="false"
+        />
+        <ul
+          id="search-results"
+          role="listbox"
+          class="search-dropdown hidden"
+          aria-label="Search results"
+        ></ul>
+        <div id="search-status" class="search-status" aria-live="polite"></div>
+      </div>
+
+      <ul id="movie-list" class="movie-list" aria-label="Movies in your list">
+        <li id="empty-list-msg" class="empty-msg">No movies yet. Search above to add some!</li>
+      </ul>
+
+      <button id="pick-btn" class="pick-btn" disabled>🎲 Pick for Me!</button>
+    </div>
+
+    <!-- Right panel: result -->
+    <div class="picker-panel result-panel" id="result-panel" aria-live="polite">
+      <h2>Tonight's Pick</h2>
+      <div id="result-placeholder" class="result-placeholder">
+        <span class="placeholder-icon">🍿</span>
+        <p>Your movie will appear here after you click "Pick for Me!"</p>
+      </div>
+      <div id="result-card" class="result-card hidden">
+        <img id="result-poster" src="" alt="" class="result-poster" />
+        <div class="result-info">
+          <h3 id="result-title"></h3>
+          <p id="result-year" class="result-meta"></p>
+          <p id="result-runtime" class="result-meta"></p>
+          <div id="result-providers" class="providers-section"></div>
+        </div>
+      </div>
+      <div id="result-error" class="result-error hidden"></div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script src="/static/js/movie_picker.js"></script>
+{% endblock %}

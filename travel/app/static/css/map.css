@@ -54,6 +54,20 @@ body {
   text-decoration: underline;
 }
 
+.travel-home-link {
+  position: absolute;
+  left: 20px;
+  top: 20px;
+  color: var(--color-accent);
+  text-decoration: none;
+  font-weight: 500;
+  z-index: 101;
+}
+
+.travel-home-link:hover {
+  text-decoration: underline;
+}
+
 .map-container {
   position: relative;
   height: calc(100vh - 100px);
@@ -275,7 +289,8 @@ body {
   }
 
   .admin-link,
-  .gallery-link {
+  .gallery-link,
+  .travel-home-link {
     position: static;
     display: inline-block;
     margin: 8px 10px 0 0;

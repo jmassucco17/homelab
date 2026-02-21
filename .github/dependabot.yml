@@ -41,6 +41,19 @@ updates:
         patterns: ['*']
 
   - package-ecosystem: 'docker'
+    directory: '/python-base'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    groups:
+      docker-images:
+        patterns: ['*']
+    # Hold at Python 3.12
+    ignore:
+      - dependency-name: 'python'
+        versions: ['>=3.13']
+
+  - package-ecosystem: 'docker'
     directory: '/shared-assets'
     schedule:
       interval: 'weekly'
@@ -57,42 +70,3 @@ updates:
     groups:
       docker-images:
         patterns: ['*']
-
-  - package-ecosystem: 'docker'
-    directory: '/blog'
-    schedule:
-      interval: 'weekly'
-      day: 'monday'
-    groups:
-      docker-images:
-        patterns: ['*']
-    # Hold at Python 3.12
-    ignore:
-      - dependency-name: 'python'
-        versions: ['>=3.13']
-
-  - package-ecosystem: 'docker'
-    directory: '/games'
-    schedule:
-      interval: 'weekly'
-      day: 'monday'
-    groups:
-      docker-images:
-        patterns: ['*']
-    # Hold at Python 3.12
-    ignore:
-      - dependency-name: 'python'
-        versions: ['>=3.13']
-
-  - package-ecosystem: 'docker'
-    directory: '/travel'
-    schedule:
-      interval: 'weekly'
-      day: 'monday'
-    groups:
-      docker-images:
-        patterns: ['*']
-    # Hold at Python 3.12
-    ignore:
-      - dependency-name: 'python'
-        versions: ['>=3.13']
