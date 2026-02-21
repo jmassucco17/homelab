@@ -30,8 +30,8 @@ class PendingTrade(pydantic.BaseModel):
     offering: dict[str, int]
     requesting: dict[str, int]
     target_player: int | None
-    accepted_by: list[int] = pydantic.Field(default_factory=lambda: [])
-    rejected_by: list[int] = pydantic.Field(default_factory=lambda: [])
+    accepted_by: list[int] = pydantic.Field(default_factory=list)
+    rejected_by: list[int] = pydantic.Field(default_factory=list)
     status: TradeStatus = TradeStatus.PENDING
 
 
@@ -110,8 +110,8 @@ def create_trade_offer(
     trade = PendingTrade(
         trade_id=str(uuid.uuid4()),
         offering_player=action.player_index,
-        offering=dict(action.offering),
-        requesting=dict(action.requesting),
+        offering=action.offering,
+        requesting=action.requesting,
         target_player=action.target_player,
     )
     return True, '', trade
