@@ -9,7 +9,6 @@ import random
 from ..models.actions import (
     Action,
     ActionResult,
-    ActionType,
     BuildDevCard,
     DiscardResources,
     EndTurn,
@@ -58,7 +57,7 @@ def apply_action(game_state: GameState, action: Action) -> ActionResult:
 
     try:
         state = _dispatch(state, action)
-    except Exception as exc:  # noqa: BLE001
+    except (ValueError, KeyError, IndexError, AttributeError) as exc:
         return ActionResult(success=False, error_message=str(exc))
 
     return ActionResult(success=True, updated_state=state)
@@ -85,38 +84,39 @@ def _is_action_in_legal_list(action: Action, legal: list[Action]) -> bool:
 
 def _dispatch(state: GameState, action: Action) -> GameState:
     """Route to the appropriate handler and return the updated state."""
-    t = action.action_type
-    if t == ActionType.PLACE_SETTLEMENT:
-        return _apply_place_settlement(state, action)  # type: ignore[arg-type]
-    if t == ActionType.PLACE_ROAD:
-        return _apply_place_road(state, action)  # type: ignore[arg-type]
-    if t == ActionType.PLACE_CITY:
-        return _apply_place_city(state, action)  # type: ignore[arg-type]
-    if t == ActionType.ROLL_DICE:
-        return _apply_roll_dice(state, action)  # type: ignore[arg-type]
-    if t == ActionType.BUILD_DEV_CARD:
-        return _apply_build_dev_card(state, action)  # type: ignore[arg-type]
-    if t == ActionType.PLAY_KNIGHT:
-        return _apply_play_knight(state, action)  # type: ignore[arg-type]
-    if t == ActionType.PLAY_ROAD_BUILDING:
-        return _apply_play_road_building(state, action)  # type: ignore[arg-type]
-    if t == ActionType.PLAY_YEAR_OF_PLENTY:
-        return _apply_play_year_of_plenty(state, action)  # type: ignore[arg-type]
-    if t == ActionType.PLAY_MONOPOLY:
-        return _apply_play_monopoly(state, action)  # type: ignore[arg-type]
-    if t == ActionType.MOVE_ROBBER:
-        return _apply_move_robber(state, action)  # type: ignore[arg-type]
-    if t == ActionType.STEAL_RESOURCE:
-        return _apply_steal_resource(state, action)  # type: ignore[arg-type]
-    if t == ActionType.DISCARD_RESOURCES:
-        return _apply_discard_resources(state, action)  # type: ignore[arg-type]
-    if t == ActionType.END_TURN:
-        return _apply_end_turn(state, action)  # type: ignore[arg-type]
-    if t == ActionType.TRADE_WITH_BANK:
-        return _apply_trade_with_bank(state, action)  # type: ignore[arg-type]
-    if t == ActionType.TRADE_WITH_PORT:
-        return _apply_trade_with_port(state, action)  # type: ignore[arg-type]
-    raise ValueError(f'Unhandled action type: {t}')
+    match action:
+        case PlaceSettlement():
+            return _apply_place_settlement(state, action)
+        case PlaceRoad():
+            return _apply_place_road(state, action)
+        case PlaceCity():
+            return _apply_place_city(state, action)
+        case RollDice():
+            return _apply_roll_dice(state, action)
+        case BuildDevCard():
+            return _apply_build_dev_card(state, action)
+        case PlayKnight():
+            return _apply_play_knight(state, action)
+        case PlayRoadBuilding():
+            return _apply_play_road_building(state, action)
+        case PlayYearOfPlenty():
+            return _apply_play_year_of_plenty(state, action)
+        case PlayMonopoly():
+            return _apply_play_monopoly(state, action)
+        case MoveRobber():
+            return _apply_move_robber(state, action)
+        case StealResource():
+            return _apply_steal_resource(state, action)
+        case DiscardResources():
+            return _apply_discard_resources(state, action)
+        case EndTurn():
+            return _apply_end_turn(state, action)
+        case TradeWithBank():
+            return _apply_trade_with_bank(state, action)
+        case TradeWithPort():
+            return _apply_trade_with_port(state, action)
+        case _:
+            raise ValueError(f'Unhandled action type: {action.action_type}')
 
 
 # ---------------------------------------------------------------------------
