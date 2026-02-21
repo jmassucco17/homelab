@@ -45,6 +45,7 @@ def _place_setup_settlement(state: GameState, vertex_id: int) -> GameState:
         state, PlaceSettlement(player_index=player_idx, vertex_id=vertex_id)
     )
     assert result.success, result.error_message
+    assert result.updated_state is not None
     return result.updated_state
 
 
@@ -53,6 +54,7 @@ def _place_setup_road(state: GameState, edge_id: int) -> GameState:
     player_idx = state.turn_state.player_index
     result = apply_action(state, PlaceRoad(player_index=player_idx, edge_id=edge_id))
     assert result.success, result.error_message
+    assert result.updated_state is not None
     return result.updated_state
 
 

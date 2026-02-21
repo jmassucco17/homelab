@@ -39,14 +39,7 @@ def _place_setup_settlement(state: GameState, vertex_id: int) -> GameState:
         state, PlaceSettlement(player_index=player_idx, vertex_id=vertex_id)
     )
     assert result.success, result.error_message
-    return result.updated_state
-
-
-def _place_setup_road(state: GameState, edge_id: int) -> GameState:
-    """Apply a PlaceRoad action and assert it succeeded."""
-    player_idx = state.turn_state.player_index
-    result = apply_action(state, PlaceRoad(player_index=player_idx, edge_id=edge_id))
-    assert result.success, result.error_message
+    assert result.updated_state is not None
     return result.updated_state
 
 
@@ -63,6 +56,7 @@ class TestActionProcessor(unittest.TestCase):
         state = _make_2p_state()
         result = apply_action(state, PlaceSettlement(player_index=0, vertex_id=5))
         self.assertTrue(result.success)
+        assert result.updated_state is not None
         new = result.updated_state
         self.assertEqual(new.board.vertices[5].building.player_index, 0)
         self.assertEqual(new.players[0].build_inventory.settlements_remaining, 4)
@@ -73,6 +67,7 @@ class TestActionProcessor(unittest.TestCase):
         state = _make_2p_state()
         result = apply_action(state, PlaceSettlement(player_index=0, vertex_id=5))
         self.assertTrue(result.success)
+        assert result.updated_state is not None
         self.assertEqual(
             result.updated_state.turn_state.pending_action,
             PendingActionType.PLACE_ROAD,
@@ -83,6 +78,7 @@ class TestActionProcessor(unittest.TestCase):
         state = _make_2p_state()
         result1 = apply_action(state, PlaceSettlement(player_index=0, vertex_id=0))
         self.assertTrue(result1.success)
+        assert result1.updated_state is not None
         state2 = result1.updated_state
         adjacent_vertex = state2.board.vertices[0].adjacent_vertex_ids[0]
         # Try placing at adjacent vertex (should fail after road placed).
@@ -98,6 +94,7 @@ class TestActionProcessor(unittest.TestCase):
         road_edge = state.board.vertices[0].adjacent_edge_ids[0]
         result = apply_action(state, PlaceRoad(player_index=0, edge_id=road_edge))
         self.assertTrue(result.success)
+        assert result.updated_state is not None
         # After setup road, player 1 should be up.
         self.assertEqual(result.updated_state.turn_state.player_index, 1)
 
@@ -108,6 +105,7 @@ class TestActionProcessor(unittest.TestCase):
         road_edge = state.board.vertices[0].adjacent_edge_ids[0]
         result = apply_action(state, PlaceRoad(player_index=0, edge_id=road_edge))
         self.assertTrue(result.success)
+        assert result.updated_state is not None
         self.assertEqual(
             result.updated_state.players[0].build_inventory.roads_remaining, 14
         )
@@ -121,6 +119,7 @@ class TestActionProcessor(unittest.TestCase):
         )
         result = apply_action(state, RollDice(player_index=0))
         self.assertTrue(result.success)
+        assert result.updated_state is not None
         roll = result.updated_state.turn_state.roll_value
         self.assertIsNotNone(roll)
         self.assertGreaterEqual(roll, 2)
@@ -139,6 +138,7 @@ class TestActionProcessor(unittest.TestCase):
         with unittest.mock.patch('random.randint', side_effect=[4, 3]):
             result = apply_action(state, RollDice(player_index=0))
         self.assertTrue(result.success)
+        assert result.updated_state is not None
         self.assertEqual(
             result.updated_state.turn_state.pending_action,
             PendingActionType.MOVE_ROBBER,
@@ -159,6 +159,7 @@ class TestActionProcessor(unittest.TestCase):
         with unittest.mock.patch('random.randint', side_effect=[4, 3]):
             result = apply_action(state, RollDice(player_index=0))
         self.assertTrue(result.success)
+        assert result.updated_state is not None
         self.assertEqual(
             result.updated_state.turn_state.pending_action,
             PendingActionType.DISCARD_RESOURCES,
@@ -180,6 +181,7 @@ class TestActionProcessor(unittest.TestCase):
             DiscardResources(player_index=1, resources={'wood': 3, 'brick': 2}),
         )
         self.assertTrue(result.success)
+        assert result.updated_state is not None
         self.assertNotIn(1, result.updated_state.turn_state.discard_player_indices)
 
     def test_discard_all_done_moves_to_move_robber(self) -> None:
@@ -197,6 +199,7 @@ class TestActionProcessor(unittest.TestCase):
             DiscardResources(player_index=1, resources={'wood': 3, 'brick': 2}),
         )
         self.assertTrue(result.success)
+        assert result.updated_state is not None
         self.assertEqual(
             result.updated_state.turn_state.pending_action,
             PendingActionType.MOVE_ROBBER,
@@ -213,6 +216,7 @@ class TestActionProcessor(unittest.TestCase):
             None,
         )
         self.assertIsNotNone(target_tile)
+        assert target_tile is not None
         tile_idx = board.tiles.index(target_tile)
 
         adj_vertices = [
@@ -232,6 +236,7 @@ class TestActionProcessor(unittest.TestCase):
                     break
 
         roll = target_tile.number_token
+        assert roll is not None
         import unittest.mock
 
         state.turn_state = TurnState(
@@ -244,6 +249,7 @@ class TestActionProcessor(unittest.TestCase):
             result = apply_action(state, RollDice(player_index=0))
 
         self.assertTrue(result.success)
+        assert result.updated_state is not None
         from games.app.catan.models.board import TILE_RESOURCE
 
         expected_resource = TILE_RESOURCE.get(target_tile.tile_type)
@@ -291,6 +297,7 @@ class TestActionProcessor(unittest.TestCase):
             state, PlaceSettlement(player_index=0, vertex_id=target_vid)
         )
         self.assertTrue(result.success)
+        assert result.updated_state is not None
         self.assertEqual(result.updated_state.phase, GamePhase.ENDED)
         self.assertEqual(result.updated_state.winner_index, 0)
 
@@ -304,6 +311,7 @@ class TestActionProcessor(unittest.TestCase):
         state.players[0].new_dev_cards = DevCardHand(knight=1)
         result = apply_action(state, EndTurn(player_index=0))
         self.assertTrue(result.success)
+        assert result.updated_state is not None
         # dev_cards should now have the knight; new_dev_cards cleared.
         self.assertEqual(result.updated_state.players[0].dev_cards.knight, 1)
         self.assertEqual(result.updated_state.players[0].new_dev_cards.knight, 0)

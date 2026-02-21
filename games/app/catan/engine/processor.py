@@ -434,8 +434,6 @@ def _apply_discard_resources(
         state.turn_state.pending_action = game_state.PendingActionType.MOVE_ROBBER
 
 
-_LONGEST_ROAD_THRESHOLD = 4  # player must exceed this length to claim (i.e. ≥ 5 roads)
-
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
