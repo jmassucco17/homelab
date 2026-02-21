@@ -9,11 +9,6 @@
 - Setup nice colored logging for Python
 - Add a knowledge base of some kind (i.e. personal Confluence or similar)
 
-## Non-Python testing (future, requires new dependencies):
-
-- **JS unit tests — theme-toggle.js**: Add Vitest + jsdom tests for `shared-assets/assets/scripts/theme-toggle.js` (cookie reading, `prefers-color-scheme`, toggle click, `data-theme` persistence). The function is already a clean ES module export so no refactor is needed.
-- **JS unit tests — game logic**: Extract pure helpers from `snake.js` and `pong.js` IIFEs into separate `snake-logic.js` / `pong-logic.js` modules, then add Vitest tests for collision detection, speed scaling, and AI paddle clamping.
-
 ## Deployment improvements:
 
 - More cleanup to the workflows for PRs and commits to main
@@ -56,7 +51,11 @@
 
 - Update python deployment file to fix at 3.12
 
-## Misc. improvement ideas
+### Non-Python testing (future, requires new dependencies):
+
+- **JS unit tests — theme-toggle.js**: Add Vitest + jsdom tests for `shared-assets/assets/scripts/theme-toggle.js` (cookie reading, `prefers-color-scheme`, toggle click, `data-theme` persistence). The function is already a clean ES module export so no refactor is needed.
+- **JS unit tests — game logic**: Extract pure helpers from `snake.js` and `pong.js` IIFEs into separate `snake-logic.js` / `pong-logic.js` modules, then add Vitest tests for collision detection, speed scaling, and AI paddle clamping.
+
 
 ### High Priority (Quick Wins)
 - Create shared utilities module for FastAPI boilerplate (app initialization, static files, Jinja2, health endpoints)
