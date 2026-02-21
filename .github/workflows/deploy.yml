@@ -31,13 +31,19 @@ on:
         description: 'Deploy tools'
         type: boolean
         default: true
-  push:
+  workflow_run:
+    workflows: ["Build and push Docker images"]
+    types:
+      - completed
     branches:
       - main
 
 jobs:
   deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6
 
@@ -78,14 +84,14 @@ jobs:
 
       - name: Deploy services on server
         env:
-          # On push, deploy all services; on workflow_dispatch, deploy only checked ones
-          DEPLOY_NETWORKING: ${{ github.event_name == 'push' || inputs.networking }}
-          DEPLOY_SHARED_ASSETS: ${{ github.event_name == 'push' || inputs['shared-assets'] }}
-          DEPLOY_HOMEPAGE: ${{ github.event_name == 'push' || inputs.homepage }}
-          DEPLOY_BLOG: ${{ github.event_name == 'push' || inputs.blog }}
-          DEPLOY_TRAVEL: ${{ github.event_name == 'push' || inputs.travel }}
-          DEPLOY_GAMES: ${{ github.event_name == 'push' || inputs.games }}
-          DEPLOY_TOOLS: ${{ github.event_name == 'push' || inputs.tools }}
+          # On workflow_run, deploy all services; on workflow_dispatch, deploy only checked ones
+          DEPLOY_NETWORKING: ${{ github.event_name == 'workflow_run' || inputs.networking }}
+          DEPLOY_SHARED_ASSETS: ${{ github.event_name == 'workflow_run' || inputs['shared-assets'] }}
+          DEPLOY_HOMEPAGE: ${{ github.event_name == 'workflow_run' || inputs.homepage }}
+          DEPLOY_BLOG: ${{ github.event_name == 'workflow_run' || inputs.blog }}
+          DEPLOY_TRAVEL: ${{ github.event_name == 'workflow_run' || inputs.travel }}
+          DEPLOY_GAMES: ${{ github.event_name == 'workflow_run' || inputs.games }}
+          DEPLOY_TOOLS: ${{ github.event_name == 'workflow_run' || inputs.tools }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             -o StrictHostKeyChecking=no \
