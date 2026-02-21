@@ -35,6 +35,10 @@ jobs:
             image: ghcr.io/jmassucco17/homelab/games
             context: .
             file: games/Dockerfile
+          - service: tools
+            image: ghcr.io/jmassucco17/homelab/tools
+            context: .
+            file: tools/Dockerfile
 
     steps:
       - uses: actions/checkout@v6

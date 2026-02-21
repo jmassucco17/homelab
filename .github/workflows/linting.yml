@@ -1,19 +1,16 @@
 name: Linting
 
 on:
-  pull_request:
   workflow_dispatch:
-  push:
-    branches:
-      - main
+  workflow_call:
 
 jobs:
   no-xxx-comments:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
@@ -21,75 +18,73 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Check for XXX comments
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            git ls-files -z | xargs -0 -r python scripts/check_xxx_comments.py
-          else
-            git diff -z --name-only ${{ github.event.pull_request.base.sha }}...HEAD | xargs -0 -r python scripts/check_xxx_comments.py
-          fi
+        run: git ls-files -z | xargs -0 -r python scripts/check_xxx_comments.py
   pyright:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      - name: Check for changed Python files
-        id: changes
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            git ls-files | grep -qE '(\.py$|pyrightconfig\.json$)' \
-              && echo "python=true" >> $GITHUB_OUTPUT \
-              || echo "python=false" >> $GITHUB_OUTPUT
-          else
-            git diff --name-only ${{ github.event.pull_request.base.sha }}...HEAD \
-              | grep -qE '(\.py$|pyrightconfig\.json$)' \
-              && echo "python=true" >> $GITHUB_OUTPUT \
-              || echo "python=false" >> $GITHUB_OUTPUT
-          fi
       - name: Set up Python
-        if: steps.changes.outputs.python == 'true'
         uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - name: Install dependencies
-        if: steps.changes.outputs.python == 'true'
         run: |
           python -m venv venv
           venv/bin/pip install -r requirements.txt
           npm install
       - name: Run Pyright
-        if: steps.changes.outputs.python == 'true'
         run: npx pyright
   ruff:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      - name: Check for changed Python files
-        id: changes
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            git ls-files | grep -qE '(\.py$|pyproject\.toml$)' \
-              && echo "python=true" >> $GITHUB_OUTPUT \
-              || echo "python=false" >> $GITHUB_OUTPUT
-          else
-            git diff --name-only ${{ github.event.pull_request.base.sha }}...HEAD \
-              | grep -qE '(\.py$|pyproject\.toml$)' \
-              && echo "python=true" >> $GITHUB_OUTPUT \
-              || echo "python=false" >> $GITHUB_OUTPUT
-          fi
       - name: Set up Python
-        if: steps.changes.outputs.python == 'true'
         uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - name: Install Ruff
-        if: steps.changes.outputs.python == 'true'
         run: pip install -r requirements.txt
       - name: Run Ruff linter
-        if: steps.changes.outputs.python == 'true'
         run: ruff check
       - name: Run Ruff formatter
-        if: steps.changes.outputs.python == 'true'
         run: ruff format --check
+  lint-css:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install npm dependencies
+        run: npm ci
+      - name: Run stylelint
+        run: npm run lint:css
+  prettier:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install npm dependencies
+        run: npm ci
+      - name: Check HTML formatting
+        run: npx prettier --check '**/*.html'
+  shellcheck:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Run ShellCheck
+        run: find . -name '*.sh' -not -path './node_modules/*' -print0 | xargs -0 shellcheck
+  actionlint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Run actionlint
+        uses: rhysd/actionlint@v1.7.7
