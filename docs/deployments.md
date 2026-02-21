@@ -209,7 +209,7 @@ Before staging is usable for the first time, complete these manual steps:
 2. Add `https://oauth.staging.jamesmassucco.com/oauth2/callback` to the Google OAuth
    app's Authorized Redirect URIs.
 3. Generate a staging cookie secret and set the `STAGING_NETWORKING_ENV` GitHub secret
-   (see `secrets.md` for the full list of fields it must contain):
+   (see `docs/secrets.md` for the full list of fields it must contain):
    ```bash
    python3 -c "import secrets, base64; print(base64.b64encode(secrets.token_bytes(32)).decode())"
    ```
