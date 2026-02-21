@@ -49,30 +49,30 @@ if [[ "$STAGING" == "true" ]]; then
   PROJ="staging-${SERVICE}"
   if [[ -f "docker-compose.prod.yml" ]]; then
     # Overlay: base + staging (no prod labels; isolated by project name)
-    COMPOSE="-p ${PROJ} -f docker-compose.yml -f docker-compose.staging.yml"
+    COMPOSE=(-p "${PROJ}" -f docker-compose.yml -f docker-compose.staging.yml)
   else
     # Standalone staging file (e.g. networking)
-    COMPOSE="-p ${PROJ} -f docker-compose.staging.yml"
+    COMPOSE=(-p "${PROJ}" -f docker-compose.staging.yml)
   fi
 
   echo "Shutting down staging containers..."
-  sudo docker compose ${COMPOSE} down --remove-orphans
+  sudo docker compose "${COMPOSE[@]}" down --remove-orphans
 
   echo "Pulling and starting staging containers (tag: ${STAGING_IMAGE_TAG:-latest})..."
-  sudo STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG:-latest}" docker compose ${COMPOSE} pull
-  sudo STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG:-latest}" docker compose ${COMPOSE} up -d --wait
+  sudo STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG:-latest}" docker compose "${COMPOSE[@]}" pull
+  sudo STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG:-latest}" docker compose "${COMPOSE[@]}" up -d --wait
 else
   if [[ -f "docker-compose.prod.yml" ]]; then
-    COMPOSE="-f docker-compose.yml -f docker-compose.prod.yml"
+    COMPOSE=(-f docker-compose.yml -f docker-compose.prod.yml)
   else
-    COMPOSE="-f docker-compose.yml"
+    COMPOSE=(-f docker-compose.yml)
   fi
 
   echo "Shutting down containers..."
-  sudo docker compose ${COMPOSE} down --remove-orphans
+  sudo docker compose "${COMPOSE[@]}" down --remove-orphans
 
   echo "Pulling latest images..."
-  sudo docker compose ${COMPOSE} pull
+  sudo docker compose "${COMPOSE[@]}" pull
   echo "Starting containers..."
-  sudo docker compose ${COMPOSE} up -d --wait
+  sudo docker compose "${COMPOSE[@]}" up -d --wait
 fi
