@@ -1,29 +1,12 @@
-# Staging override for shared-assets.
-# Routes assets.staging.jamesmassucco.com to this container via Traefik.
-# Image tag is controlled by STAGING_IMAGE_TAG (default: latest).
-#
-# Usage: scripts/start_service.sh shared-assets --staging
+# Staging overlay: routes assets.staging.jamesmassucco.com to a staging container.
+# Merged with docker-compose.yml by scripts/start_service.sh --staging.
 services:
   shared-assets:
     container_name: staging-shared-assets
     image: ghcr.io/jmassucco17/homelab/shared-assets:${STAGING_IMAGE_TAG:-latest}
     labels:
-      - traefik.enable=true
-      - traefik.http.routers.shared-assets-staging.rule=Host(`assets.staging.jamesmassucco.com`)
-      - traefik.http.routers.shared-assets-staging.entrypoints=websecure
-      - traefik.http.routers.shared-assets-staging.tls.certresolver=cloudflare
-      - traefik.http.routers.shared-assets-staging.middlewares=ratelimit
-      - traefik.http.services.shared-assets-staging.loadbalancer.server.port=80
-    healthcheck:
-      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1/']
-      interval: 5s
-      timeout: 1s
-      retries: 3
-      start_period: 2s
-    networks:
-      - web
-    restart: unless-stopped
-
-networks:
-  web:
-    external: true
+      - 'traefik.http.routers.shared-assets-staging.rule=Host(`assets.staging.jamesmassucco.com`)'
+      - 'traefik.http.routers.shared-assets-staging.entrypoints=websecure'
+      - 'traefik.http.routers.shared-assets-staging.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.shared-assets-staging.middlewares=ratelimit'
+      - 'traefik.http.services.shared-assets-staging.loadbalancer.server.port=80'

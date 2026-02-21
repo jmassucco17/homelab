@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 # Start a single homelab service by name.
-# If the service directory contains a Dockerfile, images are built locally.
-# Otherwise (e.g. networking, which uses pre-built images), images are pulled.
-# Pass --staging to use docker-compose.staging.yml instead of docker-compose.yml.
-# When staging, images are always pulled (no local build); the image tag is
-# controlled by the STAGING_IMAGE_TAG environment variable (default: latest).
+#
+# Production (default): merges docker-compose.yml with docker-compose.prod.yml
+# (routing labels and bind-mounts), then builds or pulls and starts.
+#
+# Staging (--staging): merges docker-compose.yml with docker-compose.staging.yml
+# under a separate Docker Compose project (staging-<service>) so production
+# containers are never affected. The image tag is controlled by the
+# STAGING_IMAGE_TAG environment variable (default: latest).
+# Services without docker-compose.prod.yml (e.g. networking) use only their
+# docker-compose.staging.yml as a standalone file.
 #
 # Usage: scripts/start_service.sh <service> [--staging]
 # Examples:
@@ -40,23 +45,39 @@ if [[ "$SERVICE" == "travel" ]] && [[ "$STAGING" == "false" ]]; then
   done
 fi
 
-echo "Shutting down containers..."
 if [[ "$STAGING" == "true" ]]; then
-  sudo docker compose -f docker-compose.staging.yml down --remove-orphans
-else
-  sudo docker compose down --remove-orphans
-fi
+  PROJ="staging-${SERVICE}"
+  if [[ -f "docker-compose.prod.yml" ]]; then
+    # Overlay: base + staging (no prod labels; isolated by project name)
+    COMPOSE="-p ${PROJ} -f docker-compose.yml -f docker-compose.staging.yml"
+  else
+    # Standalone staging file (e.g. networking)
+    COMPOSE="-p ${PROJ} -f docker-compose.staging.yml"
+  fi
 
-if [[ "$STAGING" == "true" ]]; then
+  echo "Shutting down staging containers..."
+  sudo docker compose ${COMPOSE} down --remove-orphans
+
   echo "Pulling and starting staging containers (tag: ${STAGING_IMAGE_TAG:-latest})..."
-  sudo STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG:-latest}" docker compose -f docker-compose.staging.yml pull
-  sudo STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG:-latest}" docker compose -f docker-compose.staging.yml up -d --wait
-elif [[ -f "$SERVICE_DIR/Dockerfile" ]]; then
-  echo "Building and starting containers..."
-  sudo docker compose up -d --build --wait
+  sudo STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG:-latest}" docker compose ${COMPOSE} pull
+  sudo STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG:-latest}" docker compose ${COMPOSE} up -d --wait
 else
-  echo "Pulling latest images..."
-  sudo docker compose pull
-  echo "Starting up containers..."
-  sudo docker compose up -d --wait
+  if [[ -f "docker-compose.prod.yml" ]]; then
+    COMPOSE="-f docker-compose.yml -f docker-compose.prod.yml"
+  else
+    COMPOSE="-f docker-compose.yml"
+  fi
+
+  echo "Shutting down containers..."
+  sudo docker compose ${COMPOSE} down --remove-orphans
+
+  if [[ -f "$SERVICE_DIR/Dockerfile" ]]; then
+    echo "Building and starting containers..."
+    sudo docker compose ${COMPOSE} up -d --build --wait
+  else
+    echo "Pulling latest images..."
+    sudo docker compose ${COMPOSE} pull
+    echo "Starting up containers..."
+    sudo docker compose ${COMPOSE} up -d --wait
+  fi
 fi

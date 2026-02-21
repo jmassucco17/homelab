@@ -1,0 +1,14 @@
+# Production overrides: Traefik routing labels and live-file bind-mounts.
+# Merged with docker-compose.yml by scripts/start_service.sh (prod) and CI.
+services:
+  blog:
+    volumes:
+      - ./app:/app/app
+      - ./posts:/app/posts
+    labels:
+      - 'traefik.http.routers.blog.rule=Host(`blog.jamesmassucco.com`)'
+      - 'traefik.http.routers.blog.entrypoints=websecure'
+      - 'traefik.http.routers.blog.tls=true'
+      - 'traefik.http.routers.blog.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.blog.middlewares=ratelimit'
+      - 'traefik.http.services.blog.loadbalancer.server.port=8000'

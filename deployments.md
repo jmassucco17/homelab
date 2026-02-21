@@ -7,17 +7,18 @@ other, and when to use each one.
 
 ## Overview
 
-All four deployment modes share a common runtime: **`scripts/start_service.sh`**.
+All three deployment modes share a common runtime: **`scripts/start_service.sh`**.
 The script starts a single service by name, choosing the right Compose file(s) based on
-the mode. The modes differ only in *which* Compose file is used and *where* the script runs.
+the mode. The modes differ only in *which* Compose files are used and *where* the script
+runs.
 
 ```
-┌────────────────────────────────────────────────────────────────────────┐
-│                        scripts/start_service.sh                        │
-│                                                                        │
-│  No flags        → docker-compose.yml          (production image)      │
-│  --staging       → docker-compose.staging.yml  (staging image)         │
-└────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                          scripts/start_service.sh                            │
+│                                                                              │
+│  No flags   → docker-compose.yml + docker-compose.prod.yml  (production)    │
+│  --staging  → docker-compose.yml + docker-compose.staging.yml  (staging)    │
+└──────────────────────────────────────────────────────────────────────────────┘
          ▲                    ▲                       ▲
          │                    │                       │
    CI integration       Production deploy       Staging deploy
@@ -27,63 +28,9 @@ the mode. The modes differ only in *which* Compose file is used and *where* the 
     action)
 ```
 
-Local development uses a separate script (`scripts/start_local.sh`) because it starts an
-HTTP-only Traefik instance with no TLS or OAuth, which is fundamentally different from the
-production networking setup.
-
 ---
 
-## 1. Local Development
-
-**Script:** `scripts/start_local.sh`  
-**Compose files used:** `docker-compose.yml` + `docker-compose.local.yml` (per service) and
-`networking/docker-compose.local.yml` (HTTP-only Traefik)
-
-### Purpose
-
-Spin up services on a local machine for active development. No TLS, no OAuth, no
-Cloudflare — services are reachable at `http://localhost:<port>` or by hostname via
-`/etc/hosts`.
-
-### Usage
-
-```bash
-# Start all services
-./scripts/start_local.sh
-
-# Start specific services
-./scripts/start_local.sh blog travel
-
-# Stop all services
-./scripts/start_local.sh --stop
-
-# Stop specific services
-./scripts/start_local.sh blog --stop
-```
-
-### How it works
-
-1. Creates the `web` Docker network if it doesn't exist.
-2. Starts an HTTP-only Traefik instance from `networking/docker-compose.local.yml`.
-3. For each requested service, starts containers with
-   `docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build --wait`.
-4. The `docker-compose.local.yml` override maps a host port and sets the Traefik router
-   to use the `web` entrypoint (HTTP) instead of `websecure` (HTTPS).
-
-### Accessing services
-
-Each service's `docker-compose.local.yml` maps a specific host port. Add the following to
-`/etc/hosts` to access services by hostname:
-
-```
-127.0.0.1  jamesmassucco.com blog.jamesmassucco.com travel.jamesmassucco.com assets.jamesmassucco.com games.jamesmassucco.com
-```
-
-The Traefik dashboard is available at `http://localhost:8080`.
-
----
-
-## 2. CI Integration Tests
+## 1. CI Integration Tests
 
 **Workflow:** `.github/workflows/docker-integration.yml`  
 **Composite actions:** `.github/actions/start-service`, `.github/actions/stop-service`  
@@ -116,7 +63,7 @@ and skips `cloudflare-ddns` since DNS propagation is not testable in CI.
 
 ---
 
-## 3. Production Deployment
+## 2. Production Deployment
 
 **Workflow:** `.github/workflows/deploy.yml`  
 **Trigger:** Push to `main` (deploys all services) or `workflow_dispatch` (selective)  
@@ -159,34 +106,32 @@ services are deployed. On push to `main`, all services are deployed.
 
 ---
 
-## 4. Staging Deployment
+## 3. Staging Deployment
 
 **Workflow:** `.github/workflows/deploy-staging.yml`  
 **Trigger:** `workflow_dispatch` only (always manual)  
 **Script called:** `scripts/start_service.sh <service> --staging` (on the server over SSH)  
-**Compose files used:** `docker-compose.staging.yml` (per service)
+**Compose files used:** `docker-compose.yml` + `docker-compose.staging.yml` (per service, overlaid)
 
 ### Purpose
 
 Deploy a specific image tag to `*.staging.jamesmassucco.com` for testing before it reaches
 production. Staging runs on the same server as production but uses separate container
-names, Traefik routers, and (for `travel`) a separate Docker volume.
-
-See `staging-plan.md` for the full architecture and one-time setup steps (DNS, TLS,
-OAuth app redirect URI).
+names, Traefik routers, and (for `travel`) a separate Docker volume. One-time setup steps
+(DNS, TLS, OAuth app redirect URI) are covered in the checklist at the end of this doc.
 
 ### How it works
 
 Identical to the production workflow except:
 - Uses `STAGING_NETWORKING_ENV` secret (which includes `GOOGLE_OAUTH2_STAGING_COOKIE_SECRET`).
-- Passes `STAGING_IMAGE_TAG` to `start_service.sh --staging`, which uses
-  `docker-compose.staging.yml` instead of `docker-compose.yml`.
+- Passes `STAGING_IMAGE_TAG` to `start_service.sh --staging`, which overlays
+  `docker-compose.staging.yml` on top of `docker-compose.yml` under an isolated
+  `staging-<service>` Docker Compose project so production containers are never affected.
+
 - Supports an optional `seed_from_prod` step that copies the production travel volume into
   the staging volume before deploying.
 
-### Workflow inputs
-
-| Input | Default | Description |
+### Workflow inputs Input | Default | Description |
 |-------|---------|-------------|
 | `image_tag` | `latest` | GHCR image tag to deploy (e.g. `sha-abc1234`) |
 | `seed_from_prod` | `false` | Copy production travel data to staging before deploying |
@@ -230,13 +175,16 @@ Shares most secrets with production. One additional secret is required:
 
 ## Compose file reference
 
-| File | Used by |
-|------|---------|
-| `<service>/docker-compose.yml` | Production, CI integration tests |
-| `<service>/docker-compose.local.yml` | Local development (overlaid on base) |
-| `<service>/docker-compose.staging.yml` | Staging (standalone, not an overlay) |
-| `networking/docker-compose.local.yml` | Local development Traefik (HTTP only) |
-| `networking/docker-compose.staging.yml` | Staging OAuth2-proxy (standalone) |
+Every service directory follows the same layout:
+
+| File | Used by | Purpose |
+|------|---------|---------|
+| `<service>/docker-compose.yml` | Production, staging, CI | Base service definition (image, build, healthcheck, restart, `traefik.enable=true`) |
+| `<service>/docker-compose.prod.yml` | Production, CI | Production Traefik routing labels; bind-mounts where applicable |
+| `<service>/docker-compose.staging.yml` | Staging | Staging routing labels; separate volume for `travel` |
+| `<service>/docker-compose.local.yml` | Local development | Host port mapping and local HTTP routing |
+| `networking/docker-compose.local.yml` | Local development | HTTP-only Traefik (no TLS/OAuth) |
+| `networking/docker-compose.staging.yml` | Staging | Staging OAuth2-proxy (standalone) |
 
 ---
 
@@ -244,8 +192,25 @@ Shares most secrets with production. One additional secret is required:
 
 | Situation | Use |
 |-----------|-----|
-| Actively developing a feature | Local development (`start_local.sh`) |
 | Validating a PR builds and serves correctly | CI integration tests (automatic on PR) |
 | Checking a specific image tag against real data before merging | Staging deploy |
 | Releasing to production after merge | Production deploy (automatic on push to `main`) |
-| Rolling back production to a previous build | Production `deploy.yml` dispatch with `sha-<tag>` in `docker-compose.yml` image field |
+| Rolling back production to a previous build | Production `deploy.yml` dispatch with `sha-<tag>` image tag |
+
+## One-time staging setup
+
+Before staging is usable for the first time, complete these manual steps:
+
+1. Add `*.staging` wildcard CNAME in Cloudflare DNS (proxied, points to `jamesmassucco.com`).
+2. Add `https://oauth.staging.jamesmassucco.com/oauth2/callback` to the Google OAuth
+   app's Authorized Redirect URIs.
+3. Generate a staging cookie secret and set the `STAGING_NETWORKING_ENV` GitHub secret:
+   ```bash
+   python3 -c "import secrets, base64; print(base64.b64encode(secrets.token_bytes(32)).decode())"
+   ```
+   The secret should contain the same fields as `NETWORKING_ENV` plus
+   `GOOGLE_OAUTH2_STAGING_COOKIE_SECRET`.
+4. Deploy staging networking once to start `oauth2-proxy-staging`:
+   ```
+   deploy-staging.yml → networking=true, all others=false
+   ```

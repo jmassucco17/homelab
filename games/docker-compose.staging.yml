@@ -1,37 +1,14 @@
-# Staging override for games.
-# Routes games.staging.jamesmassucco.com to this container via Traefik.
-# Image tag is controlled by STAGING_IMAGE_TAG (default: latest).
-# No bind-mounts: staging tests the baked image, not local files.
-#
-# Usage: scripts/start_service.sh games --staging
+# Staging overlay: routes games.staging.jamesmassucco.com to a staging container.
+# Merged with docker-compose.yml by scripts/start_service.sh --staging.
+# No bind-mounts: staging tests the baked image at the pinned STAGING_IMAGE_TAG.
 services:
   games:
     container_name: staging-games
     image: ghcr.io/jmassucco17/homelab/games:${STAGING_IMAGE_TAG:-latest}
     labels:
-      - traefik.enable=true
-      - traefik.http.routers.games-staging.rule=Host(`games.staging.jamesmassucco.com`)
-      - traefik.http.routers.games-staging.entrypoints=websecure
-      - traefik.http.routers.games-staging.tls=true
-      - traefik.http.routers.games-staging.tls.certresolver=cloudflare
-      - traefik.http.routers.games-staging.middlewares=ratelimit
-      - traefik.http.services.games-staging.loadbalancer.server.port=8000
-    healthcheck:
-      test:
-        [
-          'CMD',
-          'python3',
-          '-c',
-          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')",
-        ]
-      interval: 5s
-      timeout: 1s
-      retries: 3
-      start_period: 5s
-    networks:
-      - web
-    restart: unless-stopped
-
-networks:
-  web:
-    external: true
+      - 'traefik.http.routers.games-staging.rule=Host(`games.staging.jamesmassucco.com`)'
+      - 'traefik.http.routers.games-staging.entrypoints=websecure'
+      - 'traefik.http.routers.games-staging.tls=true'
+      - 'traefik.http.routers.games-staging.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.games-staging.middlewares=ratelimit'
+      - 'traefik.http.services.games-staging.loadbalancer.server.port=8000'
