@@ -28,7 +28,7 @@ When creating a new module (i.e. a new subdomain):
    - `networking/docker-compose.yml` - Add subdomain to cloudflare-ddns `DOMAINS`
    - `.github/dependabot.yml` - Add docker ecosystem entry
    - `.github/workflows/docker-integration.yml` - Add test job
-   - `.github/workflows/build-and-push.yml` - Add matrix entry
+   - `.github/workflows/build.yml` - Add matrix entry
    - `.github/workflows/deploy.yml` - Add input flag, file transfer, and deploy call
    - `homepage/site/index.html` - Add link in "Content and Projects"
 

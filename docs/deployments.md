@@ -9,7 +9,7 @@ other, and when to use each one.
 
 All three deployment modes share a common runtime: **`scripts/start_service.sh`**.
 The script starts a single service by name, choosing the right Compose file(s) based on
-the mode. The modes differ only in *which* Compose files are used and *where* the script
+the mode. The modes differ only in _which_ Compose files are used and _where_ the script
 runs.
 
 ```
@@ -45,6 +45,7 @@ every pull request, push to `main`, and on manual dispatch.
 ### How it works
 
 Each service has its own job. The `start-service` action:
+
 1. Creates the `web` Docker network.
 2. Calls `scripts/start_service.sh <service>`, which builds the image and runs
    `docker compose up -d --build --wait`.
@@ -72,7 +73,7 @@ and skips `cloudflare-ddns` since DNS propagation is not testable in CI.
 ### Purpose
 
 Deploy the current state of `main` to the production VPS. Images are pre-built by
-`build-and-push.yml` and pulled from GHCR; the archive provides config files and
+`build.yml` and pulled from GHCR; the archive provides config files and
 `networking/.env`.
 
 ### How it works
@@ -84,7 +85,7 @@ Deploy the current state of `main` to the production VPS. Images are pre-built b
 4. SCPs the archive to `/tmp/homelab-deploy.tar.gz` on the server.
 5. SSHes in, extracts to `/opt/homelab`, and calls `start_service.sh <service>` for each
    enabled service in dependency order:
-   `networking → shared-assets → homepage → blog → travel → games`
+   `networking → shared-assets → homepage → blog → games → tools → travel`
 6. `start_service.sh` pulls the pre-built image from GHCR and runs
    `docker compose up -d --wait`.
 
@@ -95,14 +96,14 @@ services are deployed. On push to `main`, all services are deployed.
 
 ### Required secrets
 
-| Secret | Description |
-|--------|-------------|
-| `TAILSCALE_OAUTH_CLIENT_ID` | Tailscale OAuth client ID |
-| `TAILSCALE_OAUTH_SECRET` | Tailscale OAuth secret |
-| `SSH_PRIVATE_KEY` | Private key for SSH into the server |
-| `SERVER_HOST` | Tailscale hostname or IP of the server |
-| `SERVER_USER` | SSH username on the server |
-| `NETWORKING_ENV` | Full contents of `networking/.env` |
+| Secret                      | Description                            |
+| --------------------------- | -------------------------------------- |
+| `TAILSCALE_OAUTH_CLIENT_ID` | Tailscale OAuth client ID              |
+| `TAILSCALE_OAUTH_SECRET`    | Tailscale OAuth secret                 |
+| `SSH_PRIVATE_KEY`           | Private key for SSH into the server    |
+| `SERVER_HOST`               | Tailscale hostname or IP of the server |
+| `SERVER_USER`               | SSH username on the server             |
+| `NETWORKING_ENV`            | Full contents of `networking/.env`     |
 
 ---
 
@@ -123,6 +124,7 @@ names, Traefik routers, and (for `travel`) a separate Docker volume. One-time se
 ### How it works
 
 Identical to the production workflow except:
+
 - Uses `STAGING_NETWORKING_ENV` secret (which includes `GOOGLE_OAUTH2_STAGING_COOKIE_SECRET`).
 - Passes `STAGING_IMAGE_TAG` to `start_service.sh --staging`, which overlays
   `docker-compose.staging.yml` on top of `docker-compose.yml` under an isolated
@@ -132,6 +134,7 @@ Identical to the production workflow except:
   the staging volume before deploying.
 
 ### Workflow inputs Input | Default | Description |
+
 |-------|---------|-------------|
 | `image_tag` | `latest` | GHCR image tag to deploy (e.g. `sha-abc1234`) |
 | `seed_from_prod` | `false` | Copy production travel data to staging before deploying |
@@ -154,22 +157,22 @@ Identical to the production workflow except:
 
 Shares most secrets with production. One additional secret is required:
 
-| Secret | Description |
-|--------|-------------|
+| Secret                   | Description                                                                |
+| ------------------------ | -------------------------------------------------------------------------- |
 | `STAGING_NETWORKING_ENV` | `networking/.env` contents including `GOOGLE_OAUTH2_STAGING_COOKIE_SECRET` |
 
 ---
 
 ## Staging subdomains
 
-| URL | Service |
-|-----|---------|
-| `staging.jamesmassucco.com` | homepage |
-| `blog.staging.jamesmassucco.com` | blog |
-| `travel.staging.jamesmassucco.com` | travel |
-| `games.staging.jamesmassucco.com` | games |
-| `assets.staging.jamesmassucco.com` | shared-assets |
-| `oauth.staging.jamesmassucco.com` | staging OAuth2-proxy |
+| URL                                | Service              |
+| ---------------------------------- | -------------------- |
+| `staging.jamesmassucco.com`        | homepage             |
+| `blog.staging.jamesmassucco.com`   | blog                 |
+| `travel.staging.jamesmassucco.com` | travel               |
+| `games.staging.jamesmassucco.com`  | games                |
+| `assets.staging.jamesmassucco.com` | shared-assets        |
+| `oauth.staging.jamesmassucco.com`  | staging OAuth2-proxy |
 
 ---
 
@@ -177,23 +180,23 @@ Shares most secrets with production. One additional secret is required:
 
 Every service directory follows the same layout:
 
-| File | Used by | Purpose |
-|------|---------|---------|
-| `<service>/docker-compose.yml` | Production, staging, CI | Base service definition (image, build, healthcheck, restart, `traefik.enable=true`) |
-| `<service>/docker-compose.prod.yml` | Production, CI | Production Traefik routing labels; named data volume for `travel` |
-| `<service>/docker-compose.staging.yml` | Staging | Staging routing labels; separate volume for `travel` |
-| `networking/docker-compose.staging.yml` | Staging | Staging OAuth2-proxy (standalone) |
+| File                                    | Used by                 | Purpose                                                                             |
+| --------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------- |
+| `<service>/docker-compose.yml`          | Production, staging, CI | Base service definition (image, build, healthcheck, restart, `traefik.enable=true`) |
+| `<service>/docker-compose.prod.yml`     | Production, CI          | Production Traefik routing labels; named data volume for `travel`                   |
+| `<service>/docker-compose.staging.yml`  | Staging                 | Staging routing labels; separate volume for `travel`                                |
+| `networking/docker-compose.staging.yml` | Staging                 | Staging OAuth2-proxy (standalone)                                                   |
 
 ---
 
 ## Choosing the right deployment method
 
-| Situation | Use |
-|-----------|-----|
-| Validating a PR builds and serves correctly | CI integration tests (automatic on PR) |
-| Checking a specific image tag against real data before merging | Staging deploy |
-| Releasing to production after merge | Production deploy (automatic on push to `main`) |
-| Rolling back production to a previous build | Production `deploy.yml` dispatch with `sha-<tag>` image tag |
+| Situation                                                      | Use                                                         |
+| -------------------------------------------------------------- | ----------------------------------------------------------- |
+| Validating a PR builds and serves correctly                    | CI integration tests (automatic on PR)                      |
+| Checking a specific image tag against real data before merging | Staging deploy                                              |
+| Releasing to production after merge                            | Production deploy (automatic on push to `main`)             |
+| Rolling back production to a previous build                    | Production `deploy.yml` dispatch with `sha-<tag>` image tag |
 
 ## One-time staging setup
 
