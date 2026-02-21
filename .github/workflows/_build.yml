@@ -52,10 +52,6 @@ jobs:
             image: ghcr.io/jmassucco17/homelab/blog
             context: .
             file: blog/Dockerfile
-          - service: travel
-            image: ghcr.io/jmassucco17/homelab/travel
-            context: .
-            file: travel/Dockerfile
           - service: games
             image: ghcr.io/jmassucco17/homelab/games
             context: .
@@ -64,6 +60,10 @@ jobs:
             image: ghcr.io/jmassucco17/homelab/tools
             context: .
             file: tools/Dockerfile
+          - service: travel
+            image: ghcr.io/jmassucco17/homelab/travel
+            context: .
+            file: travel/Dockerfile
 
     steps:
       - uses: actions/checkout@v6

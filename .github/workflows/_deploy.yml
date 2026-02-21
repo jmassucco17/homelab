@@ -142,9 +142,9 @@ jobs:
           deploy_if_enabled shared-assets   "$DEPLOY_SHARED_ASSETS"
           deploy_if_enabled homepage        "$DEPLOY_HOMEPAGE"
           deploy_if_enabled blog            "$DEPLOY_BLOG"
-          deploy_if_enabled travel          "$DEPLOY_TRAVEL"
           deploy_if_enabled games           "$DEPLOY_GAMES"
           deploy_if_enabled tools           "$DEPLOY_TOOLS"
+          deploy_if_enabled travel          "$DEPLOY_TRAVEL"
 
           rm -f /tmp/homelab-deploy.tar.gz
           echo "Deployment complete."
@@ -203,8 +203,8 @@ jobs:
           deploy_if_enabled shared-assets "${DEPLOY_SHARED_ASSETS}"
           deploy_if_enabled homepage      "${DEPLOY_HOMEPAGE}"
           deploy_if_enabled blog          "${DEPLOY_BLOG}"
-          deploy_if_enabled travel        "${DEPLOY_TRAVEL}"
           deploy_if_enabled games         "${DEPLOY_GAMES}"
+          deploy_if_enabled travel        "${DEPLOY_TRAVEL}"
 
           rm -f /tmp/homelab-deploy.tar.gz
           echo "Staging deployment complete."

@@ -85,7 +85,7 @@ Deploy the current state of `main` to the production VPS. Images are pre-built b
 4. SCPs the archive to `/tmp/homelab-deploy.tar.gz` on the server.
 5. SSHes in, extracts to `/opt/homelab`, and calls `start_service.sh <service>` for each
    enabled service in dependency order:
-   `networking → shared-assets → homepage → blog → travel → games`
+   `networking → shared-assets → homepage → blog → games → tools → travel`
 6. `start_service.sh` pulls the pre-built image from GHCR and runs
    `docker compose up -d --wait`.
 
