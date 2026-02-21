@@ -15,18 +15,18 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Create networking/.env with test credentials
+      - name: Set up test environment variables
         run: |
           COOKIE_SECRET=$(python3 -c "import secrets; print(secrets.token_hex(16))")
-          cat > networking/.env << EOF
-          CLOUDFLARE_API_EMAIL=test@example.com
-          CLOUDFLARE_API_TOKEN=test-token
-          CLOUDFLARE_TRUSTED_IPS=0.0.0.0/0
-          GOOGLE_OAUTH2_CLIENT_ID=test-client-id
-          GOOGLE_OAUTH2_CLIENT_SECRET=test-client-secret
-          GOOGLE_OAUTH2_COOKIE_SECRET=${COOKIE_SECRET}
-          OAUTH2_AUTHORIZED_EMAILS=test@example.com
-          EOF
+          {
+            echo "CLOUDFLARE_API_EMAIL=test@example.com"
+            echo "CLOUDFLARE_API_TOKEN=test-token"
+            echo "CLOUDFLARE_TRUSTED_IPS=0.0.0.0/0"
+            echo "GOOGLE_OAUTH2_CLIENT_ID=test-client-id"
+            echo "GOOGLE_OAUTH2_CLIENT_SECRET=test-client-secret"
+            echo "GOOGLE_OAUTH2_COOKIE_SECRET=${COOKIE_SECRET}"
+            echo "OAUTH2_AUTHORIZED_EMAILS=test@example.com"
+          } >> "$GITHUB_ENV"
 
       - name: Create acme.json with correct permissions
         run: |
@@ -364,17 +364,17 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Create networking/.env stub
+      - name: Set up networking test environment variables
         run: |
-          cat > networking/.env <<'EOF'
-          CLOUDFLARE_API_EMAIL=test@example.com
-          CLOUDFLARE_API_TOKEN=test-token
-          CLOUDFLARE_TRUSTED_IPS=0.0.0.0/0
-          GOOGLE_OAUTH2_CLIENT_ID=test-client-id
-          GOOGLE_OAUTH2_CLIENT_SECRET=test-client-secret
-          GOOGLE_OAUTH2_COOKIE_SECRET=00000000000000000000000000000000
-          OAUTH2_AUTHORIZED_EMAILS=test@example.com
-          EOF
+          {
+            echo "CLOUDFLARE_API_EMAIL=test@example.com"
+            echo "CLOUDFLARE_API_TOKEN=test-token"
+            echo "CLOUDFLARE_TRUSTED_IPS=0.0.0.0/0"
+            echo "GOOGLE_OAUTH2_CLIENT_ID=test-client-id"
+            echo "GOOGLE_OAUTH2_CLIENT_SECRET=test-client-secret"
+            echo "GOOGLE_OAUTH2_COOKIE_SECRET=00000000000000000000000000000000"
+            echo "OAUTH2_AUTHORIZED_EMAILS=test@example.com"
+          } >> "$GITHUB_ENV"
 
       - name: Validate all Compose files
         run: |

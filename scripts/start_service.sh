@@ -32,14 +32,14 @@ if [[ "$SERVICE" == "travel" ]]; then
 fi
 
 echo "Shutting down containers..."
-sudo docker compose down --remove-orphans
+sudo -E docker compose down --remove-orphans
 
 if [[ -f "$SERVICE_DIR/Dockerfile" ]]; then
   echo "Building and starting containers..."
-  sudo docker compose up -d --build --wait
+  sudo -E docker compose up -d --build --wait
 else
   echo "Pulling latest images..."
-  sudo docker compose pull
+  sudo -E docker compose pull
   echo "Starting up containers..."
-  sudo docker compose up -d --wait
+  sudo -E docker compose up -d --wait
 fi

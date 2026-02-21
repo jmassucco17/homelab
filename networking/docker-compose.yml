@@ -48,8 +48,6 @@ services:
       - './acme.json:/letsencrypt/acme.json'
     networks:
       - web
-    env_file:
-      - .env
     environment:
       - CF_DNS_API_TOKEN=${CLOUDFLARE_API_TOKEN}
     labels:

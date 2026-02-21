@@ -48,9 +48,6 @@ jobs:
           oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
           tags: tag:github
 
-      - name: Write networking/.env from secret
-        run: printf '%s' "${{ secrets.NETWORKING_ENV }}" > networking/.env
-
       - name: Set up SSH key
         run: |
           mkdir -p ~/.ssh
@@ -63,7 +60,6 @@ jobs:
           grep -v '^#' .gitignore | grep -v '^$' > /tmp/exclude_list
           printf '.git/\n*.tar.gz\n*.tar\n' >> /tmp/exclude_list
           tar --exclude-from=/tmp/exclude_list -cf /tmp/homelab-deploy.tar .
-          tar --append -f /tmp/homelab-deploy.tar networking/.env
           gzip /tmp/homelab-deploy.tar
 
       - name: Upload archive to server
@@ -83,11 +79,37 @@ jobs:
           DEPLOY_TRAVEL: ${{ github.event_name == 'push' || inputs.travel }}
           DEPLOY_GAMES: ${{ github.event_name == 'push' || inputs.games }}
           DEPLOY_TOOLS: ${{ github.event_name == 'push' || inputs.tools }}
+          # Networking secrets (passed to docker compose on the server)
+          CLOUDFLARE_API_EMAIL: ${{ secrets.CLOUDFLARE_API_EMAIL }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_TRUSTED_IPS: ${{ secrets.CLOUDFLARE_TRUSTED_IPS }}
+          GOOGLE_OAUTH2_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH2_CLIENT_ID }}
+          GOOGLE_OAUTH2_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH2_CLIENT_SECRET }}
+          GOOGLE_OAUTH2_COOKIE_SECRET: ${{ secrets.GOOGLE_OAUTH2_COOKIE_SECRET }}
+          OAUTH2_AUTHORIZED_EMAILS: ${{ secrets.OAUTH2_AUTHORIZED_EMAILS }}
+          # Tools secret
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             -o StrictHostKeyChecking=no \
             "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" \
-            "DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' DEPLOY_SHARED_ASSETS='${DEPLOY_SHARED_ASSETS}' DEPLOY_HOMEPAGE='${DEPLOY_HOMEPAGE}' DEPLOY_BLOG='${DEPLOY_BLOG}' DEPLOY_TRAVEL='${DEPLOY_TRAVEL}' DEPLOY_GAMES='${DEPLOY_GAMES}' DEPLOY_TOOLS='${DEPLOY_TOOLS}' bash -s" << 'REMOTE'
+            env \
+              DEPLOY_NETWORKING="${DEPLOY_NETWORKING}" \
+              DEPLOY_SHARED_ASSETS="${DEPLOY_SHARED_ASSETS}" \
+              DEPLOY_HOMEPAGE="${DEPLOY_HOMEPAGE}" \
+              DEPLOY_BLOG="${DEPLOY_BLOG}" \
+              DEPLOY_TRAVEL="${DEPLOY_TRAVEL}" \
+              DEPLOY_GAMES="${DEPLOY_GAMES}" \
+              DEPLOY_TOOLS="${DEPLOY_TOOLS}" \
+              CLOUDFLARE_API_EMAIL="${CLOUDFLARE_API_EMAIL}" \
+              CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN}" \
+              CLOUDFLARE_TRUSTED_IPS="${CLOUDFLARE_TRUSTED_IPS}" \
+              GOOGLE_OAUTH2_CLIENT_ID="${GOOGLE_OAUTH2_CLIENT_ID}" \
+              GOOGLE_OAUTH2_CLIENT_SECRET="${GOOGLE_OAUTH2_CLIENT_SECRET}" \
+              GOOGLE_OAUTH2_COOKIE_SECRET="${GOOGLE_OAUTH2_COOKIE_SECRET}" \
+              OAUTH2_AUTHORIZED_EMAILS="${OAUTH2_AUTHORIZED_EMAILS}" \
+              TMDB_API_KEY="${TMDB_API_KEY}" \
+            bash -s << 'REMOTE'
           set -euo pipefail
           mkdir -p /opt/homelab
           cd /opt/homelab
