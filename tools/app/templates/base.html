@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      ;(function () {
+        const cookieTheme = document.cookie
+          .split('; ')
+          .find((row) => row.startsWith('theme='))
+          ?.split('=')[1]
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+        const theme = cookieTheme || (prefersDark ? 'dark' : 'light')
+        document.documentElement.setAttribute('data-theme', theme)
+      })()
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="icon"
+      type="image/png"
+      href="https://assets.jamesmassucco.com/icon/favicon-96x96.png"
+      sizes="96x96"
+    />
+    <link rel="shortcut icon" href="https://assets.jamesmassucco.com/icon/favicon.ico" />
+    <link rel="stylesheet" href="https://assets.jamesmassucco.com/styles/main.css?v=2.0" />
+    <link rel="stylesheet" href="/static/css/tools.css" />
+    <title>{% block title %}Tools{% endblock %} | JM Homelab</title>
+    {% block extra_head %}{% endblock %}
+  </head>
+  <body>
+    <div id="theme-toggle-container"></div>
+    <a href="https://jamesmassucco.com" class="site-home-link">
+      <img
+        src="https://assets.jamesmassucco.com/icon/favicon-96x96.png"
+        alt="Home"
+        class="site-logo"
+      />
+      <span>Home</span>
+    </a>
+
+    <nav class="tools-nav">
+      <a href="/">Tools</a>
+      <a href="/movie-picker">Movie Picker</a>
+    </nav>
+
+    {% block content %}{% endblock %}
+
+    <footer>&copy; 2025 James Massucco. Built with love and Linux.</footer>
+    <script type="module">
+      import { insertThemeToggle } from 'https://assets.jamesmassucco.com/scripts/theme-toggle.js?v=2.0'
+      window.addEventListener('DOMContentLoaded', () => {
+        insertThemeToggle()
+      })
+    </script>
+    {% block extra_scripts %}{% endblock %}
+  </body>
+</html>

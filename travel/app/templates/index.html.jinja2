@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel - Home</title>
+    <link rel="stylesheet" href="https://assets.jamesmassucco.com/styles/main.css?v=2.0">
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <div id="theme-toggle-container"></div>
+    <a href="https://jamesmassucco.com" class="site-home-link">
+        <img
+            src="https://assets.jamesmassucco.com/icon/favicon-96x96.png"
+            alt="Home"
+            class="site-logo"
+        />
+        Home
+    </a>
+    <div class="container">
+        <header>
+            <h1>✈️ Travel</h1>
+            <p class="tagline">Explore my journeys and adventures</p>
+        </header>
+
+        <main class="links">
+            <a href="/photos" class="link-card">
+                <div class="icon">📸</div>
+                <h2>Photo Gallery</h2>
+                <p>Browse my travel photo collection with interactive maps and location details</p>
+            </a>
+
+            <a href="/maps" class="link-card">
+                <div class="icon">🗺️</div>
+                <h2>Custom Maps</h2>
+                <p>Create and share custom travel maps with multiple locations and routes</p>
+            </a>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 James Massucco</p>
+        </footer>
+    </div>
+
+    <script type="module">
+      import { insertThemeToggle } from 'https://assets.jamesmassucco.com/scripts/theme-toggle.js?v=2.0'
+      window.addEventListener('DOMContentLoaded', () => {
+        insertThemeToggle()
+      })
+    </script>
+</body>
+</html>

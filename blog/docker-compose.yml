@@ -1,12 +1,10 @@
 services:
   blog:
     container_name: blog
+    image: ghcr.io/jmassucco17/homelab/blog:latest
     build:
       context: ..
       dockerfile: blog/Dockerfile
-    volumes:
-      - ./app:/app/app
-      - ./posts:/app/posts
     labels:
       # Use traefik to provide HTTP endpoint
       - 'traefik.enable=true'
@@ -14,6 +12,7 @@ services:
       - 'traefik.http.routers.blog.entrypoints=websecure'
       - 'traefik.http.routers.blog.tls=true'
       - 'traefik.http.routers.blog.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.blog.middlewares=ratelimit'
       - 'traefik.http.services.blog.loadbalancer.server.port=8000'
     healthcheck:
       test:

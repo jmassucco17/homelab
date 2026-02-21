@@ -19,29 +19,25 @@ on:
         description: 'Deploy blog'
         type: boolean
         default: true
-      travel-landing:
-        description: 'Deploy travel landing'
-        type: boolean
-        default: true
-      travel-photos:
-        description: 'Deploy travel photos'
-        type: boolean
-        default: true
-      travel-maps:
-        description: 'Deploy travel maps'
+      travel:
+        description: 'Deploy travel'
         type: boolean
         default: true
       games:
         description: 'Deploy games'
         type: boolean
         default: true
-  push:
-    branches:
-      - main
+      tools:
+        description: 'Deploy tools'
+        type: boolean
+        default: true
+  workflow_call:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6
 
@@ -55,6 +51,9 @@ jobs:
       - name: Write networking/.env from secret
         run: printf '%s' "${{ secrets.NETWORKING_ENV }}" > networking/.env
 
+      - name: Write tools/.env from secret
+        run: printf 'TMDB_API_KEY=%s\n' "${{ secrets.TMDB_API_KEY }}" > tools/.env
+
       - name: Set up SSH key
         run: |
           mkdir -p ~/.ssh
@@ -62,70 +61,69 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "${{ secrets.SERVER_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Create deployment archive
+      - name: Transfer config files to server
         run: |
-          grep -v '^#' .gitignore | grep -v '^$' > /tmp/exclude_list
-          printf '.git/\n*.tar.gz\n*.tar\n' >> /tmp/exclude_list
-          tar --exclude-from=/tmp/exclude_list -cf /tmp/homelab-deploy.tar .
-          tar --append -f /tmp/homelab-deploy.tar networking/.env
-          gzip /tmp/homelab-deploy.tar
-
-      - name: Upload archive to server
-        run: |
+          mkdir -p /tmp/homelab-config/networking
+          cp networking/docker-compose.yml /tmp/homelab-config/networking/
+          cp networking/.env /tmp/homelab-config/networking/
+          for svc in shared-assets homepage blog travel games tools; do
+            mkdir -p "/tmp/homelab-config/$svc"
+            cp "$svc/docker-compose.yml" "/tmp/homelab-config/$svc/"
+          done
+          tar -czf /tmp/homelab-config.tar.gz -C /tmp/homelab-config .
           scp -i ~/.ssh/deploy_key \
             -o StrictHostKeyChecking=no \
-            /tmp/homelab-deploy.tar.gz \
-            "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/homelab-deploy.tar.gz"
+            /tmp/homelab-config.tar.gz \
+            "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/homelab-config.tar.gz"
 
-      - name: Extract and start services on server
+      - name: Deploy services on server
         env:
-          # On push, deploy all services; on workflow_dispatch, deploy only checked ones
-          DEPLOY_NETWORKING: ${{ github.event_name == 'push' || inputs.networking }}
-          DEPLOY_SHARED_ASSETS: ${{ github.event_name == 'push' || inputs['shared-assets'] }}
-          DEPLOY_HOMEPAGE: ${{ github.event_name == 'push' || inputs.homepage }}
-          DEPLOY_BLOG: ${{ github.event_name == 'push' || inputs.blog }}
-          DEPLOY_TRAVEL_LANDING: ${{ github.event_name == 'push' || inputs['travel-landing'] }}
-          DEPLOY_TRAVEL_PHOTOS: ${{ github.event_name == 'push' || inputs['travel-photos'] }}
-          DEPLOY_TRAVEL_MAPS: ${{ github.event_name == 'push' || inputs['travel-maps'] }}
-          DEPLOY_GAMES: ${{ github.event_name == 'push' || inputs.games }}
+          # On workflow_call (automatic), inputs are empty so || true deploys all services.
+          # On workflow_dispatch (manual), inputs reflect the user's checkbox selections.
+          DEPLOY_NETWORKING: ${{ inputs.networking || true }}
+          DEPLOY_SHARED_ASSETS: ${{ inputs['shared-assets'] || true }}
+          DEPLOY_HOMEPAGE: ${{ inputs.homepage || true }}
+          DEPLOY_BLOG: ${{ inputs.blog || true }}
+          DEPLOY_TRAVEL: ${{ inputs.travel || true }}
+          DEPLOY_GAMES: ${{ inputs.games || true }}
+          DEPLOY_TOOLS: ${{ inputs.tools || true }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             -o StrictHostKeyChecking=no \
             "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" \
-            "DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' DEPLOY_SHARED_ASSETS='${DEPLOY_SHARED_ASSETS}' DEPLOY_HOMEPAGE='${DEPLOY_HOMEPAGE}' DEPLOY_BLOG='${DEPLOY_BLOG}' DEPLOY_TRAVEL_LANDING='${DEPLOY_TRAVEL_LANDING}' DEPLOY_TRAVEL_PHOTOS='${DEPLOY_TRAVEL_PHOTOS}' DEPLOY_TRAVEL_MAPS='${DEPLOY_TRAVEL_MAPS}' DEPLOY_GAMES='${DEPLOY_GAMES}' bash -s" << 'REMOTE'
+            "DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' DEPLOY_SHARED_ASSETS='${DEPLOY_SHARED_ASSETS}' DEPLOY_HOMEPAGE='${DEPLOY_HOMEPAGE}' DEPLOY_BLOG='${DEPLOY_BLOG}' DEPLOY_TRAVEL='${DEPLOY_TRAVEL}' DEPLOY_GAMES='${DEPLOY_GAMES}' DEPLOY_TOOLS='${DEPLOY_TOOLS}' bash -s" << 'REMOTE'
           set -euo pipefail
           mkdir -p /opt/homelab
           cd /opt/homelab
-          echo "Extracting deployment archive..."
-          tar -xzf /tmp/homelab-deploy.tar.gz
+          echo "Extracting config files..."
+          tar -xzf /tmp/homelab-config.tar.gz
           touch networking/acme.json
           chmod 600 networking/acme.json
           docker network create web 2>/dev/null || true
 
-          # Deploy each service if its flag is true
           deploy_if_enabled() {
             local svc="$1"
             local flag="$2"
             if [ "$flag" = "true" ]; then
-              echo "--- Starting $svc ---"
-              cd /opt/homelab/$svc
-              ./start.sh
+              echo "--- Deploying $svc ---"
+              cd "/opt/homelab/$svc"
+              docker compose pull
+              docker compose up -d --wait
               cd /opt/homelab
             else
               echo "--- Skipping $svc ---"
             fi
           }
 
-          # Services deployed in dependency order
+          # Deploy each service if its flag is true, in dependency order
           deploy_if_enabled networking      "$DEPLOY_NETWORKING"
           deploy_if_enabled shared-assets   "$DEPLOY_SHARED_ASSETS"
           deploy_if_enabled homepage        "$DEPLOY_HOMEPAGE"
           deploy_if_enabled blog            "$DEPLOY_BLOG"
-          deploy_if_enabled travel/landing  "$DEPLOY_TRAVEL_LANDING"
-          deploy_if_enabled travel/photos   "$DEPLOY_TRAVEL_PHOTOS"
-          deploy_if_enabled travel/maps     "$DEPLOY_TRAVEL_MAPS"
-          deploy_if_enabled games         "$DEPLOY_GAMES"
+          deploy_if_enabled travel          "$DEPLOY_TRAVEL"
+          deploy_if_enabled games           "$DEPLOY_GAMES"
+          deploy_if_enabled tools           "$DEPLOY_TOOLS"
 
-          rm -f /tmp/homelab-deploy.tar.gz
+          rm -f /tmp/homelab-config.tar.gz
           echo "Deployment complete."
           REMOTE

@@ -13,6 +13,12 @@
 
 - Add non-python testing wherever appropriate
 
+## Non-Python testing (future, requires new dependencies):
+
+- **JS unit tests — theme-toggle.js**: Add Vitest + jsdom tests for `shared-assets/assets/scripts/theme-toggle.js` (cookie reading, `prefers-color-scheme`, toggle click, `data-theme` persistence). The function is already a clean ES module export so no refactor is needed.
+- **JS unit tests — game logic**: Extract pure helpers from `snake.js` and `pong.js` IIFEs into separate `snake-logic.js` / `pong-logic.js` modules, then add Vitest tests for collision detection, speed scaling, and AI paddle clamping.
+- **Accessibility audits**: Run `@axe-core/cli` against each service's HTML in `docker-integration.yml` after containers are already running. Start with WCAG 2.1 level A, expand to level AA once baseline is green.
+
 ## Deployment improvements:
 
 - More cleanup to the workflows for PRs and commits to main
