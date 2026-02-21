@@ -1,0 +1,1 @@
+"""Catan game module."""
