@@ -51,6 +51,9 @@ jobs:
       - name: Write networking/.env from secret
         run: printf '%s' "${{ secrets.NETWORKING_ENV }}" > networking/.env
 
+      - name: Write tools/.env from secret
+        run: printf 'TMDB_API_KEY=%s\n' "${{ secrets.TMDB_API_KEY }}" > tools/.env
+
       - name: Set up SSH key
         run: |
           mkdir -p ~/.ssh
