@@ -1,0 +1,33 @@
+# Staging overlay: routes travel.staging.jamesmassucco.com to a staging container.
+# Merged with docker-compose.yml by scripts/start_service.sh --staging.
+# Uses a separate staging-travel-data volume so production data is never touched.
+# To seed staging from prod before deploying, use the seed_from_prod option in
+# deploy-staging.yml, or run manually:
+#   docker run --rm -v travel-site_data-volume:/src:ro -v staging-travel-data:/dst \
+#     alpine sh -c "cp -a /src/. /dst/"
+services:
+  travel:
+    container_name: staging-travel
+    image: ghcr.io/jmassucco17/homelab/travel:${STAGING_IMAGE_TAG:-latest}
+    volumes:
+      - staging-travel-data:/data
+    labels:
+      # Admin routes — require staging OAuth
+      - traefik.http.routers.travel-admin-staging.rule=Host(`travel.staging.jamesmassucco.com`) && PathPrefix(`/photos/admin`)
+      - traefik.http.routers.travel-admin-staging.entrypoints=websecure
+      - traefik.http.routers.travel-admin-staging.tls.certresolver=cloudflare
+      - traefik.http.routers.travel-admin-staging.middlewares=oauth-auth-staging,ratelimit
+      - traefik.http.routers.travel-admin-staging.priority=100
+
+      # Public routes — no authentication required
+      - traefik.http.routers.travel-public-staging.rule=Host(`travel.staging.jamesmassucco.com`)
+      - traefik.http.routers.travel-public-staging.entrypoints=websecure
+      - traefik.http.routers.travel-public-staging.tls.certresolver=cloudflare
+      - traefik.http.routers.travel-public-staging.middlewares=ratelimit
+      - traefik.http.routers.travel-public-staging.priority=50
+
+      - traefik.http.services.travel-staging.loadbalancer.server.port=8000
+
+volumes:
+  staging-travel-data:
+    name: staging-travel-data

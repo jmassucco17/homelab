@@ -51,6 +51,13 @@ Follow all instructions in this section whenever you are contributing code to th
 - If a language is not listed by name, use `other.md`
 - These guides include usage information that should be followed whenever working with that language
 
+### Reference Documents
+
+The `docs/` directory contains reference documents that agents should load **only when relevant** to the current task:
+
+- **`docs/deployments.md`** — Load when working on deployment workflows, CI pipelines, `start_service.sh`, or anything related to how services are built, tested, or shipped (CI integration tests, production deploy, staging deploy). Not needed for pure feature development inside a service.
+- **`docs/secrets.md`** — Load when adding a new secret, modifying `networking/.env`, updating a workflow that reads secrets, or troubleshooting authentication/credentials issues. Not needed for routine code changes.
+
 ### Committing / Branches
 
 - Never do work directly on the `main` branch
