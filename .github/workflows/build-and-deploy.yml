@@ -1,0 +1,100 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - prod
+          - staging
+        default: 'prod'
+      image_tag:
+        description: 'Image tag to deploy (e.g. sha-abc1234, or latest) - only for staging'
+        required: false
+        type: string
+        default: 'latest'
+      seed_from_prod:
+        description: 'Seed staging travel data from production volume before deploying - only for staging'
+        type: boolean
+        default: false
+      networking:
+        description: 'Deploy networking'
+        type: boolean
+        default: true
+      shared-assets:
+        description: 'Deploy shared-assets'
+        type: boolean
+        default: true
+      homepage:
+        description: 'Deploy homepage'
+        type: boolean
+        default: true
+      blog:
+        description: 'Deploy blog'
+        type: boolean
+        default: true
+      travel:
+        description: 'Deploy travel'
+        type: boolean
+        default: true
+      games:
+        description: 'Deploy games'
+        type: boolean
+        default: true
+      tools:
+        description: 'Deploy tools (prod only)'
+        type: boolean
+        default: true
+
+jobs:
+  # Determine environment based on trigger and inputs
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.determine-env.outputs.environment }}
+    steps:
+      - name: Determine environment
+        id: determine-env
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+              echo "environment=prod" >> $GITHUB_OUTPUT
+            else
+              echo "environment=staging" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "environment=${{ inputs.environment }}" >> $GITHUB_OUTPUT
+          fi
+
+  build:
+    needs: setup
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/_build.yml
+    with:
+      environment: ${{ needs.setup.outputs.environment }}
+
+  deploy:
+    needs: [setup, build]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/_deploy.yml
+    secrets: inherit
+    with:
+      environment: ${{ needs.setup.outputs.environment }}
+      image_tag: ${{ inputs.image_tag || 'latest' }}
+      seed_from_prod: ${{ inputs.seed_from_prod || false }}
+      networking: ${{ inputs.networking || true }}
+      shared-assets: ${{ inputs['shared-assets'] || true }}
+      homepage: ${{ inputs.homepage || true }}
+      blog: ${{ inputs.blog || true }}
+      travel: ${{ inputs.travel || true }}
+      games: ${{ inputs.games || true }}
+      tools: ${{ inputs.tools || true }}

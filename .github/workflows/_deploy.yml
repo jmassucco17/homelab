@@ -1,20 +1,25 @@
-name: Deploy to staging
+name: Deploy Services (Reusable)
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
+      environment:
+        description: 'Environment to deploy to (prod or staging)'
+        required: true
+        type: string
       image_tag:
         description: 'Image tag to deploy (e.g. sha-abc1234, or latest)'
-        default: 'latest'
         required: false
+        type: string
+        default: 'latest'
       seed_from_prod:
         description: 'Seed staging travel data from production volume before deploying'
         type: boolean
         default: false
       networking:
-        description: 'Deploy staging networking (OAuth2-proxy)'
+        description: 'Deploy networking'
         type: boolean
-        default: false
+        default: true
       shared-assets:
         description: 'Deploy shared-assets'
         type: boolean
@@ -35,9 +40,13 @@ on:
         description: 'Deploy games'
         type: boolean
         default: true
+      tools:
+        description: 'Deploy tools'
+        type: boolean
+        default: true
 
 jobs:
-  deploy-staging:
+  deploy:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -51,8 +60,17 @@ jobs:
           oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
           tags: tag:github
 
-      - name: Write networking/.env from staging secret
-        run: printf '%s' "${{ secrets.STAGING_NETWORKING_ENV }}" > networking/.env
+      - name: Write networking/.env from secret
+        run: |
+          if [ "${{ inputs.environment }}" = "staging" ]; then
+            printf '%s' "${{ secrets.STAGING_NETWORKING_ENV }}" > networking/.env
+          else
+            printf '%s' "${{ secrets.NETWORKING_ENV }}" > networking/.env
+          fi
+
+      - name: Write tools/.env from secret
+        if: inputs.environment == 'prod'
+        run: printf 'TMDB_API_KEY=%s\n' "${{ secrets.TMDB_API_KEY }}" > tools/.env
 
       - name: Set up SSH key
         run: |
@@ -66,7 +84,11 @@ jobs:
           grep -v '^#' .gitignore | grep -v '^$' > /tmp/exclude_list
           printf '.git/\n*.tar.gz\n*.tar\n' >> /tmp/exclude_list
           tar --exclude-from=/tmp/exclude_list -cf /tmp/homelab-deploy.tar .
-          tar --append -f /tmp/homelab-deploy.tar networking/.env
+          if [ "${{ inputs.environment }}" = "staging" ]; then
+            tar --append -f /tmp/homelab-deploy.tar networking/.env
+          else
+            tar --append -f /tmp/homelab-deploy.tar networking/.env tools/.env
+          fi
           gzip /tmp/homelab-deploy.tar
 
       - name: Upload archive to server
@@ -76,7 +98,56 @@ jobs:
             /tmp/homelab-deploy.tar.gz \
             "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/homelab-deploy.tar.gz"
 
-      - name: Extract and start staging services on server
+      - name: Deploy services on server (prod)
+        if: inputs.environment == 'prod'
+        env:
+          DEPLOY_NETWORKING: ${{ inputs.networking }}
+          DEPLOY_SHARED_ASSETS: ${{ inputs['shared-assets'] }}
+          DEPLOY_HOMEPAGE: ${{ inputs.homepage }}
+          DEPLOY_BLOG: ${{ inputs.blog }}
+          DEPLOY_TRAVEL: ${{ inputs.travel }}
+          DEPLOY_GAMES: ${{ inputs.games }}
+          DEPLOY_TOOLS: ${{ inputs.tools }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o StrictHostKeyChecking=no \
+            "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" \
+            "DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' DEPLOY_SHARED_ASSETS='${DEPLOY_SHARED_ASSETS}' DEPLOY_HOMEPAGE='${DEPLOY_HOMEPAGE}' DEPLOY_BLOG='${DEPLOY_BLOG}' DEPLOY_TRAVEL='${DEPLOY_TRAVEL}' DEPLOY_GAMES='${DEPLOY_GAMES}' DEPLOY_TOOLS='${DEPLOY_TOOLS}' bash -s" << 'REMOTE'
+          set -euo pipefail
+          mkdir -p /opt/homelab
+          cd /opt/homelab
+          echo "Extracting deployment archive..."
+          tar -xzf /tmp/homelab-deploy.tar.gz
+          touch networking/acme.json
+          chmod 600 networking/acme.json
+          docker network create web 2>/dev/null || true
+
+          deploy_if_enabled() {
+            local svc="$1"
+            local flag="$2"
+            if [ "$flag" = "true" ]; then
+              echo "--- Deploying $svc ---"
+              /opt/homelab/scripts/start_service.sh "$svc"
+            else
+              echo "--- Skipping $svc ---"
+            fi
+          }
+
+          # Deploy each service if its flag is true, in dependency order
+          deploy_if_enabled networking      "$DEPLOY_NETWORKING"
+          deploy_if_enabled shared-assets   "$DEPLOY_SHARED_ASSETS"
+          deploy_if_enabled homepage        "$DEPLOY_HOMEPAGE"
+          deploy_if_enabled blog            "$DEPLOY_BLOG"
+          deploy_if_enabled travel          "$DEPLOY_TRAVEL"
+          deploy_if_enabled games           "$DEPLOY_GAMES"
+          deploy_if_enabled tools           "$DEPLOY_TOOLS"
+
+          rm -f /tmp/homelab-deploy.tar.gz
+          echo "Deployment complete."
+          REMOTE
+
+      - name: Deploy services on server (staging)
+        if: inputs.environment == 'staging'
         env:
           STAGING_IMAGE_TAG: ${{ inputs.image_tag }}
           SEED_FROM_PROD: ${{ inputs.seed_from_prod }}

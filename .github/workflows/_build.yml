@@ -1,10 +1,13 @@
-name: Build
+name: Build Images (Reusable)
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Environment to build for (prod or staging)'
+        required: false
+        type: string
+        default: 'prod'
 
 jobs:
   build-base:
@@ -115,10 +118,3 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
-
-  deploy:
-    needs: build
-    permissions:
-      contents: read
-    uses: ./.github/workflows/deploy.yml
-    secrets: inherit
