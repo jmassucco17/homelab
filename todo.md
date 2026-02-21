@@ -9,15 +9,10 @@
 - Setup nice colored logging for Python
 - Add a knowledge base of some kind (i.e. personal Confluence or similar)
 
-## Testing improvements
-
-- Add non-python testing wherever appropriate
-
 ## Non-Python testing (future, requires new dependencies):
 
 - **JS unit tests — theme-toggle.js**: Add Vitest + jsdom tests for `shared-assets/assets/scripts/theme-toggle.js` (cookie reading, `prefers-color-scheme`, toggle click, `data-theme` persistence). The function is already a clean ES module export so no refactor is needed.
 - **JS unit tests — game logic**: Extract pure helpers from `snake.js` and `pong.js` IIFEs into separate `snake-logic.js` / `pong-logic.js` modules, then add Vitest tests for collision detection, speed scaling, and AI paddle clamping.
-- **Accessibility audits**: Run `@axe-core/cli` against each service's HTML in `docker-integration.yml` after containers are already running. Start with WCAG 2.1 level A, expand to level AA once baseline is green.
 
 ## Deployment improvements:
 
@@ -26,7 +21,6 @@
 - Add secrets management (including new `TMDB_API_KEY`) for the server
 - Finish package based deployment, remove plan doc, and test for both local and prod deployments
 - Setup a proper staging environment that both me and AI agents can interact with, for testing major changes in a full environment (need to figure out domain structure)
-- Teach Claude Code how to manage the deployment: how to ssh into the server, how to check the webpage from the public internet, how to run a local deployment, etc.
 - Make Tailscale remind me when Hetzner VPS is going to expire
 - Database migration management (both at the schema layer and at the storage layer)
     - enable backup / restore capability
