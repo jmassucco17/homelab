@@ -96,3 +96,16 @@ updates:
     ignore:
       - dependency-name: 'python'
         versions: ['>=3.13']
+
+  - package-ecosystem: 'docker'
+    directory: '/tools'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    groups:
+      docker-images:
+        patterns: ['*']
+    # Hold at Python 3.12
+    ignore:
+      - dependency-name: 'python'
+        versions: ['>=3.13']

@@ -15,6 +15,7 @@ When creating a new module (i.e. a new page or new sub-site), make a new top-lev
 - Update `docker-integration.yml` to add integration tests for the new service
 - Add an `image: ghcr.io/jmassucco17/homelab/<service>:latest` field to the service's `docker-compose.yml`
 - Add a matrix entry to `.github/workflows/build-and-push.yml` following the standard service order
+- Add a link to the new service from the homepage (`homepage/site/index.html`) in the "Content and Projects" section
 
 ### Standard service order
 
@@ -63,6 +64,35 @@ ruff format .
 npx pyright
 ```
 
+#### Linting (CSS)
+
+```bash
+npm run lint:css
+```
+
+#### Linting (shell scripts)
+
+```bash
+find . -name '*.sh' -not -path './node_modules/*' -print0 | xargs -0 shellcheck
+```
+
+#### Formatting (HTML templates)
+
+```bash
+# Check formatting
+npx prettier --check '**/*.html'
+
+# Auto-fix
+npx prettier --write '**/*.html'
+```
+
+#### Linting (GitHub Actions workflows)
+
+```bash
+# Requires actionlint to be installed: https://github.com/rhysd/actionlint
+actionlint
+```
+
 #### Unit tests
 
 ```bash
@@ -76,16 +106,25 @@ cd travel && python -m unittest discover -s app -p "*_test.py"
 #### Complete pre-commit workflow
 
 ```bash
-# 1. Lint and format
+# 1. Lint and format Python
 ruff check --fix . && ruff format .
 
 # 2. Run type checker
 npx pyright
 
-# 3. Run tests
+# 3. Lint CSS
+npm run lint:css
+
+# 4. Check HTML formatting (auto-fix with --write if needed)
+npx prettier --check '**/*.html'
+
+# 5. Lint shell scripts
+find . -name '*.sh' -not -path './node_modules/*' -print0 | xargs -0 shellcheck
+
+# 6. Run tests
 pytest -v
 
-# 4. If all pass, commit
+# 7. If all pass, commit
 git add . && git commit -m "Your commit message"
 ```
 
