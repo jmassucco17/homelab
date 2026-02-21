@@ -443,9 +443,11 @@ def _apply_steal_resource(state: GameState, action: StealResource) -> None:
         raise ValueError('Target player has no resources to steal.')
 
     # Pick a random resource from the target.
+    from games.app.catan.models.board import ResourceType
+
     pool: list[str] = []
-    for res_type in ['wood', 'brick', 'wheat', 'sheep', 'ore']:
-        pool.extend([res_type] * getattr(target.resources, res_type))
+    for res_type in ResourceType:
+        pool.extend([res_type.value] * getattr(target.resources, res_type.value))
 
     chosen = random.choice(pool)
     target.resources = target.resources.subtract({chosen: 1})
@@ -474,6 +476,8 @@ def _apply_discard_resources(state: GameState, action: DiscardResources) -> None
         state.turn_state.pending_action = PendingActionType.MOVE_ROBBER
 
 
+_LONGEST_ROAD_THRESHOLD = 4  # player must exceed this length to claim (i.e. ≥ 5 roads)
+
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
@@ -481,7 +485,7 @@ def _apply_discard_resources(state: GameState, action: DiscardResources) -> None
 
 def _update_longest_road(state: GameState) -> None:
     """Recompute and update the longest road owner in *state*."""
-    best_length = 4  # must exceed 4 to claim
+    best_length = _LONGEST_ROAD_THRESHOLD  # must exceed threshold to claim
     best_owner: int | None = None
     for player in state.players:
         if player.longest_road_length > best_length:
@@ -490,7 +494,7 @@ def _update_longest_road(state: GameState) -> None:
         elif (
             player.longest_road_length == best_length
             and best_owner is not None
-            and player.longest_road_length > 4
+            and player.longest_road_length > _LONGEST_ROAD_THRESHOLD
         ):
             # Tie: current holder keeps it (handled below).
             pass

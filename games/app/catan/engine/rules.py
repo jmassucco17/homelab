@@ -97,6 +97,9 @@ def calculate_longest_road(board: Board, player_index: int) -> int:
     return max_length
 
 
+_LARGEST_ARMY_THRESHOLD = 2  # player must exceed this to claim (i.e. ≥ 3 knights)
+
+
 def get_largest_army_holder(players: list[Player]) -> int | None:
     """Return the player_index of the player with the most knights (>= 3).
 
@@ -104,7 +107,7 @@ def get_largest_army_holder(players: list[Player]) -> int | None:
     strict tie the function returns None, deferring tie-breaking to the caller
     (the existing holder retains the card).
     """
-    best_count = 2  # threshold: player must have > 2 knights (i.e. at least 3)
+    best_count = _LARGEST_ARMY_THRESHOLD  # must exceed threshold
     holder: int | None = None
     for player in players:
         if player.knights_played > best_count:
