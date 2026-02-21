@@ -8,6 +8,7 @@ on:
 
 jobs:
   build:
+    name: build (${{ matrix.service }})
     runs-on: ubuntu-latest
     permissions:
       contents: read
