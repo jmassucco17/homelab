@@ -13,6 +13,12 @@ This document describes all GitHub secrets required for the CI/CD workflows in t
 
 ## Required Secrets
 
+### Container Registry
+
+| Secret       | Description                                                                                                                                                                    |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GHCR_TOKEN` | GitHub Personal Access Token (classic) with `read:packages` scope. Used by the deploy workflow to authenticate `docker pull` on the server against the GitHub Container Registry (GHCR). |
+
 ### Deployment Infrastructure
 
 | Secret            | Description                                                                                                                                     |
