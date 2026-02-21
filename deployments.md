@@ -201,15 +201,18 @@ Every service directory follows the same layout:
 
 Before staging is usable for the first time, complete these manual steps:
 
-1. Add `*.staging` wildcard CNAME in Cloudflare DNS (proxied, points to `jamesmassucco.com`).
+1. Add a `*.staging` wildcard CNAME in Cloudflare DNS (proxied, pointing to
+   `jamesmassucco.com`). This is a one-time static record — it doesn't need DDNS because it
+   chains off the `jamesmassucco.com` A record which cloudflare-ddns already keeps current.
+   The A record for `staging.jamesmassucco.com` is managed automatically by cloudflare-ddns
+   (added to its DOMAINS list in `networking/docker-compose.yml`).
 2. Add `https://oauth.staging.jamesmassucco.com/oauth2/callback` to the Google OAuth
    app's Authorized Redirect URIs.
-3. Generate a staging cookie secret and set the `STAGING_NETWORKING_ENV` GitHub secret:
+3. Generate a staging cookie secret and set the `STAGING_NETWORKING_ENV` GitHub secret
+   (see `secrets.md` for the full list of fields it must contain):
    ```bash
    python3 -c "import secrets, base64; print(base64.b64encode(secrets.token_bytes(32)).decode())"
    ```
-   The secret should contain the same fields as `NETWORKING_ENV` plus
-   `GOOGLE_OAUTH2_STAGING_COOKIE_SECRET`.
 4. Deploy staging networking once to start `oauth2-proxy-staging`:
    ```
    deploy-staging.yml → networking=true, all others=false
