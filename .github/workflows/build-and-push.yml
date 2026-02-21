@@ -1,4 +1,4 @@
-name: Build and push Docker images
+name: Build
 
 on:
   push:
@@ -73,3 +73,10 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+  deploy:
+    needs: build-and-push
+    permissions:
+      contents: read
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit
