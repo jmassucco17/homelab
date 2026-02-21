@@ -1,6 +1,7 @@
 """Unit tests for location tracking routes."""
 
 import datetime
+import json
 import unittest
 from unittest.mock import patch
 
@@ -150,12 +151,55 @@ class TestLocationRoutes(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 400)
 
-    def test_refresh_without_google_configured(self) -> None:
-        """Test that refresh returns 503 when Google is not configured."""
-        with (
-            patch.object(services, 'GOOGLE_CLIENT_ID', ''),
-            patch.object(services, 'GOOGLE_CLIENT_SECRET', ''),
-            patch.object(services, 'GOOGLE_LOCATION_REFRESH_TOKEN', ''),
+    def test_import_takeout_file(self) -> None:
+        """Test importing a Takeout Semantic Location History JSON file."""
+        takeout_data = {
+            'timelineObjects': [
+                {
+                    'placeVisit': {
+                        'duration': {'startTimestamp': '2025-04-10T08:00:00Z'},
+                        'centerLatE7': 356762000,
+                        'centerLngE7': 1396503000,
+                    }
+                }
+            ]
+        }
+        with patch.object(
+            services,
+            'reverse_geocode',
+            return_value={
+                'city': 'Tokyo',
+                'country': 'Japan',
+                'country_code': 'JP',
+                'state': None,
+                'raw': None,
+            },
         ):
-            response = self.client.post('/location/api/refresh')
-        self.assertEqual(response.status_code, 503)
+            response = self.client.post(
+                '/location/api/import',
+                files={
+                    'file': (
+                        '2025_APRIL.json',
+                        json.dumps(takeout_data),
+                        'application/json',
+                    )
+                },
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['imported'], 1)
+
+    def test_import_non_json_file_rejected(self) -> None:
+        """Test that a non-.json file is rejected with 400."""
+        response = self.client.post(
+            '/location/api/import',
+            files={'file': ('data.txt', b'hello', 'text/plain')},
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_import_invalid_json_rejected(self) -> None:
+        """Test that a malformed JSON file is rejected with 400."""
+        response = self.client.post(
+            '/location/api/import',
+            files={'file': ('data.json', b'not json{{{', 'application/json')},
+        )
+        self.assertEqual(response.status_code, 400)

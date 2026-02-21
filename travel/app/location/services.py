@@ -1,68 +1,89 @@
 """Services for daily location tracking."""
 
 import json
-import os
 from datetime import UTC, date, datetime
+from typing import Any, TypedDict
 
-import httpx
 from geopy import geocoders  # pyright: ignore[reportMissingTypeStubs]
 from sqlmodel import Session, select
 
 from .models import DailyLocation
 
-GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
-GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET', '')
-GOOGLE_LOCATION_REFRESH_TOKEN = os.getenv('GOOGLE_LOCATION_REFRESH_TOKEN', '')
+# Google Takeout exports location history as Semantic Location History JSON files.
+# Download your data at https://takeout.google.com, choose "Location History (Timeline)",  # noqa: E501
+# and look for files at:
+#   Takeout/Location History (Timeline)/Semantic Location History/YYYY/YYYY_MONTH.json
 
 geolocator = geocoders.Nominatim(user_agent='TravelLocationApp/1.0')
 
 
-def is_google_configured() -> bool:
-    """Return True if Google OAuth credentials are configured."""
-    return bool(
-        GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET and GOOGLE_LOCATION_REFRESH_TOKEN
-    )
+class _TakeoutLocation(TypedDict, total=False):
+    latitudeE7: int
+    longitudeE7: int
 
 
-async def get_google_access_token() -> str | None:
-    """Exchange refresh token for an access token."""
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            'https://oauth2.googleapis.com/token',
-            data={
-                'client_id': GOOGLE_CLIENT_ID,
-                'client_secret': GOOGLE_CLIENT_SECRET,
-                'refresh_token': GOOGLE_LOCATION_REFRESH_TOKEN,
-                'grant_type': 'refresh_token',
-            },
-        )
-        response.raise_for_status()
-        return str(response.json().get('access_token', ''))
+class _TakeoutDuration(TypedDict, total=False):
+    startTimestamp: str
 
 
-async def fetch_coords_from_google(target_date: date) -> tuple[float, float] | None:
-    """Fetch lat/lon for target_date from Google Maps Timeline API."""
-    access_token = await get_google_access_token()
-    if not access_token:
-        return None
-    start = f'{target_date.isoformat()}T00:00:00Z'
-    end = f'{target_date.isoformat()}T23:59:59Z'
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            'https://timeline.googleapis.com/v1/users/me/timelineSegments',
-            params={'startTime': start, 'endTime': end},
-            headers={'Authorization': f'Bearer {access_token}'},
-        )
-        response.raise_for_status()
-        data = response.json()
-    for segment in data.get('timelineSegments', []):
-        if 'placeVisit' in segment:
-            loc = segment['placeVisit'].get('location', {})
-            lat_e7 = loc.get('latitudeE7')
-            lon_e7 = loc.get('longitudeE7')
-            if lat_e7 is not None and lon_e7 is not None:
-                return lat_e7 / 1e7, lon_e7 / 1e7
-    return None
+class _TakeoutPlaceVisit(TypedDict, total=False):
+    location: _TakeoutLocation
+    duration: _TakeoutDuration
+    centerLatE7: int
+    centerLngE7: int
+
+
+class _TakeoutObject(TypedDict, total=False):
+    placeVisit: _TakeoutPlaceVisit
+
+
+class TakeoutData(TypedDict, total=False):
+    timelineObjects: list[_TakeoutObject]
+
+
+def parse_takeout_data(data: TakeoutData) -> list[tuple[date, float, float]]:
+    """Parse a Google Takeout Semantic Location History JSON object.
+
+    Returns a list of (date, latitude, longitude) tuples, one per place visit.
+    Coordinates are extracted from the placeVisit's centerLatE7/centerLngE7
+    fields (integers representing degrees × 10^7).
+
+    Args:
+        data: Parsed JSON from a Takeout Semantic Location History file.
+
+    Returns:
+        List of (date, lat, lon) tuples ordered by date ascending.
+    """
+    results: list[tuple[date, float, float]] = []
+    for obj in data.get('timelineObjects', []):
+        place_visit = obj.get('placeVisit')
+        if place_visit is None:
+            continue
+
+        duration = place_visit.get('duration') or {}
+        start_ts = duration.get('startTimestamp')
+        if start_ts is None:
+            continue
+
+        try:
+            visit_date = datetime.fromisoformat(start_ts.replace('Z', '+00:00')).date()
+        except ValueError:
+            continue
+
+        # Prefer centerLatE7/centerLngE7; fall back to location.latitudeE7
+        lat_e7: int | None = place_visit.get('centerLatE7')
+        lon_e7: int | None = place_visit.get('centerLngE7')
+        if lat_e7 is None or lon_e7 is None:
+            location = place_visit.get('location') or {}
+            lat_e7 = location.get('latitudeE7')
+            lon_e7 = location.get('longitudeE7')
+
+        if lat_e7 is None or lon_e7 is None:
+            continue
+        results.append((visit_date, lat_e7 / 1e7, lon_e7 / 1e7))
+
+    results.sort(key=lambda t: t[0])
+    return results
 
 
 def reverse_geocode(lat: float, lon: float) -> dict[str, str | None]:
@@ -148,30 +169,41 @@ def upsert_location(
     return loc
 
 
-async def refresh_today(session: Session) -> DailyLocation | None:
-    """Fetch today's location from Google and cache it.
+def import_takeout_file(session: Session, data: Any) -> list[DailyLocation]:
+    """Parse a Google Takeout Semantic Location History file and upsert each day.
 
-    Returns None if not configured.
+    For each unique calendar date, the first place visit encountered is used.
+    Coordinates are reverse-geocoded to city/state/country via Nominatim.
+
+    Args:
+        session: Database session.
+        data: Parsed JSON from a Takeout Semantic Location History file.
+
+    Returns:
+        List of DailyLocation records that were inserted or updated.
     """
-    if not is_google_configured():
-        return None
-    today = datetime.now(UTC).date()
-    coords = await fetch_coords_from_google(today)
-    if not coords:
-        return None
-    lat, lon = coords
-    geo = reverse_geocode(lat, lon)
-    return upsert_location(
-        session,
-        today,
-        lat,
-        lon,
-        city=geo.get('city'),
-        state=geo.get('state'),
-        country=geo.get('country'),
-        country_code=geo.get('country_code'),
-        raw_geocode=geo.get('raw'),
-    )
+    visits = parse_takeout_data(data)
+    # Keep only the first visit per date (visits are sorted ascending).
+    seen: set[date] = set()
+    saved: list[DailyLocation] = []
+    for visit_date, lat, lon in visits:
+        if visit_date in seen:
+            continue
+        seen.add(visit_date)
+        geo = reverse_geocode(lat, lon)
+        loc = upsert_location(
+            session,
+            visit_date,
+            lat,
+            lon,
+            city=geo.get('city'),
+            state=geo.get('state'),
+            country=geo.get('country'),
+            country_code=geo.get('country_code'),
+            raw_geocode=geo.get('raw'),
+        )
+        saved.append(loc)
+    return saved
 
 
 def location_display_label(loc: DailyLocation, mode: str) -> str:

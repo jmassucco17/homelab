@@ -1,10 +1,11 @@
 """Routes for daily location tracking."""
 
+import json
 import pathlib
 from datetime import UTC, datetime
 from datetime import date as date_type
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -44,30 +45,31 @@ async def location_index(
             'groups': groups,
             'all_locations': all_locations,
             'mode': mode,
-            'configured': services.is_google_configured(),
             'today': today,
         },
     )
 
 
-@router.post('/api/refresh')
-async def refresh_location(
+@router.post('/api/import')
+async def import_takeout(
+    file: UploadFile = File(...),
     session: Session = Depends(get_session),
 ) -> dict[str, object]:
-    """Trigger a fresh fetch of today's location from Google Maps."""
-    loc = await services.refresh_today(session)
-    if loc is None:
-        raise HTTPException(
-            status_code=503, detail='Google Maps not configured or no data'
-        )
-    return {
-        'date': loc.date.isoformat(),
-        'city': loc.city,
-        'state': loc.state,
-        'country': loc.country,
-        'latitude': loc.latitude,
-        'longitude': loc.longitude,
-    }
+    """Import a Google Takeout Semantic Location History JSON file.
+
+    Download your location data from https://takeout.google.com, select
+    "Location History (Timeline)", and upload a file from:
+      Takeout/Location History (Timeline)/Semantic Location History/YYYY/YYYY_MONTH.json
+    """
+    if not file.filename or not file.filename.endswith('.json'):
+        raise HTTPException(status_code=400, detail='File must be a .json file')
+    raw = await file.read()
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail='Invalid JSON file') from None
+    saved = services.import_takeout_file(session, data)
+    return {'imported': len(saved)}
 
 
 @router.post('/api/locations')

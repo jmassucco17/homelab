@@ -2,6 +2,7 @@
 
 import datetime
 import unittest
+from typing import cast
 from unittest.mock import MagicMock, patch
 
 import sqlalchemy
@@ -9,6 +10,7 @@ import sqlalchemy.pool
 import sqlmodel
 
 from travel.app.location import models, services
+from travel.app.location.services import TakeoutData
 
 
 def make_in_memory_engine() -> sqlalchemy.Engine:
@@ -22,26 +24,94 @@ def make_in_memory_engine() -> sqlalchemy.Engine:
     return engine
 
 
-class TestIsGoogleConfigured(unittest.TestCase):
-    """Tests for is_google_configured."""
+class TestParseTakeoutData(unittest.TestCase):
+    """Tests for parse_takeout_data."""
 
-    def test_not_configured_when_missing(self) -> None:
-        """Returns False when env vars are not set."""
-        with (
-            patch.object(services, 'GOOGLE_CLIENT_ID', ''),
-            patch.object(services, 'GOOGLE_CLIENT_SECRET', ''),
-            patch.object(services, 'GOOGLE_LOCATION_REFRESH_TOKEN', ''),
-        ):
-            self.assertFalse(services.is_google_configured())
+    def _make_visit(
+        self, timestamp: str, lat_e7: int, lon_e7: int, center: bool = True
+    ) -> dict[str, object]:
+        place_visit: dict[str, object] = {
+            'duration': {'startTimestamp': timestamp},
+            'location': {'latitudeE7': lat_e7, 'longitudeE7': lon_e7},
+        }
+        if center:
+            place_visit['centerLatE7'] = lat_e7
+            place_visit['centerLngE7'] = lon_e7
+        return {'placeVisit': place_visit}
 
-    def test_configured_when_all_set(self) -> None:
-        """Returns True when all env vars are set."""
-        with (
-            patch.object(services, 'GOOGLE_CLIENT_ID', 'id'),
-            patch.object(services, 'GOOGLE_CLIENT_SECRET', 'secret'),
-            patch.object(services, 'GOOGLE_LOCATION_REFRESH_TOKEN', 'token'),
-        ):
-            self.assertTrue(services.is_google_configured())
+    def test_empty_data(self) -> None:
+        """Returns empty list for empty timelineObjects."""
+        self.assertEqual(services.parse_takeout_data(cast(TakeoutData, {})), [])
+        empty: TakeoutData = {'timelineObjects': []}
+        self.assertEqual(services.parse_takeout_data(empty), [])
+
+    def test_single_place_visit(self) -> None:
+        """Parses a single placeVisit correctly."""
+        data = {
+            'timelineObjects': [
+                self._make_visit('2025-06-01T10:00:00Z', 488566000, 23522000)
+            ]
+        }
+        results = services.parse_takeout_data(cast(TakeoutData, data))
+        self.assertEqual(len(results), 1)
+        visit_date, lat, lon = results[0]
+        self.assertEqual(visit_date, datetime.date(2025, 6, 1))
+        self.assertAlmostEqual(lat, 48.8566, places=3)
+        self.assertAlmostEqual(lon, 2.3522, places=3)
+
+    def test_falls_back_to_location_coords(self) -> None:
+        """Falls back to location.latitudeE7 when centerLatE7 is absent."""
+        data = {
+            'timelineObjects': [
+                self._make_visit(
+                    '2025-06-01T00:00:00Z', 488566000, 23522000, center=False
+                )
+            ]
+        }
+        results = services.parse_takeout_data(cast(TakeoutData, data))
+        self.assertEqual(len(results), 1)
+
+    def test_skips_activity_segments(self) -> None:
+        """Ignores activitySegment entries."""
+        data = {
+            'timelineObjects': [
+                {
+                    'activitySegment': {
+                        'duration': {'startTimestamp': '2025-06-01T00:00:00Z'}
+                    }
+                }
+            ]
+        }
+        self.assertEqual(services.parse_takeout_data(cast(TakeoutData, data)), [])
+
+    def test_multiple_visits_sorted(self) -> None:
+        """Returns visits sorted by date ascending."""
+        data = {
+            'timelineObjects': [
+                self._make_visit('2025-06-03T00:00:00Z', 100000000, 200000000),
+                self._make_visit('2025-06-01T00:00:00Z', 300000000, 400000000),
+                self._make_visit('2025-06-02T00:00:00Z', 500000000, 600000000),
+            ]
+        }
+        results = services.parse_takeout_data(cast(TakeoutData, data))
+        self.assertEqual(len(results), 3)
+        dates = [r[0] for r in results]
+        self.assertEqual(dates, sorted(dates))
+
+    def test_invalid_timestamp_skipped(self) -> None:
+        """Entries with unparseable timestamps are silently skipped."""
+        data = {
+            'timelineObjects': [
+                {
+                    'placeVisit': {
+                        'duration': {'startTimestamp': 'not-a-date'},
+                        'centerLatE7': 100000000,
+                        'centerLngE7': 200000000,
+                    }
+                }
+            ]
+        }
+        self.assertEqual(services.parse_takeout_data(cast(TakeoutData, data)), [])
 
 
 class TestReverseGeocode(unittest.TestCase):

@@ -34,9 +34,7 @@
         </div>
         <div class="hero-date">as of {{ current.date.isoformat() }}</div>
         {% else %}
-        <div class="hero-unknown">Location not yet updated today.</div>
-        {% endif %} {% if configured %}
-        <button class="btn-refresh" id="refresh-btn">🔄 Refresh Today</button>
+        <div class="hero-unknown">No location data yet — import a Takeout file below.</div>
         {% endif %}
       </div>
 
@@ -98,6 +96,22 @@
       {% else %}
       <div class="location-empty">No location history yet.</div>
       {% endif %}
+
+      <!-- Import section -->
+      <div class="import-section">
+        <h3>Import from Google Takeout</h3>
+        <p>
+          Download your location history from
+          <a href="https://takeout.google.com" target="_blank" rel="noopener">takeout.google.com</a>
+          (select "Location History (Timeline)"), then upload a monthly JSON file from
+          <code>Takeout/Location History (Timeline)/Semantic Location History/YYYY/YYYY_MONTH.json</code>.
+        </p>
+        <form id="import-form" class="import-form">
+          <input type="file" id="import-file" accept=".json" required />
+          <button type="submit" class="btn-import">📥 Import</button>
+        </form>
+        <div id="import-status" class="import-status" hidden></div>
+      </div>
     </main>
 
     <footer class="site-footer">
@@ -157,26 +171,48 @@
         }
       })();
     </script>
-    {% endif %} {% if configured %}
+    {% endif %}
     <script>
-      document.getElementById("refresh-btn")?.addEventListener("click", async () => {
-        const btn = document.getElementById("refresh-btn");
-        if (btn) btn.disabled = true;
+      document.getElementById("import-form")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const fileInput = document.getElementById("import-file");
+        const statusEl = document.getElementById("import-status");
+        if (!fileInput.files || fileInput.files.length === 0) return;
+
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+
+        if (statusEl) {
+          statusEl.hidden = false;
+          statusEl.textContent = "Importing…";
+          statusEl.className = "import-status";
+        }
+
         try {
-          const res = await fetch("/location/api/refresh", { method: "POST" });
+          const res = await fetch("/location/api/import", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await res.json();
           if (res.ok) {
-            window.location.reload();
+            if (statusEl) {
+              statusEl.textContent = `✅ Imported ${data.imported} location(s).`;
+              statusEl.className = "import-status import-ok";
+            }
+            setTimeout(() => window.location.reload(), 1500);
           } else {
-            const data = await res.json();
-            alert("Refresh failed: " + (data.detail || res.status));
-            if (btn) btn.disabled = false;
+            if (statusEl) {
+              statusEl.textContent = "❌ Import failed: " + (data.detail || res.status);
+              statusEl.className = "import-status import-error";
+            }
           }
-        } catch (e) {
-          alert("Refresh failed: " + e);
-          if (btn) btn.disabled = false;
+        } catch (err) {
+          if (statusEl) {
+            statusEl.textContent = "❌ Import failed: " + err;
+            statusEl.className = "import-status import-error";
+          }
         }
       });
     </script>
-    {% endif %}
   </body>
 </html>
