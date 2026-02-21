@@ -43,6 +43,8 @@ networking > shared-assets > homepage > and then the rest in alphabetical order
 
 ## Contributing
 
+Follow all instructions in this section whenever you are contributing code to the repo
+
 ### Style Guides
 
 - See `docs/style-guides/<language>` for language-specific style and usage
@@ -51,5 +53,7 @@ networking > shared-assets > homepage > and then the rest in alphabetical order
 
 ### Committing / Branches
 
-- Commit regularly during work, including during interactive sessions. Commit messages must be a single line - no multi-line messages, no body, no footers
-- Never commit to the `main` branch. If work is requested while on the `main` branch, checkout a new branch with a concise but informative name. When work is complete, or is ready for feedback, create a PR through GitHub
+- Never do work directly on the `main` branch
+- If you are starting work and find yourself on the `main` branch, run `git switch -c <name-of-new-branch>` (come up with a reasonable and concise branch name, like `claude/restructure-docs`)
+- When you create a new branch, always make sure that you complete some work, commit it (`git commit -m "<description of work>"`), and then run `gh pr create` to make a GitHub PR and push the code to GitHub
+- When you are done with a body of work, always commit and then `git push -u origin HEAD`
