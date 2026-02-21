@@ -12,14 +12,14 @@ permissions:
 
 jobs:
   lint:
-    uses: ./.github/workflows/linting.yml
+    uses: ./.github/workflows/_linting.yml
 
   test:
-    uses: ./.github/workflows/unit-testing.yml
+    uses: ./.github/workflows/_unit-testing.yml
 
   integration:
     needs: [lint, test]
-    uses: ./.github/workflows/docker-integration.yml
+    uses: ./.github/workflows/_docker-integration.yml
 
   ci:
     runs-on: ubuntu-latest

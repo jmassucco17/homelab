@@ -19,36 +19,16 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Setup Docker and login
+        uses: ./.github/actions/docker-setup
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+      - name: Build and push python-base
+        uses: ./.github/actions/docker-build-push
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/jmassucco17/homelab/python-base
-          tags: |
-            type=sha,format=short
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
+          image: ghcr.io/jmassucco17/homelab/python-base
           context: .
-          file: python-base/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=python-base
-          cache-to: type=gha,mode=max,scope=python-base
+          dockerfile: python-base/Dockerfile
+          cache-scope: python-base
 
   build:
     name: build ${{ matrix.service }}
@@ -88,33 +68,13 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Setup Docker and login
+        uses: ./.github/actions/docker-setup
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+      - name: Build and push ${{ matrix.service }}
+        uses: ./.github/actions/docker-build-push
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ matrix.image }}
-          tags: |
-            type=sha,format=short
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
+          image: ${{ matrix.image }}
           context: ${{ matrix.context }}
-          file: ${{ matrix.file }}
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=${{ matrix.service }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+          dockerfile: ${{ matrix.file }}
+          cache-scope: ${{ matrix.service }}
