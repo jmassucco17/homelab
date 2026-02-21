@@ -1,0 +1,14 @@
+# Staging overlay: routes blog.staging.jamesmassucco.com to a staging container.
+# Merged with docker-compose.yml by scripts/start_service.sh --staging.
+# No bind-mounts: staging tests the baked image at the pinned STAGING_IMAGE_TAG.
+services:
+  blog:
+    container_name: staging-blog
+    image: ghcr.io/jmassucco17/homelab/blog:${STAGING_IMAGE_TAG:-latest}
+    labels:
+      - 'traefik.http.routers.blog-staging.rule=Host(`blog.staging.jamesmassucco.com`)'
+      - 'traefik.http.routers.blog-staging.entrypoints=websecure'
+      - 'traefik.http.routers.blog-staging.tls=true'
+      - 'traefik.http.routers.blog-staging.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.blog-staging.middlewares=ratelimit'
+      - 'traefik.http.services.blog-staging.loadbalancer.server.port=8000'

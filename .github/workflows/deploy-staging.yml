@@ -1,0 +1,136 @@
+name: Deploy to staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy (e.g. sha-abc1234, or latest)'
+        default: 'latest'
+        required: false
+      seed_from_prod:
+        description: 'Seed staging travel data from production volume before deploying'
+        type: boolean
+        default: false
+      networking:
+        description: 'Deploy staging networking (OAuth2-proxy)'
+        type: boolean
+        default: false
+      shared-assets:
+        description: 'Deploy shared-assets'
+        type: boolean
+        default: true
+      homepage:
+        description: 'Deploy homepage'
+        type: boolean
+        default: true
+      blog:
+        description: 'Deploy blog'
+        type: boolean
+        default: true
+      travel:
+        description: 'Deploy travel'
+        type: boolean
+        default: true
+      games:
+        description: 'Deploy games'
+        type: boolean
+        default: true
+
+jobs:
+  deploy-staging:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          tags: tag:github
+
+      - name: Write networking/.env from staging secret
+        run: printf '%s' "${{ secrets.STAGING_NETWORKING_ENV }}" > networking/.env
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.SERVER_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Create deployment archive
+        run: |
+          grep -v '^#' .gitignore | grep -v '^$' > /tmp/exclude_list
+          printf '.git/\n*.tar.gz\n*.tar\n' >> /tmp/exclude_list
+          tar --exclude-from=/tmp/exclude_list -cf /tmp/homelab-deploy.tar .
+          tar --append -f /tmp/homelab-deploy.tar networking/.env
+          gzip /tmp/homelab-deploy.tar
+
+      - name: Upload archive to server
+        run: |
+          scp -i ~/.ssh/deploy_key \
+            -o StrictHostKeyChecking=no \
+            /tmp/homelab-deploy.tar.gz \
+            "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/homelab-deploy.tar.gz"
+
+      - name: Extract and start staging services on server
+        env:
+          STAGING_IMAGE_TAG: ${{ inputs.image_tag }}
+          SEED_FROM_PROD: ${{ inputs.seed_from_prod }}
+          DEPLOY_NETWORKING: ${{ inputs.networking }}
+          DEPLOY_SHARED_ASSETS: ${{ inputs['shared-assets'] }}
+          DEPLOY_HOMEPAGE: ${{ inputs.homepage }}
+          DEPLOY_BLOG: ${{ inputs.blog }}
+          DEPLOY_TRAVEL: ${{ inputs.travel }}
+          DEPLOY_GAMES: ${{ inputs.games }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o StrictHostKeyChecking=no \
+            "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" \
+            "STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' SEED_FROM_PROD='${SEED_FROM_PROD}' DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' DEPLOY_SHARED_ASSETS='${DEPLOY_SHARED_ASSETS}' DEPLOY_HOMEPAGE='${DEPLOY_HOMEPAGE}' DEPLOY_BLOG='${DEPLOY_BLOG}' DEPLOY_TRAVEL='${DEPLOY_TRAVEL}' DEPLOY_GAMES='${DEPLOY_GAMES}' bash -s" << 'REMOTE'
+          set -euo pipefail
+          mkdir -p /opt/homelab
+          cd /opt/homelab
+          echo "Extracting deployment archive..."
+          tar -xzf /tmp/homelab-deploy.tar.gz
+          touch networking/acme.json
+          chmod 600 networking/acme.json
+          docker network create web 2>/dev/null || true
+
+          # Optionally seed staging travel data from production before deploying
+          if [ "${SEED_FROM_PROD}" = "true" ]; then
+            echo "--- Seeding staging travel data from production ---"
+            docker run --rm \
+              -v travel-site_data-volume:/src:ro \
+              -v staging-travel-data:/dst \
+              alpine \
+              sh -c "cp -a /src/. /dst/ && echo 'Seed complete.'"
+          fi
+
+          # Deploy each staging service if its flag is true
+          deploy_if_enabled() {
+            local svc="$1"
+            local flag="$2"
+            if [ "$flag" = "true" ]; then
+              echo "--- Starting staging $svc ---"
+              STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" \
+                /opt/homelab/scripts/start_service.sh "$svc" --staging
+            else
+              echo "--- Skipping staging $svc ---"
+            fi
+          }
+
+          # Services deployed in dependency order
+          deploy_if_enabled networking    "${DEPLOY_NETWORKING}"
+          deploy_if_enabled shared-assets "${DEPLOY_SHARED_ASSETS}"
+          deploy_if_enabled homepage      "${DEPLOY_HOMEPAGE}"
+          deploy_if_enabled blog          "${DEPLOY_BLOG}"
+          deploy_if_enabled travel        "${DEPLOY_TRAVEL}"
+          deploy_if_enabled games         "${DEPLOY_GAMES}"
+
+          rm -f /tmp/homelab-deploy.tar.gz
+          echo "Staging deployment complete."
+          REMOTE
