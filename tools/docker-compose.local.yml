@@ -1,0 +1,11 @@
+# Local development override for tools service.
+# Merges with docker-compose.yml to add HTTP routing and direct port access.
+# Used by scripts/start_local.sh via: docker compose -f docker-compose.yml -f docker-compose.local.yml
+services:
+  tools:
+    ports:
+      - '8005:8000'
+    labels:
+      - 'traefik.http.routers.tools-local.rule=Host(`tools.jamesmassucco.com`)'
+      - 'traefik.http.routers.tools-local.entrypoints=web'
+      - 'traefik.http.services.tools.loadbalancer.server.port=8000'

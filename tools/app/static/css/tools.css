@@ -1,0 +1,21 @@
+/* Tools service — shared styles */
+
+.tools-nav {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.tools-nav a {
+  text-decoration: none;
+  font-weight: 500;
+  color: var(--link-color, #4a90d9);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.tools-nav a:hover {
+  background: var(--hover-bg, rgb(74 144 217 / 10%));
+}

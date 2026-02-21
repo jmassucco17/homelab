@@ -15,6 +15,11 @@ repos:
         entry: npx prettier --write
         language: system
         files: \.(html|htm)$
+      - id: stylelint
+        name: stylelint
+        entry: npx stylelint --fix
+        language: system
+        files: \.css$
 
   # NOTE: ruff version must stay in sync with requirements.txt
   - repo: https://github.com/charliermarsh/ruff-pre-commit

@@ -1,11 +1,10 @@
 services:
   games:
     container_name: games
+    image: ghcr.io/jmassucco17/homelab/games:latest
     build:
       context: ..
       dockerfile: games/Dockerfile
-    volumes:
-      - ./app:/app/app
     labels:
       # Use traefik to provide HTTP endpoint
       - 'traefik.enable=true'
@@ -13,6 +12,7 @@ services:
       - 'traefik.http.routers.games.entrypoints=websecure'
       - 'traefik.http.routers.games.tls=true'
       - 'traefik.http.routers.games.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.games.middlewares=ratelimit'
       - 'traefik.http.services.games.loadbalancer.server.port=8000'
     healthcheck:
       test:
