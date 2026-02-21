@@ -48,7 +48,6 @@ services:
 
 volumes:
   data-volume:
-    name: travel-site_data-volume  # Preserve existing photos database
 
 networks:
   web:

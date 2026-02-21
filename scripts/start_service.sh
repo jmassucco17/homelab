@@ -29,6 +29,11 @@ if [[ "$SERVICE" == "travel" ]]; then
       sudo docker rm -f "${old_container}" 2>/dev/null || true
     fi
   done
+  # One-time migration: remove old volume from previous project name (safe to remove after all envs migrated)
+  if sudo docker volume ls --format '{{.Name}}' | grep -q "^travel-site_data-volume$"; then
+    echo "Removing old travel-site_data-volume..."
+    sudo docker volume rm travel-site_data-volume 2>/dev/null || true
+  fi
 fi
 
 echo "Shutting down containers..."
