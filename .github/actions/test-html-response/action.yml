@@ -1,0 +1,27 @@
+name: Test HTML response
+description: Tests that a service endpoint returns HTML content
+
+inputs:
+  service:
+    description: Service container name (e.g. homepage, blog, travel)
+    required: true
+  endpoint:
+    description: Endpoint to test (default is root /)
+    required: false
+    default: '/'
+  port:
+    description: Port to connect to (default 8000 for FastAPI, 80 for nginx)
+    required: false
+    default: '8000'
+
+runs:
+  using: composite
+  steps:
+    - name: Test endpoint returns HTML
+      shell: bash
+      run: |
+        docker exec ${{ inputs.service }} python3 -c '
+        import urllib.request
+        resp = urllib.request.urlopen("http://127.0.0.1:${{ inputs.port }}${{ inputs.endpoint }}")
+        assert b"<html" in resp.read().lower()
+        '

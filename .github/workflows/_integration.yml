@@ -5,6 +5,47 @@ on:
   workflow_call:
 
 jobs:
+  compose-validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Create networking/.env stub
+        run: |
+          cat > networking/.env <<'EOF'
+          CLOUDFLARE_API_EMAIL=test@example.com
+          CLOUDFLARE_API_TOKEN=test-token
+          CLOUDFLARE_TRUSTED_IPS=0.0.0.0/0
+          GOOGLE_OAUTH2_CLIENT_ID=test-client-id
+          GOOGLE_OAUTH2_CLIENT_SECRET=test-client-secret
+          GOOGLE_OAUTH2_COOKIE_SECRET=00000000000000000000000000000000
+          OAUTH2_AUTHORIZED_EMAILS=test@example.com
+          EOF
+
+      - name: Validate all Compose files
+        run: |
+          for dir in networking shared-assets homepage blog travel games tools; do
+            echo "--- Validating $dir ---"
+
+            # Validate base compose file
+            echo "  Base: $dir/docker-compose.yml"
+            docker compose -f "$dir/docker-compose.yml" config --quiet
+
+            # Validate prod overlay if it exists
+            if [ -f "$dir/docker-compose.prod.yml" ]; then
+              echo "  Prod: $dir/docker-compose.yml + $dir/docker-compose.prod.yml"
+              docker compose -f "$dir/docker-compose.yml" -f "$dir/docker-compose.prod.yml" config --quiet
+            fi
+
+            # Validate staging overlay if it exists
+            if [ -f "$dir/docker-compose.staging.yml" ]; then
+              echo "  Staging: $dir/docker-compose.yml + $dir/docker-compose.staging.yml"
+              docker compose -f "$dir/docker-compose.yml" -f "$dir/docker-compose.staging.yml" config --quiet
+            fi
+          done
+
   networking:
     runs-on: ubuntu-latest
     permissions:
@@ -107,9 +148,10 @@ jobs:
           service: homepage
 
       - name: Test index endpoint returns HTML
-        run: |
-          result=$(docker exec homepage wget -qO- http://127.0.0.1/)
-          echo "$result" | grep -qi '<html'
+        uses: ./.github/actions/test-html-response
+        with:
+          service: homepage
+          port: '80'
 
       - name: Stop homepage service
         uses: ./.github/actions/stop-service
@@ -130,48 +172,9 @@ jobs:
           service: blog
 
       - name: Test health endpoint
-        run: |
-          docker exec blog python3 -c '
-          import json, urllib.request
-          resp = urllib.request.urlopen("http://127.0.0.1:8000/health")
-          assert json.loads(resp.read())["status"] == "healthy"
-          '
-
-      - name: Test index endpoint returns HTML
-        run: |
-          docker exec blog python3 -c '
-          import urllib.request
-          resp = urllib.request.urlopen("http://127.0.0.1:8000/")
-          assert b"<html" in resp.read().lower()
-          '
-
-      - name: Test blog post endpoint returns content
-        run: |
-          docker exec blog python3 -c '
-          import urllib.request
-          resp = urllib.request.urlopen("http://127.0.0.1:8000/posts/starting-a-homelab")
-          assert b"Starting a Homelab" in resp.read()
-          '
-
-      - name: Test RSS endpoint returns XML
-        run: |
-          docker exec blog python3 -c '
-          import urllib.request
-          resp = urllib.request.urlopen("http://127.0.0.1:8000/rss.xml")
-          content = resp.read()
-          assert b"<rss" in content and b"<channel>" in content
-          '
-
-      - name: Test invalid post returns 404
-        run: |
-          docker exec blog python3 -c "
-          import urllib.request, urllib.error
-          try:
-              urllib.request.urlopen('http://127.0.0.1:8000/posts/nonexistent-post')
-              raise AssertionError('Expected 404 but got 200')
-          except urllib.error.HTTPError as e:
-              assert e.code == 404, f'Expected 404, got {e.code}'
-          "
+        uses: ./.github/actions/test-health-endpoint
+        with:
+          service: blog
 
       - name: Stop blog service
         uses: ./.github/actions/stop-service
@@ -192,58 +195,9 @@ jobs:
           service: travel
 
       - name: Test health endpoint
-        run: |
-          docker exec travel python3 -c '
-          import json, urllib.request
-          resp = urllib.request.urlopen("http://127.0.0.1:8000/health")
-          assert json.loads(resp.read())["status"] == "healthy"
-          '
-
-      - name: Test landing page returns HTML
-        run: |
-          docker exec travel python3 -c '
-          import urllib.request
-          resp = urllib.request.urlopen("http://127.0.0.1:8000/")
-          assert b"<html" in resp.read().lower()
-          '
-
-      - name: Test photos root endpoint returns HTML
-        run: |
-          docker exec travel python3 -c '
-          import urllib.request
-          resp = urllib.request.urlopen("http://127.0.0.1:8000/photos")
-          assert b"<html" in resp.read().lower()
-          '
-
-      - name: Test photos gallery endpoint returns HTML
-        run: |
-          docker exec travel python3 -c '
-          import urllib.request
-          resp = urllib.request.urlopen("http://127.0.0.1:8000/photos/gallery")
-          assert b"<html" in resp.read().lower()
-          '
-
-      - name: Test maps root endpoint returns HTML
-        run: |
-          docker exec travel python3 -c '
-          import urllib.request
-          resp = urllib.request.urlopen("http://127.0.0.1:8000/maps/")
-          assert b"<html" in resp.read().lower()
-          '
-
-      - name: Test maps API endpoint
-        run: |
-          docker exec travel python3 -c '
-          import json, urllib.request
-          req = urllib.request.Request("http://127.0.0.1:8000/maps/api/maps",
-                                      data=b"{\"name\":\"Test Map\"}",
-                                      headers={"Content-Type":"application/json"},
-                                      method="POST")
-          resp = urllib.request.urlopen(req)
-          data = json.loads(resp.read())
-          assert data["name"] == "Test Map"
-          assert "id" in data
-          '
+        uses: ./.github/actions/test-health-endpoint
+        with:
+          service: travel
 
       - name: Stop travel service
         uses: ./.github/actions/stop-service
@@ -264,36 +218,9 @@ jobs:
           service: games
 
       - name: Test health endpoint
-        run: |
-          docker exec games python3 -c '
-          import json, urllib.request
-          resp = urllib.request.urlopen("http://127.0.0.1:8000/health")
-          assert json.loads(resp.read())["status"] == "healthy"
-          '
-
-      - name: Test index endpoint returns HTML
-        run: |
-          docker exec games python3 -c '
-          import urllib.request
-          resp = urllib.request.urlopen("http://127.0.0.1:8000/")
-          assert b"<html" in resp.read().lower()
-          '
-
-      - name: Test snake endpoint returns HTML
-        run: |
-          docker exec games python3 -c '
-          import urllib.request
-          resp = urllib.request.urlopen("http://127.0.0.1:8000/snake")
-          assert b"<html" in resp.read().lower()
-          '
-
-      - name: Test snake.js is served
-        run: |
-          docker exec games python3 -c '
-          import urllib.request
-          resp = urllib.request.urlopen("http://127.0.0.1:8000/static/snake/snake.js")
-          assert b"requestAnimationFrame" in resp.read()
-          '
+        uses: ./.github/actions/test-health-endpoint
+        with:
+          service: games
 
       - name: Stop games service
         uses: ./.github/actions/stop-service
@@ -314,68 +241,12 @@ jobs:
           service: tools
 
       - name: Test health endpoint
-        run: |
-          docker exec tools python3 -c '
-          import json, urllib.request
-          resp = urllib.request.urlopen("http://127.0.0.1:8000/health")
-          assert json.loads(resp.read())["status"] == "healthy"
-          '
-
-      - name: Test index endpoint returns HTML
-        run: |
-          docker exec tools python3 -c '
-          import urllib.request
-          resp = urllib.request.urlopen("http://127.0.0.1:8000/")
-          assert b"<html" in resp.read().lower()
-          '
-
-      - name: Test movie-picker endpoint returns HTML
-        run: |
-          docker exec tools python3 -c '
-          import urllib.request
-          resp = urllib.request.urlopen("http://127.0.0.1:8000/movie-picker")
-          assert b"<html" in resp.read().lower()
-          '
-
-      - name: Test search returns 503 without API key
-        run: |
-          docker exec tools python3 -c "
-          import urllib.request, urllib.error
-          try:
-              urllib.request.urlopen('http://127.0.0.1:8000/api/movies/search?q=inception')
-              raise AssertionError('Expected 503 but got 200')
-          except urllib.error.HTTPError as e:
-              assert e.code == 503, f'Expected 503, got {e.code}'
-          "
+        uses: ./.github/actions/test-health-endpoint
+        with:
+          service: tools
 
       - name: Stop tools service
         uses: ./.github/actions/stop-service
         if: always()
         with:
           service: tools
-
-  compose-validate:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Create networking/.env stub
-        run: |
-          cat > networking/.env <<'EOF'
-          CLOUDFLARE_API_EMAIL=test@example.com
-          CLOUDFLARE_API_TOKEN=test-token
-          CLOUDFLARE_TRUSTED_IPS=0.0.0.0/0
-          GOOGLE_OAUTH2_CLIENT_ID=test-client-id
-          GOOGLE_OAUTH2_CLIENT_SECRET=test-client-secret
-          GOOGLE_OAUTH2_COOKIE_SECRET=00000000000000000000000000000000
-          OAUTH2_AUTHORIZED_EMAILS=test@example.com
-          EOF
-
-      - name: Validate all Compose files
-        run: |
-          for dir in networking shared-assets homepage blog travel games tools; do
-            echo "--- $dir/docker-compose.yml ---"
-            docker compose -f "$dir/docker-compose.yml" config --quiet
-          done

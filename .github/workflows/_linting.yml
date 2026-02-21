@@ -12,13 +12,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+      - name: Setup Python and dependencies
+        uses: ./.github/actions/setup-python
 
       - name: Check for XXX comments
         run: git ls-files -z | xargs -0 -r python scripts/check_xxx_comments.py
@@ -51,13 +46,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-
-      - name: Install Ruff
-        run: pip install -r requirements.txt
+      - name: Setup Python and dependencies
+        uses: ./.github/actions/setup-python
 
       - name: Run Ruff linter
         run: ruff check
