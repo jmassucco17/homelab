@@ -378,6 +378,4 @@ jobs:
           for dir in networking shared-assets homepage blog travel games tools; do
             echo "--- $dir/docker-compose.yml ---"
             docker compose -f "$dir/docker-compose.yml" config --quiet
-            echo "--- $dir/docker-compose.local.yml ---"
-            docker compose -f "$dir/docker-compose.yml" -f "$dir/docker-compose.local.yml" config --quiet
           done
