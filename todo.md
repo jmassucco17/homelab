@@ -35,6 +35,7 @@
 
 - Update Python to 3.13
 - Don't use `root` for managing the VPS
+- Better secrets handling (don't keep them in `.env` files on disk on VPS)
 
 ## Bug fixes:
 
