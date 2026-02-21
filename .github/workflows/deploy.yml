@@ -63,7 +63,7 @@ jobs:
           mkdir -p /tmp/homelab-config/networking
           cp networking/docker-compose.yml /tmp/homelab-config/networking/
           cp networking/.env /tmp/homelab-config/networking/
-          for svc in shared-assets homepage blog travel games; do
+          for svc in shared-assets homepage blog travel games tools; do
             mkdir -p "/tmp/homelab-config/$svc"
             cp "$svc/docker-compose.yml" "/tmp/homelab-config/$svc/"
           done
@@ -78,10 +78,12 @@ jobs:
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
           GHCR_USERNAME: ${{ github.actor }}
         run: |
-          printf '%s' "${GHCR_TOKEN}" | ssh -i ~/.ssh/deploy_key \
+          ssh -i ~/.ssh/deploy_key \
             -o StrictHostKeyChecking=no \
             "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" \
-            "docker login ghcr.io -u '${GHCR_USERNAME}' --password-stdin"
+            bash << EOF
+          echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
+          EOF
 
       - name: Deploy services on server
         env:
