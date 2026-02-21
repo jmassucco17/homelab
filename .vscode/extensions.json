@@ -7,7 +7,6 @@
     "tamasfe.even-better-toml",
     "redhat.vscode-yaml",
     "samuelcolvin.jinjahtml",
-    "GitHub.vscode-github-actions",
     "ms-azuretools.vscode-docker"
   ]
 }
