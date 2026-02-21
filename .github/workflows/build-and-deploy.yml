@@ -60,9 +60,9 @@ jobs:
         # otherwise, use the input
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
-            echo "environment=prod" >> $GITHUB_OUTPUT
+            echo "environment=prod" >> "$GITHUB_OUTPUT"
           else
-            echo "environment=${{ inputs.environment }}" >> $GITHUB_OUTPUT
+            echo "environment=${{ inputs.environment }}" >> "$GITHUB_OUTPUT"
           fi
 
   build:
