@@ -11,6 +11,7 @@
 
 ## Deployment improvements:
 
+- Make better use of GHCR, or investigate alternative deployment management technologies (e.g. FluxCD)
 - Learn how to use worktrees, and teach Claude how to do it
 - More cleanup to the workflows for PRs and commits to main
 - Use narrower requirements at build time for modules, to speed up builds
