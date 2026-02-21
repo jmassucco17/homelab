@@ -4,16 +4,11 @@ on:
   workflow_call:
     inputs:
       environment:
-        description: 'Environment to deploy to (prod or staging)'
+        description: 'Environment to deploy to (`prod` or `staging`)'
         required: true
         type: string
-      image_tag:
-        description: 'Image tag to deploy (e.g. sha-abc1234, or latest)'
-        required: false
-        type: string
-        default: 'latest'
       seed_from_prod:
-        description: 'Seed staging travel data from production volume before deploying'
+        description: '[staging only] Seed data from production volume'
         type: boolean
         default: false
       networking:
@@ -52,6 +47,15 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v6
+
+      - name: Set image tag
+        id: image-tag
+        run: |
+          if [ "${{ inputs.environment }}" = "staging" ]; then
+            echo "tag=sha-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          else
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          fi
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v4
@@ -149,7 +153,7 @@ jobs:
       - name: Deploy services on server (staging)
         if: inputs.environment == 'staging'
         env:
-          STAGING_IMAGE_TAG: ${{ inputs.image_tag }}
+          STAGING_IMAGE_TAG: ${{ steps.image-tag.outputs.tag }}
           SEED_FROM_PROD: ${{ inputs.seed_from_prod }}
           DEPLOY_NETWORKING: ${{ inputs.networking }}
           DEPLOY_SHARED_ASSETS: ${{ inputs['shared-assets'] }}

@@ -14,13 +14,8 @@ on:
           - prod
           - staging
         default: 'prod'
-      image_tag:
-        description: 'Image tag to deploy (e.g. sha-abc1234, or latest) - only for staging'
-        required: false
-        type: string
-        default: 'latest'
       seed_from_prod:
-        description: 'Seed staging travel data from production volume before deploying - only for staging'
+        description: '[staging only] Seed data from production volume'
         type: boolean
         default: false
       networking:
@@ -48,7 +43,7 @@ on:
         type: boolean
         default: true
       tools:
-        description: 'Deploy tools (prod only)'
+        description: 'Deploy tools'
         type: boolean
         default: true
 
@@ -61,13 +56,11 @@ jobs:
     steps:
       - name: Determine environment
         id: determine-env
+        # If the workflow is triggered by a push (to main), it's prod;
+        # otherwise, use the input
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
-            if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-              echo "environment=prod" >> $GITHUB_OUTPUT
-            else
-              echo "environment=staging" >> $GITHUB_OUTPUT
-            fi
+            echo "environment=prod" >> $GITHUB_OUTPUT
           else
             echo "environment=${{ inputs.environment }}" >> $GITHUB_OUTPUT
           fi
@@ -88,8 +81,8 @@ jobs:
     uses: ./.github/workflows/_deploy.yml
     secrets: inherit
     with:
+      # Values after `||` are used on push to main
       environment: ${{ needs.setup.outputs.environment }}
-      image_tag: ${{ inputs.image_tag || 'latest' }}
       seed_from_prod: ${{ inputs.seed_from_prod || false }}
       networking: ${{ inputs.networking || true }}
       shared-assets: ${{ inputs['shared-assets'] || true }}
