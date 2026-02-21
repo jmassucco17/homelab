@@ -11,6 +11,7 @@
 
 ## Deployment improvements:
 
+- Learn how to use worktrees, and teach Claude how to do it
 - More cleanup to the workflows for PRs and commits to main
 - Use narrower requirements at build time for modules, to speed up builds
 - Add secrets management (including new `TMDB_API_KEY`) for the server
