@@ -18,18 +18,20 @@ NOTE: From here on out, we'll refer to top-level directories that contain docker
 
 ### Creating new modules
 
-# XXX fix this section
+When creating a new module (i.e. a new subdomain):
 
-When creating a new module (i.e. a new subdomain), make a new top-level folder and populate it with a `docker-compose.yml`. Make sure to:
+1. **Create module directory** - Follow the pattern of either `homepage` (static/nginx) or `blog` (Python/FastAPI)
+   - `Dockerfile`, `docker-compose.yml`, `docker-compose.local.yml`
+   - Application code (`site/` for static, `app/` for Python)
 
-- Update `scripts/start_local.sh` to include the service in `ALL_SERVICES`
-- Create a `docker-compose.local.yml` in the new module directory (see existing examples for the pattern)
-- Update `networking/` to create a new sub-domain
-- Update `dependabot.yml` to ensure we track updates for the new docker image
-- Update `docker-integration.yml` to add integration tests for the new service
-- Add an `image: ghcr.io/jmassucco17/homelab/<service>:latest` field to the service's `docker-compose.yml`
-- Add a matrix entry to `.github/workflows/build-and-push.yml` following the standard service order
-- Add a link to the new service from the homepage (`homepage/site/index.html`) in the "Content and Projects" section
+2. **Update configuration files** - Look at how existing services are registered and follow the same pattern:
+   - `scripts/start_local.sh` - Add to `ALL_SERVICES` and `LOCAL_HOSTS`
+   - `networking/docker-compose.yml` - Add subdomain to cloudflare-ddns `DOMAINS`
+   - `.github/dependabot.yml` - Add docker ecosystem entry
+   - `.github/workflows/docker-integration.yml` - Add test job
+   - `.github/workflows/build-and-push.yml` - Add matrix entry
+   - `.github/workflows/deploy.yml` - Add input flag, file transfer, and deploy call
+   - `homepage/site/index.html` - Add link in "Content and Projects"
 
 ### Listing all modules
 
