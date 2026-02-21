@@ -10,6 +10,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.responses import Response
 
+from travel.app.location import database as location_db
+from travel.app.location import routes as location_routes
 from travel.app.maps import database as maps_db
 from travel.app.maps import routes as maps_routes
 from travel.app.photos import database as photos_db
@@ -23,6 +25,7 @@ async def lifespan(app: FastAPI):
     """Initialize databases on startup."""
     photos_db.create_db_and_tables()
     maps_db.create_db_and_tables()
+    location_db.create_db_and_tables()
     yield
 
 
@@ -46,6 +49,7 @@ templates = Jinja2Templates(directory=str(APP_DIR / 'templates'))
 app.include_router(photos_routes.admin_router, prefix='/photos')
 app.include_router(photos_routes.public_router, prefix='/photos')
 app.include_router(maps_routes.router, prefix='/maps')
+app.include_router(location_routes.router, prefix='/location')
 
 
 @app.get('/', response_class=HTMLResponse)

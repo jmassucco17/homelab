@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Where Am I? — Travel</title>
+    <link rel="stylesheet" href="https://assets.jamesmassucco.com/styles/main.css?v=2.0" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="/static/css/location.css" />
+  </head>
+  <body>
+    <div id="theme-toggle-container"></div>
+    <header class="site-header">
+      <div class="container">
+        <h1><a href="/">✈️ Travel</a></h1>
+        <nav>
+          <a href="/">Home</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container">
+      <div class="page-header">
+        <h2>📍 Where Am I?</h2>
+      </div>
+
+      <!-- Current location hero -->
+      <div class="location-hero">
+        <h2>Current Location</h2>
+        {% if current %}
+        <div class="hero-label">
+          {% if current.city %}{{ current.city }},{% endif %}
+          {{ current.country or "Unknown" }}
+        </div>
+        <div class="hero-date">as of {{ current.date.isoformat() }}</div>
+        {% else %}
+        <div class="hero-unknown">Location not yet updated today.</div>
+        {% endif %} {% if configured %}
+        <button class="btn-refresh" id="refresh-btn">🔄 Refresh Today</button>
+        {% endif %}
+      </div>
+
+      <!-- Map -->
+      {% if all_locations %}
+      <div id="location-map"></div>
+      {% endif %}
+
+      <!-- Toggle bar -->
+      <div class="toggle-bar">
+        <span>View by:</span>
+        <a href="?mode=city" class="{% if mode == 'city' %}active{% endif %}">City</a>
+        <a href="?mode=country" class="{% if mode == 'country' %}active{% endif %}"
+          >Country</a
+        >
+      </div>
+
+      <!-- History table -->
+      {% if groups %}
+      <table class="history-table">
+        {% if mode == 'city' %}
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>City</th>
+            <th>Country</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for g in groups %}
+          <tr class="{% if g.latest.date == today %}today-row{% endif %}">
+            <td>{{ g.to_date.isoformat() }}</td>
+            <td>{{ g.latest.city or "—" }}</td>
+            <td>{{ g.latest.country or "—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        {% else %}
+        <thead>
+          <tr>
+            <th>From</th>
+            <th>To</th>
+            <th>Days</th>
+            <th>Location</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for g in groups %}
+          <tr class="{% if g.latest.date == today %}today-row{% endif %}">
+            <td>{{ g.from_date.isoformat() }}</td>
+            <td>{{ g.to_date.isoformat() }}</td>
+            <td>{{ g.days }}</td>
+            <td>{{ g.label }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        {% endif %}
+      </table>
+      {% else %}
+      <div class="location-empty">No location history yet.</div>
+      {% endif %}
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <p>&copy; 2026 James Massucco</p>
+      </div>
+    </footer>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module">
+      import { insertThemeToggle } from "https://assets.jamesmassucco.com/scripts/theme-toggle.js?v=2.0";
+      window.addEventListener("DOMContentLoaded", () => {
+        insertThemeToggle();
+      });
+    </script>
+
+    {% if all_locations %}
+    <script>
+      (function () {
+        const locations = [
+          {% for loc in all_locations %}
+          {
+            lat: {{ loc.latitude }},
+            lon: {{ loc.longitude }},
+            label:
+              "{{ (loc.city or '') | replace('"', '\\"') }}{% if loc.city and loc.country %}, {% endif %}{{ (loc.country or '') | replace('"', '\\"') }}",
+            date: "{{ loc.date.isoformat() }}",
+            isToday: {{ 'true' if loc.date == today else 'false' }},
+          },
+          {% endfor %}
+        ];
+
+        const map = L.map("location-map");
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: "© OpenStreetMap contributors",
+        }).addTo(map);
+
+        const bounds = [];
+        locations.forEach((loc) => {
+          const color = loc.isToday ? "#0070f3" : "#888";
+          const marker = L.circleMarker([loc.lat, loc.lon], {
+            radius: loc.isToday ? 10 : 7,
+            fillColor: color,
+            color: "#fff",
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.9,
+          }).addTo(map);
+          marker.bindPopup(
+            `<strong>${loc.label || "Unknown"}</strong><br/>${loc.date}`,
+          );
+          bounds.push([loc.lat, loc.lon]);
+        });
+
+        if (bounds.length > 0) {
+          map.fitBounds(bounds, { padding: [30, 30] });
+        }
+      })();
+    </script>
+    {% endif %} {% if configured %}
+    <script>
+      document.getElementById("refresh-btn")?.addEventListener("click", async () => {
+        const btn = document.getElementById("refresh-btn");
+        if (btn) btn.disabled = true;
+        try {
+          const res = await fetch("/location/api/refresh", { method: "POST" });
+          if (res.ok) {
+            window.location.reload();
+          } else {
+            const data = await res.json();
+            alert("Refresh failed: " + (data.detail || res.status));
+            if (btn) btn.disabled = false;
+          }
+        } catch (e) {
+          alert("Refresh failed: " + e);
+          if (btn) btn.disabled = false;
+        }
+      });
+    </script>
+    {% endif %}
+  </body>
+</html>

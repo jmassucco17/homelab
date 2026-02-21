@@ -1,0 +1,146 @@
+/* ===== LOCATION PAGE =====
+ * Styles for the daily location tracking page.
+ */
+
+/* ---- Current location hero card ---- */
+.location-hero {
+  background: var(--color-section-bg);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem 2rem;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow-card);
+}
+
+.location-hero h2 {
+  margin: 0 0 0.5rem;
+  color: var(--color-title-text);
+  font-size: 1.3rem;
+}
+
+.location-hero .hero-label {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  margin-bottom: 0.25rem;
+}
+
+.location-hero .hero-date {
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.location-hero .hero-unknown {
+  color: var(--color-text);
+  font-style: italic;
+}
+
+/* ---- Refresh button ---- */
+.btn-refresh {
+  display: inline-block;
+  margin-top: 0.75rem;
+  padding: 0.4rem 0.9rem;
+  background: var(--color-accent);
+  color: var(--color-title-text);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: opacity 0.2s;
+}
+
+.btn-refresh:hover {
+  opacity: 0.85;
+}
+
+/* ---- Map container ---- */
+#location-map {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-card-border);
+  margin-bottom: 2rem;
+  height: 400px;
+}
+
+/* ---- Mode toggle bar ---- */
+.toggle-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.95rem;
+  color: var(--color-text);
+}
+
+.toggle-bar a {
+  padding: 0.3rem 0.8rem;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  color: var(--color-text);
+  border: 1px solid var(--color-card-border);
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.toggle-bar a.active {
+  background: var(--color-accent);
+  color: var(--color-title-text);
+  border-color: var(--color-accent);
+}
+
+.toggle-bar a:hover:not(.active) {
+  background: var(--color-section-bg);
+}
+
+/* ---- History table ---- */
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  color: var(--color-text);
+}
+
+.history-table th {
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 2px solid var(--color-card-border);
+  color: var(--color-title-text);
+  font-weight: 600;
+}
+
+.history-table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--color-card-border);
+}
+
+.history-table .today-row td {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.history-table tr:last-child td {
+  border-bottom: none;
+}
+
+.history-table tr:hover td {
+  background: var(--color-section-bg);
+}
+
+/* ---- Empty state ---- */
+.location-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--color-text);
+  font-style: italic;
+}
+
+/* ---- Responsive ---- */
+@media (width <= 600px) {
+  #location-map {
+    height: 280px;
+  }
+
+  .location-hero .hero-label {
+    font-size: 1.3rem;
+  }
+}
