@@ -19,16 +19,6 @@ fi
 
 cd "$SERVICE_DIR"
 
-# One-time migration: remove old travel sub-containers if they exist
-if [[ "$SERVICE" == "travel" ]]; then
-  for old_container in travel-landing travel-photos travel-maps travel-site; do
-    if sudo docker ps -a --format '{{.Names}}' | grep -q "^${old_container}$"; then
-      echo "Removing old ${old_container} container..."
-      sudo docker rm -f "${old_container}" 2>/dev/null || true
-    fi
-  done
-fi
-
 echo "Shutting down containers..."
 sudo docker compose down --remove-orphans
 

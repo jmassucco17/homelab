@@ -121,16 +121,6 @@ jobs:
             fi
           }
 
-          # One-time migration: remove old travel sub-containers if they exist
-          if [ "${DEPLOY_TRAVEL}" = "true" ]; then
-            for old_container in travel-landing travel-photos travel-maps travel-site; do
-              if docker ps -a --format '{{.Names}}' | grep -q "^${old_container}$"; then
-                echo "Removing old ${old_container} container..."
-                docker rm -f "${old_container}" 2>/dev/null || true
-              fi
-            done
-          fi
-
           # Deploy each service if its flag is true, in dependency order
           deploy_if_enabled networking      "$DEPLOY_NETWORKING"
           deploy_if_enabled shared-assets   "$DEPLOY_SHARED_ASSETS"
