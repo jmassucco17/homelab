@@ -29,8 +29,8 @@
 
 ## Organization
 
-- Add instructions about port management for local deployments
-- Reduce sources of truth for what packages are available (listed in a lot of places, see #23 for example)
+- Create a `docs/` directory for splitting up the AI docs, and then make `CLAUDE.md` into just an "index"
+- Reduce sources of truth for what modules are available (listed in a lot of places, see #23 for example)
 - Explain CSS strategy (have Copilot do this based on #24)
 - Apply a fixed order for all the subdomains wherever they appear (networking -> shared-assets -> homepage -> others in alphabetical order)
 
