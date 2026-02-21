@@ -40,7 +40,9 @@ class ServerMessageType(enum.StrEnum):
 class JoinGame(pydantic.BaseModel):
     """Sent by a client to join a game room."""
 
-    message_type: ClientMessageType = ClientMessageType.JOIN_GAME
+    message_type: typing.Literal[ClientMessageType.JOIN_GAME] = (
+        ClientMessageType.JOIN_GAME
+    )
     player_name: str
     room_code: str
 
@@ -48,14 +50,18 @@ class JoinGame(pydantic.BaseModel):
 class SubmitAction(pydantic.BaseModel):
     """Sent by a client to submit a game action."""
 
-    message_type: ClientMessageType = ClientMessageType.SUBMIT_ACTION
+    message_type: typing.Literal[ClientMessageType.SUBMIT_ACTION] = (
+        ClientMessageType.SUBMIT_ACTION
+    )
     action: Action
 
 
 class RequestUndo(pydantic.BaseModel):
     """Sent by a client to undo the most recent placement (setup phase only)."""
 
-    message_type: ClientMessageType = ClientMessageType.REQUEST_UNDO
+    message_type: typing.Literal[ClientMessageType.REQUEST_UNDO] = (
+        ClientMessageType.REQUEST_UNDO
+    )
 
 
 # Discriminated union of all client message types.
