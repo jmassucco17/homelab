@@ -148,10 +148,9 @@ jobs:
           service: homepage
 
       - name: Test index endpoint returns HTML
-        uses: ./.github/actions/test-html-response
-        with:
-          service: homepage
-          port: '80'
+        run: |
+          result=$(docker exec homepage wget -qO- http://127.0.0.1/)
+          echo "$result" | grep -qi '<html'
 
       - name: Stop homepage service
         uses: ./.github/actions/stop-service

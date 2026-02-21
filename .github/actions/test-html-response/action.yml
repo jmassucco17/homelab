@@ -3,7 +3,7 @@ description: Tests that a service endpoint returns HTML content
 
 inputs:
   service:
-    description: Service container name (e.g. homepage, blog, travel)
+    description: Service container name (e.g. blog, travel)
     required: true
   endpoint:
     description: Endpoint to test (default is root /)
