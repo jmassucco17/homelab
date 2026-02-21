@@ -23,7 +23,7 @@ def run_game(
     Returns:
         (winner_index, action_count) - winner is None if limit exceeded.
     """
-    names = [f'Player{i}' for i in range(num_players)]
+    names = [f'Player{i + 1}' for i in range(num_players)]
     colors = ['red', 'blue', 'green', 'orange'][:num_players]
     ai_seed = seed
     ais = {i: EasyCatanAI(seed=ai_seed) for i in range(num_players)}

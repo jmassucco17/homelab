@@ -13,6 +13,11 @@ from .medium import _PIPS, MediumCatanAI
 # Resource diversity bonus: having different resources is more valuable
 _RESOURCE_DIVERSITY_WEIGHT = 0.5
 
+# Minimum own road length before pursuing longest road bonus
+_MIN_ROAD_PURSUIT_LENGTH = 3
+# Start pursuing longest road when within this many roads of the current holder
+_ROAD_GAP_THRESHOLD = 2
+
 
 def _vertex_score(game_state: GameState, vertex_id: int) -> float:
     """Score a vertex: pip count + resource diversity bonus."""
@@ -96,7 +101,8 @@ class HardCatanAI(CatanAI):
             else 0
         )
         roads = [a for a in legal_actions if a.action_type == ActionType.PLACE_ROAD]
-        if roads and (my_road_len >= max(3, holder_len - 2)):
+        threshold = max(_MIN_ROAD_PURSUIT_LENGTH, holder_len - _ROAD_GAP_THRESHOLD)
+        if roads and (my_road_len >= threshold):
             return self._best_road(game_state, roads)
 
         # City
