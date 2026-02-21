@@ -62,4 +62,5 @@ The `docs/` directory contains reference documents that agents should load **onl
 - Never do work directly on the `main` branch
 - If you are starting work and find yourself on the `main` branch, run `git switch -c <name-of-new-branch>` (come up with a reasonable and concise branch name, like `claude/restructure-docs`)
 - When you create a new branch, always make sure that you complete some work, commit it (`git commit -m "<description of work>"`), and then run `gh pr create` to make a GitHub PR and push the code to GitHub
+- Before making a commit, run `pre-commit run` and fix any issues found
 - When you are done with a body of work, always commit and then `git push -u origin HEAD`
