@@ -1,4 +1,4 @@
-# Production overrides: Traefik routing labels, named data volume, and host port.
+# Production overrides: Traefik routing labels and named data volume.
 # Merged with docker-compose.yml by scripts/start_service.sh (prod) and CI.
 services:
   travel:
