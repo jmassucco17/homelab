@@ -445,6 +445,26 @@ boolean input.
 
 ---
 
+## Implementation Note: Standalone vs Overlay Compose Files
+
+The plan described `docker-compose.staging.yml` files as overlays on top of the production
+`docker-compose.yml`. During implementation, **standalone staging files** were chosen
+instead for application services (shared-assets, homepage, blog, travel, games). This
+avoids a Docker Compose merge problem: when merging label maps, both files' labels are
+unioned, so the production Traefik router labels (pointing at `*.jamesmassucco.com`) would
+appear on the staging container alongside the staging labels, creating conflicting router
+registrations in Traefik.
+
+Standalone files are complete and explicit. `start_service.sh --staging` uses only
+`-f docker-compose.staging.yml` (not merged with the base).
+
+The `oauth-auth-staging` Traefik middleware is defined on `oauth2-proxy-staging`'s own
+labels — Traefik picks up middleware definitions from any container in the `web` network,
+so travel's staging router can reference `oauth-auth-staging` without it being defined on
+the Traefik container itself.
+
+---
+
 ## Implementation Checklist
 
 ### Infrastructure
@@ -456,31 +476,29 @@ boolean input.
   `networking/docker-compose.yml`
 
 ### Networking / OAuth
-- [ ] Add `oauth2-proxy-staging` service to `networking/docker-compose.yml`
-- [ ] Add `oauth-auth-staging` middleware labels to the Traefik container
+- [x] Add `oauth2-proxy-staging` service (`networking/docker-compose.staging.yml`)
+- [x] Define `oauth-auth-staging` middleware on `oauth2-proxy-staging` container labels
 - [ ] Add `https://oauth.staging.jamesmassucco.com/oauth2/callback` to Google OAuth app
-  Authorized Redirect URIs
+  Authorized Redirect URIs *(manual — Google Cloud Console)*
 - [ ] Generate `GOOGLE_OAUTH2_STAGING_COOKIE_SECRET` and add to `networking/.env`
 
 ### Service Overrides
-- [ ] Create `networking/docker-compose.staging.yml`
-- [ ] Create `shared-assets/docker-compose.staging.yml`
-- [ ] Create `homepage/docker-compose.staging.yml`
-- [ ] Create `blog/docker-compose.staging.yml`
-- [ ] Create `travel/docker-compose.staging.yml` (with `staging-travel-data` volume)
-- [ ] Create `games/docker-compose.staging.yml`
+- [x] Create `networking/docker-compose.staging.yml`
+- [x] Create `shared-assets/docker-compose.staging.yml`
+- [x] Create `homepage/docker-compose.staging.yml`
+- [x] Create `blog/docker-compose.staging.yml`
+- [x] Create `travel/docker-compose.staging.yml` (with `staging-travel-data` volume)
+- [x] Create `games/docker-compose.staging.yml`
 
 ### Scripts
-- [ ] Update `scripts/start_service.sh` to accept `--staging` flag
+- [x] Update `scripts/start_service.sh` to accept `--staging` flag
 
 ### CI/CD
-- [ ] Create `.github/workflows/deploy-staging.yml`
-- [ ] Add `STAGING_NETWORKING_ENV` secret to GitHub repository settings
+- [x] Create `.github/workflows/deploy-staging.yml` (with `seed_from_prod` input)
+- [ ] Add `STAGING_NETWORKING_ENV` secret to GitHub repository settings *(manual)*
 
-### Data
-- [ ] (Optional) Create `scripts/seed_staging_data.sh` for repeatable synthetic data
-- [ ] (Optional) Add `seed_from_prod` input to `deploy-staging.yml` that runs the volume
-  copy step before deploying the new image
+### Documentation
+- [x] Create `deployments.md` documenting all four deployment methods
 
 ### Verification
 - [ ] After initial setup, confirm `https://staging.jamesmassucco.com` loads correctly

@@ -1,0 +1,37 @@
+# Staging override for blog.
+# Routes blog.staging.jamesmassucco.com to this container via Traefik.
+# Image tag is controlled by STAGING_IMAGE_TAG (default: latest).
+# No bind-mounts: staging tests the baked image, not local files.
+#
+# Usage: scripts/start_service.sh blog --staging
+services:
+  blog:
+    container_name: staging-blog
+    image: ghcr.io/jmassucco17/homelab/blog:${STAGING_IMAGE_TAG:-latest}
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.blog-staging.rule=Host(`blog.staging.jamesmassucco.com`)
+      - traefik.http.routers.blog-staging.entrypoints=websecure
+      - traefik.http.routers.blog-staging.tls=true
+      - traefik.http.routers.blog-staging.tls.certresolver=cloudflare
+      - traefik.http.routers.blog-staging.middlewares=ratelimit
+      - traefik.http.services.blog-staging.loadbalancer.server.port=8000
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python3',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')",
+        ]
+      interval: 5s
+      timeout: 1s
+      retries: 3
+      start_period: 5s
+    networks:
+      - web
+    restart: unless-stopped
+
+networks:
+  web:
+    external: true

@@ -1,0 +1,59 @@
+# Staging override for travel.
+# Routes travel.staging.jamesmassucco.com to this container via Traefik.
+# Image tag is controlled by STAGING_IMAGE_TAG (default: latest).
+# Uses a separate staging-travel-data volume — production data is never touched.
+# To seed staging from prod before deploying, use the seed_from_prod option in
+# deploy-staging.yml, or run manually:
+#   docker run --rm -v travel-site_data-volume:/src:ro -v staging-travel-data:/dst \
+#     alpine sh -c "cp -a /src/. /dst/"
+#
+# Usage: scripts/start_service.sh travel --staging
+services:
+  travel:
+    container_name: staging-travel
+    image: ghcr.io/jmassucco17/homelab/travel:${STAGING_IMAGE_TAG:-latest}
+    environment:
+      - DATA_DIR=/data
+    volumes:
+      - staging-travel-data:/data
+    labels:
+      - traefik.enable=true
+
+      # Admin routes — require staging OAuth
+      - traefik.http.routers.travel-admin-staging.rule=Host(`travel.staging.jamesmassucco.com`) && PathPrefix(`/photos/admin`)
+      - traefik.http.routers.travel-admin-staging.entrypoints=websecure
+      - traefik.http.routers.travel-admin-staging.tls.certresolver=cloudflare
+      - traefik.http.routers.travel-admin-staging.middlewares=oauth-auth-staging,ratelimit
+      - traefik.http.routers.travel-admin-staging.priority=100
+
+      # Public routes — no authentication required
+      - traefik.http.routers.travel-public-staging.rule=Host(`travel.staging.jamesmassucco.com`)
+      - traefik.http.routers.travel-public-staging.entrypoints=websecure
+      - traefik.http.routers.travel-public-staging.tls.certresolver=cloudflare
+      - traefik.http.routers.travel-public-staging.middlewares=ratelimit
+      - traefik.http.routers.travel-public-staging.priority=50
+
+      - traefik.http.services.travel-staging.loadbalancer.server.port=8000
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python3',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')",
+        ]
+      interval: 5s
+      timeout: 1s
+      retries: 3
+      start_period: 5s
+    networks:
+      - web
+    restart: unless-stopped
+
+volumes:
+  staging-travel-data:
+    name: staging-travel-data
+
+networks:
+  web:
+    external: true

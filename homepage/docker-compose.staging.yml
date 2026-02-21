@@ -1,0 +1,30 @@
+# Staging override for homepage.
+# Routes staging.jamesmassucco.com to this container via Traefik.
+# Image tag is controlled by STAGING_IMAGE_TAG (default: latest).
+#
+# Usage: scripts/start_service.sh homepage --staging
+services:
+  homepage:
+    container_name: staging-homepage
+    image: ghcr.io/jmassucco17/homelab/homepage:${STAGING_IMAGE_TAG:-latest}
+    entrypoint: /bin/sh -c "cp -r /tmp/site/* /usr/share/nginx/html && nginx -g 'daemon off;'"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.homepage-staging.rule=Host(`staging.jamesmassucco.com`)
+      - traefik.http.routers.homepage-staging.entrypoints=websecure
+      - traefik.http.routers.homepage-staging.tls=true
+      - traefik.http.routers.homepage-staging.tls.certresolver=cloudflare
+      - traefik.http.services.homepage-staging.loadbalancer.server.port=80
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1/']
+      interval: 5s
+      timeout: 1s
+      retries: 3
+      start_period: 2s
+    networks:
+      - web
+    restart: unless-stopped
+
+networks:
+  web:
+    external: true
