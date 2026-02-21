@@ -51,6 +51,9 @@ jobs:
       - name: Write networking/.env from secret
         run: printf '%s' "${{ secrets.NETWORKING_ENV }}" > networking/.env
 
+      - name: Write tools/.env from secret
+        run: printf 'TMDB_API_KEY=%s\n' "${{ secrets.TMDB_API_KEY }}" > tools/.env
+
       - name: Set up SSH key
         run: |
           mkdir -p ~/.ssh
@@ -63,7 +66,7 @@ jobs:
           grep -v '^#' .gitignore | grep -v '^$' > /tmp/exclude_list
           printf '.git/\n*.tar.gz\n*.tar\n' >> /tmp/exclude_list
           tar --exclude-from=/tmp/exclude_list -cf /tmp/homelab-deploy.tar .
-          tar --append -f /tmp/homelab-deploy.tar networking/.env
+          tar --append -f /tmp/homelab-deploy.tar networking/.env tools/.env
           gzip /tmp/homelab-deploy.tar
 
       - name: Upload archive to server
