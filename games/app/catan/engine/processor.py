@@ -229,8 +229,7 @@ def _apply_place_city(state: GameState, action: PlaceCity) -> GameState:
 
 
 def _apply_roll_dice(state: GameState, action: RollDice) -> GameState:
-    rng = random.Random()
-    roll = rng.randint(1, 6) + rng.randint(1, 6)
+    roll = random.randint(1, 6) + random.randint(1, 6)
     state.dice_roll_history.append(roll)
     state.turn_state.roll_value = roll
     state.turn_state.has_rolled = True
@@ -426,7 +425,7 @@ def _apply_trade_with_port(state: GameState, action: TradeWithPort) -> GameState
 # ---------------------------------------------------------------------------
 
 
-def _calculate_longest_road(board: Board, player_index: int) -> int:
+def calculate_longest_road(board: Board, player_index: int) -> int:
     """DFS to find the longest road length for a player."""
     adj: dict[int, list[tuple[int, int]]] = collections.defaultdict(list)
     for e in board.edges:
@@ -461,7 +460,7 @@ def _calculate_longest_road(board: Board, player_index: int) -> int:
 def _update_longest_road(state: GameState, player_index: int) -> GameState:
     """Recalculate longest road and update award if needed."""
     player = state.players[player_index]
-    length = _calculate_longest_road(state.board, player_index)
+    length = calculate_longest_road(state.board, player_index)
     player.longest_road_length = length
 
     current_holder = state.longest_road_owner

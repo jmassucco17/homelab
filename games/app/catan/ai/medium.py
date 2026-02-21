@@ -13,7 +13,7 @@ from ..models.game_state import GameState
 from .base import CatanAI
 
 # Pip counts per number token
-_PIPS: dict[int, int] = {2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1}
+PIPS: dict[int, int] = {2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1}
 
 
 def _vertex_pip_count(game_state: GameState, vertex_id: int) -> int:
@@ -24,7 +24,7 @@ def _vertex_pip_count(game_state: GameState, vertex_id: int) -> int:
     for tile_idx in vertex.adjacent_tile_indices:
         tile = board.tiles[tile_idx]
         if tile.number_token is not None:
-            total += _PIPS.get(tile.number_token, 0)
+            total += PIPS.get(tile.number_token, 0)
     return total
 
 

@@ -162,7 +162,7 @@ This phase produces the shared data models and API contracts that all other Cata
   - Setup phase order (1→2→…→N→N→…→1 snake-draft)
   - Main phase turn cycling
   - Dice roll → distribute resources → check robber → await player actions
-- [x] **Unit tests** (`games/tests/catan/test_engine.py`)
+- [x] **Unit tests** (`games/app/catan/engine_test.py`)
   - Legal action generation edge cases (can't build where occupied, etc.)
   - Resource distribution on roll (including 7)
   - Robber placement and stealing
@@ -279,7 +279,7 @@ The trade system is complex enough to warrant its own workstream.
 - [x] **AI driver** (`games/app/catan/ai/driver.py`)
   - Runs AI turn asynchronously in the server (1–3 s simulated delay for UX)
   - Invoked by `ws_handler.py` when it is an AI player's turn
-- [x] **Simulation runner** (`games/tests/catan/simulate.py`)
+- [x] **Simulation runner** (`games/app/catan/simulate.py`)
   - Run 1000 full games AI-vs-AI to verify no infinite loops, check win-rate distribution
   - Output: average game length, win rates by seat position
 

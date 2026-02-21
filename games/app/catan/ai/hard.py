@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import random
 
-from ..models.actions import Action, ActionType
+from ..models.actions import Action, ActionType, StealResource
 from ..models.board import TileType
 from ..models.game_state import GameState
 from .base import CatanAI
-from .medium import _PIPS, MediumCatanAI
+from .medium import PIPS, MediumCatanAI
 
 # Resource diversity bonus: having different resources is more valuable
 _RESOURCE_DIVERSITY_WEIGHT = 0.5
@@ -28,7 +28,7 @@ def _vertex_score(game_state: GameState, vertex_id: int) -> float:
     for tile_idx in vertex.adjacent_tile_indices:
         tile = board.tiles[tile_idx]
         if tile.number_token is not None and tile.tile_type != TileType.DESERT:
-            pip_total += _PIPS.get(tile.number_token, 0)
+            pip_total += PIPS.get(tile.number_token, 0)
             resources_seen.add(tile.tile_type.value)
     diversity_bonus = len(resources_seen) * _RESOURCE_DIVERSITY_WEIGHT
     # Port bonus
@@ -71,15 +71,13 @@ class HardCatanAI(CatanAI):
             return self._choose_robber(game_state, player_index, robber_actions)
 
         # Steal: target player with most resources
-        steal_actions = [
-            a for a in legal_actions if a.action_type == ActionType.STEAL_RESOURCE
-        ]
+        steal_actions = [a for a in legal_actions if isinstance(a, StealResource)]
         if steal_actions:
             return max(
                 steal_actions,
                 key=lambda a: game_state.players[
                     a.target_player_index
-                ].resources.total(),  # type: ignore[attr-defined]
+                ].resources.total(),
             )
 
         # Settlement: maximize vertex score
@@ -187,7 +185,7 @@ class HardCatanAI(CatanAI):
         )
         board = game_state.board
         # Prefer tiles with leader buildings but without own buildings
-        scored = []
+        scored: list[tuple[int, Action]] = []
         for action in robber_actions:
             tile_idx = action.tile_index  # type: ignore[attr-defined]
             tile_verts = [

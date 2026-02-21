@@ -3,23 +3,32 @@
 from __future__ import annotations
 
 import copy
+import typing
 import unittest
 
 from games.app.catan.engine.processor import (
-    _calculate_longest_road,
     apply_action,
+    calculate_longest_road,
 )
 from games.app.catan.engine.rules import get_legal_actions
 from games.app.catan.engine.turn_manager import create_initial_game_state
 from games.app.catan.models.actions import (
+    ActionResult,
     ActionType,
     EndTurn,
+    PlaceRoad,
     PlaceSettlement,
     RollDice,
 )
 from games.app.catan.models.board import Road
 from games.app.catan.models.game_state import GamePhase, GameState, PendingActionType
 from games.app.catan.models.player import Resources
+
+
+def _gs(result: ActionResult) -> GameState:
+    """Extract updated GameState from ActionResult, asserting it is not None."""
+    assert result.updated_state is not None
+    return typing.cast('GameState', result.updated_state)
 
 
 class TestCreateInitialGameState(unittest.TestCase):
@@ -60,7 +69,7 @@ class TestSetupLegalActions(unittest.TestCase):
         result = apply_action(self.state, first_action)
         self.assertTrue(result.success)
         # Now we should be in PLACE_ROAD
-        updated = result.updated_state
+        updated = _gs(result)
         self.assertEqual(
             updated.turn_state.pending_action, PendingActionType.PLACE_ROAD
         )
@@ -74,8 +83,10 @@ class TestSetupLegalActions(unittest.TestCase):
             state, PlaceSettlement(player_index=0, vertex_id=v0.vertex_id)
         )
         self.assertTrue(result.success)
-        road_state = result.updated_state
-        road_actions = get_legal_actions(road_state, 0)
+        road_state = _gs(result)
+        road_actions: list[PlaceRoad] = [
+            a for a in get_legal_actions(road_state, 0) if isinstance(a, PlaceRoad)
+        ]
         # All road actions should be adjacent to vertex 0
         valid_edge_ids = set(v0.adjacent_edge_ids)
         for action in road_actions:
@@ -96,7 +107,7 @@ class TestSetupNoResourceCharge(unittest.TestCase):
             state, PlaceSettlement(player_index=0, vertex_id=v0.vertex_id)
         )
         self.assertTrue(result.success)
-        player = result.updated_state.players[0]
+        player = _gs(result).players[0]
         self.assertEqual(player.resources.total(), 0)
 
     def test_road_free_in_setup(self) -> None:
@@ -106,10 +117,11 @@ class TestSetupNoResourceCharge(unittest.TestCase):
         r1 = apply_action(
             state, PlaceSettlement(player_index=0, vertex_id=v0.vertex_id)
         )
-        road_actions = get_legal_actions(r1.updated_state, 0)
-        r2 = apply_action(r1.updated_state, road_actions[0])
+        s1 = _gs(r1)
+        road_actions = get_legal_actions(s1, 0)
+        r2 = apply_action(s1, road_actions[0])
         self.assertTrue(r2.success)
-        player = r2.updated_state.players[0]
+        player = _gs(r2).players[0]
         self.assertEqual(player.resources.total(), 0)
 
 
@@ -122,7 +134,7 @@ class TestRollDiceDistribution(unittest.TestCase):
             actions = get_legal_actions(state, state.turn_state.player_index)
             if not actions:
                 break
-            state = apply_action(state, actions[0]).updated_state
+            state = _gs(apply_action(state, actions[0]))
         return state
 
     def test_roll_distributes_resources(self) -> None:
@@ -134,7 +146,7 @@ class TestRollDiceDistribution(unittest.TestCase):
         result = apply_action(state, RollDice(player_index=pi))
         self.assertTrue(result.success)
         # After rolling, pending should be BUILD_OR_TRADE or MOVE_ROBBER or DISCARD
-        new_state = result.updated_state
+        new_state = _gs(result)
         self.assertIn(
             new_state.turn_state.pending_action,
             [
@@ -155,7 +167,7 @@ class TestMainPhaseActions(unittest.TestCase):
             actions = get_legal_actions(state, state.turn_state.player_index)
             if not actions:
                 break
-            state = apply_action(state, actions[0]).updated_state
+            state = _gs(apply_action(state, actions[0]))
 
         if state.phase != GamePhase.MAIN:
             return state, 0
@@ -165,7 +177,7 @@ class TestMainPhaseActions(unittest.TestCase):
         actions = get_legal_actions(state, pi)
         roll = next((a for a in actions if a.action_type == ActionType.ROLL_DICE), None)
         if roll:
-            state = apply_action(state, roll).updated_state
+            state = _gs(apply_action(state, roll))
 
         # Handle any robber/discard
         for _ in range(20):
@@ -175,7 +187,7 @@ class TestMainPhaseActions(unittest.TestCase):
             acts = get_legal_actions(state, pi2)
             if not acts:
                 break
-            state = apply_action(state, acts[0]).updated_state
+            state = _gs(apply_action(state, acts[0]))
 
         if resources and state.phase == GamePhase.MAIN:
             state = copy.deepcopy(state)
@@ -198,7 +210,7 @@ class TestMainPhaseActions(unittest.TestCase):
         brick_before = state.players[pi].resources.brick
         result = apply_action(state, road_actions[0])
         self.assertTrue(result.success)
-        player = result.updated_state.players[pi]
+        player = _gs(result).players[pi]
         self.assertEqual(player.resources.wood, wood_before - 1)
         self.assertEqual(player.resources.brick, brick_before - 1)
 
@@ -212,7 +224,7 @@ class TestEndTurn(unittest.TestCase):
             actions = get_legal_actions(state, state.turn_state.player_index)
             if not actions:
                 break
-            state = apply_action(state, actions[0]).updated_state
+            state = _gs(apply_action(state, actions[0]))
 
         if state.phase != GamePhase.MAIN:
             self.skipTest('Did not reach main phase')
@@ -225,14 +237,14 @@ class TestEndTurn(unittest.TestCase):
             acts = get_legal_actions(state, state.turn_state.player_index)
             if not acts:
                 break
-            state = apply_action(state, acts[0]).updated_state
+            state = _gs(apply_action(state, acts[0]))
 
         if state.turn_state.pending_action != PendingActionType.BUILD_OR_TRADE:
             self.skipTest('Did not reach BUILD_OR_TRADE')
 
         result = apply_action(state, EndTurn(player_index=pi))
         self.assertTrue(result.success)
-        new_state = result.updated_state
+        new_state = _gs(result)
         expected_next = (pi + 1) % 2
         self.assertEqual(new_state.turn_state.player_index, expected_next)
         self.assertEqual(
@@ -243,13 +255,13 @@ class TestEndTurn(unittest.TestCase):
 class TestLongestRoad(unittest.TestCase):
     def test_empty_road_is_zero(self) -> None:
         state = create_initial_game_state(['Alice', 'Bob'], ['red', 'blue'], seed=1)
-        self.assertEqual(_calculate_longest_road(state.board, 0), 0)
+        self.assertEqual(calculate_longest_road(state.board, 0), 0)
 
     def test_single_road_is_one(self) -> None:
         state = create_initial_game_state(['Alice', 'Bob'], ['red', 'blue'], seed=1)
         board = copy.deepcopy(state.board)
         board.edges[0].road = Road(player_index=0)
-        self.assertEqual(_calculate_longest_road(board, 0), 1)
+        self.assertEqual(calculate_longest_road(board, 0), 1)
 
     def test_chain_of_roads(self) -> None:
         """A linear chain of N roads should have longest road = N."""
@@ -258,7 +270,7 @@ class TestLongestRoad(unittest.TestCase):
         # Build a chain: edge 0 → edge 1 → edge 2 (if connected)
         # Find a path of 3 connected edges
         edge0 = board.edges[0]
-        v0, v1 = edge0.vertex_ids
+        _v0, v1 = edge0.vertex_ids
         # Find edge connected to v1
         connected_edges = [
             e for e in board.edges if e.edge_id != 0 and v1 in e.vertex_ids
@@ -267,7 +279,7 @@ class TestLongestRoad(unittest.TestCase):
             board.edges[0].road = Road(player_index=0)
             board.edges[connected_edges[0].edge_id].road = Road(player_index=0)
             board.edges[connected_edges[1].edge_id].road = Road(player_index=0)
-            length = _calculate_longest_road(board, 0)
+            length = calculate_longest_road(board, 0)
             self.assertGreaterEqual(length, 2)
 
 
@@ -280,7 +292,7 @@ class TestRobberOnSeven(unittest.TestCase):
             actions = get_legal_actions(state, state.turn_state.player_index)
             if not actions:
                 break
-            state = apply_action(state, actions[0]).updated_state
+            state = _gs(apply_action(state, actions[0]))
 
         if state.phase != GamePhase.MAIN:
             self.skipTest('Did not reach main phase')
@@ -288,7 +300,7 @@ class TestRobberOnSeven(unittest.TestCase):
         pi = state.turn_state.player_index
         result = apply_action(state, RollDice(player_index=pi))
         self.assertTrue(result.success)
-        new_state = result.updated_state
+        new_state = _gs(result)
         self.assertIn(
             new_state.turn_state.pending_action,
             [
@@ -316,6 +328,10 @@ class TestVictoryCondition(unittest.TestCase):
 
         result = apply_action(state, settlement_actions[0])
         self.assertTrue(result.success)
-        new_state = result.updated_state
+        new_state = _gs(result)
         self.assertEqual(new_state.phase, GamePhase.ENDED)
         self.assertEqual(new_state.winner_index, 0)
+
+
+if __name__ == '__main__':
+    unittest.main()
