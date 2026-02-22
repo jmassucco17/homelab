@@ -57,6 +57,10 @@ The `docs/` directory contains reference documents that agents should load **onl
 - **`docs/deployments.md`** — Load when working on deployment workflows, CI pipelines, `start_service.sh`, or anything related to how services are built, tested, or shipped (CI integration tests, production deploy, staging deploy). Not needed for pure feature development inside a service.
 - **`docs/secrets.md`** — Load when adding a new secret, modifying `networking/.env`, updating a workflow that reads secrets, or troubleshooting authentication/credentials issues. Not needed for routine code changes.
 
+### Plans
+
+All planning documents must be stored in **`docs/plans/`** with a descriptive filename (e.g. `docs/plans/css-styling-plan.md`). Never create or update a `plan.md` at the repository root.
+
 ### Committing / Branches
 
 - Never do work directly on the `main` branch
