@@ -1,7 +1,7 @@
 """Unit tests for models.py database models."""
 
+import datetime
 import unittest
-from datetime import UTC, datetime
 
 from travel.app.photos import models
 
@@ -35,13 +35,13 @@ class TestLocation(unittest.TestCase):
 
     def test_location_created_date_defaults_to_now(self) -> None:
         """Test that created_date defaults to current UTC time."""
-        before = datetime.now(UTC)
+        before = datetime.datetime.now(datetime.UTC)
         location = models.PhotoLocation(
             name='Test',
             latitude=0.0,
             longitude=0.0,
         )
-        after = datetime.now(UTC)
+        after = datetime.datetime.now(datetime.UTC)
         self.assertGreaterEqual(location.created_date, before)
         self.assertLessEqual(location.created_date, after)
 
@@ -68,20 +68,20 @@ class TestPicture(unittest.TestCase):
 
     def test_picture_upload_date_defaults_to_now(self) -> None:
         """Test that upload_date defaults to current UTC time."""
-        before = datetime.now(UTC)
+        before = datetime.datetime.now(datetime.UTC)
         picture = models.Picture(
             filename='test.jpg',
             original_filename='test.jpg',
             file_size=1024,
             mime_type='image/jpeg',
         )
-        after = datetime.now(UTC)
+        after = datetime.datetime.now(datetime.UTC)
         self.assertGreaterEqual(picture.upload_date, before)
         self.assertLessEqual(picture.upload_date, after)
 
     def test_picture_with_all_fields(self) -> None:
         """Test Picture model with all optional fields set."""
-        date_taken = datetime(2024, 6, 15, 12, 0, 0, tzinfo=UTC)
+        date_taken = datetime.datetime(2024, 6, 15, 12, 0, 0, tzinfo=datetime.UTC)
         picture = models.Picture(
             filename='abc123.jpg',
             original_filename='sunset.jpg',

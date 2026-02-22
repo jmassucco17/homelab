@@ -1,36 +1,36 @@
-"""Database configuration and session management."""
+"""Database configuration and session management for the photos module."""
 
-# Database URL - using SQLite stored in the data directory
 import os
+from collections.abc import Generator
 
-from sqlmodel import Session, SQLModel, create_engine
+import sqlmodel
 
 data_dir = os.environ.get('DATA_DIR', 'data')
 DATABASE_URL = f'sqlite:///{data_dir}/travel.db'
 
 # Create engine with check_same_thread=False for SQLite
-engine = create_engine(
+engine = sqlmodel.create_engine(
     DATABASE_URL,
     connect_args={'check_same_thread': False},
     echo=True,
 )
 
 
-def create_db_and_tables():
+def create_db_and_tables() -> None:
     """Create database tables."""
     # Import models to ensure they're registered with SQLModel
     from . import models  # noqa: F401 # pyright: ignore[reportUnusedImport]
 
-    SQLModel.metadata.create_all(engine)
+    sqlmodel.SQLModel.metadata.create_all(engine)
 
 
-def get_session():
+def get_session() -> Generator[sqlmodel.Session, None, None]:
     """Get database session."""
-    with Session(engine) as session:
+    with sqlmodel.Session(engine) as session:
         yield session
 
 
-def get_admin_session():
+def get_admin_session() -> Generator[sqlmodel.Session, None, None]:
     """Get admin database session - same as regular session in this case."""
-    with Session(engine) as session:
+    with sqlmodel.Session(engine) as session:
         yield session
