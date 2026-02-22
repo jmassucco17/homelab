@@ -1,7 +1,7 @@
 """Database configuration and session management for the photos module."""
 
-import collections.abc
 import os
+from collections.abc import Generator
 
 import sqlmodel
 
@@ -24,13 +24,13 @@ def create_db_and_tables() -> None:
     sqlmodel.SQLModel.metadata.create_all(engine)
 
 
-def get_session() -> collections.abc.Generator[sqlmodel.Session, None, None]:
+def get_session() -> Generator[sqlmodel.Session, None, None]:
     """Get database session."""
     with sqlmodel.Session(engine) as session:
         yield session
 
 
-def get_admin_session() -> collections.abc.Generator[sqlmodel.Session, None, None]:
+def get_admin_session() -> Generator[sqlmodel.Session, None, None]:
     """Get admin database session - same as regular session in this case."""
     with sqlmodel.Session(engine) as session:
         yield session

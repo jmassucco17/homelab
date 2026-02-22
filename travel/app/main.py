@@ -1,9 +1,9 @@
 """Combined travel application - landing, photos, and maps."""
 
-import collections.abc
 import contextlib
 import os
 import pathlib
+from collections.abc import AsyncGenerator
 
 import fastapi
 import fastapi.responses
@@ -19,7 +19,7 @@ APP_DIR = pathlib.Path(__file__).resolve().parent
 
 
 @contextlib.asynccontextmanager
-async def lifespan(app: fastapi.FastAPI) -> collections.abc.AsyncGenerator[None, None]:
+async def lifespan(app: fastapi.FastAPI) -> AsyncGenerator[None, None]:
     """Initialize databases on startup."""
     photos_db.create_db_and_tables()
     maps_db.create_db_and_tables()

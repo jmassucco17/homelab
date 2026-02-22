@@ -1,8 +1,8 @@
 """Database configuration and session management for the maps module."""
 
-import collections.abc
 import os
 import pathlib
+from collections.abc import Generator
 
 import sqlmodel
 
@@ -20,7 +20,7 @@ def create_db_and_tables() -> None:
     sqlmodel.SQLModel.metadata.create_all(engine)
 
 
-def get_session() -> collections.abc.Generator[sqlmodel.Session, None, None]:
+def get_session() -> Generator[sqlmodel.Session, None, None]:
     """Get a database session."""
     with sqlmodel.Session(engine) as session:
         yield session

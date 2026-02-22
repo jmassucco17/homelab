@@ -1,6 +1,7 @@
 # Python Style Guide
 
 - Import at the module level and access classes or functions as <module>.<func>; never import classes or functions directly
+  - **Exception**: type-annotation helpers from `typing`, `typing_extensions`, and `collections.abc` (e.g. `from collections.abc import Generator`, `from typing import Any`) may be imported directly, since they are used exclusively as annotations
 - Provide argument and return type hinting for all methods and functions
 - Include docstrings for most classes and functions with brief description; in general, don't include args/returns info in the docstring unless it's non-obvious (e.g. if it returns a dict, describe the structure)
 - Include comments for operations that need additional explanation
