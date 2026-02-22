@@ -24,23 +24,14 @@ import fastapi
 import pydantic
 
 from ..engine import processor
-from ..models.game_state import GamePhase
-from ..models.serializers import serialize_model
-from ..models.ws_messages import (
-    ClientMessage,
-    ErrorMessage,
-    GameOver,
-    GameStateUpdate,
-    PlayerJoined,
-    SubmitAction,
-)
-from .room_manager import GameRoom, room_manager
+from ..models import game_state, serializers, ws_messages
+from . import room_manager
 
 router = fastapi.APIRouter()
 
 # Pydantic v2 TypeAdapter for the discriminated-union ClientMessage type.
-_client_message_adapter: pydantic.TypeAdapter[ClientMessage] = pydantic.TypeAdapter(
-    ClientMessage
+_client_message_adapter: pydantic.TypeAdapter[ws_messages.ClientMessage] = (
+    pydantic.TypeAdapter(ws_messages.ClientMessage)
 )
 
 
@@ -60,75 +51,83 @@ async def catan_ws(
     # Always accept before sending any message (WebSocket protocol requires it).
     await websocket.accept()
 
-    room = room_manager.get_room(room_code)
+    room = room_manager.room_manager.get_room(room_code)
     if room is None:
         await websocket.send_text(
-            ErrorMessage(error=f'Room {room_code!r} does not exist').model_dump_json()
+            ws_messages.ErrorMessage(
+                error=f'Room {room_code!r} does not exist'
+            ).model_dump_json()
         )
         await websocket.close(code=1008)
         return
 
-    slot = room_manager.join_room(room_code, player_name, websocket)
+    slot = room_manager.room_manager.join_room(room_code, player_name, websocket)
     if slot is None:
         await websocket.send_text(
-            ErrorMessage(error='Room is full or player name is taken').model_dump_json()
+            ws_messages.ErrorMessage(
+                error='Room is full or player name is taken'
+            ).model_dump_json()
         )
         await websocket.close(code=1008)
         return
 
     # Announce the new (or reconnected) player to everyone in the room.
-    joined_msg = PlayerJoined(
+    joined_msg = ws_messages.PlayerJoined(
         player_name=player_name,
         player_index=slot.player_index,
         total_players=room.player_count,
     )
-    await room_manager.broadcast(room, joined_msg.model_dump_json())
+    await room_manager.room_manager.broadcast(room, joined_msg.model_dump_json())
 
     try:
         while True:
             raw = await websocket.receive_text()
             try:
                 data = json.loads(raw)
-                client_msg: ClientMessage = _client_message_adapter.validate_python(
-                    data
+                client_msg: ws_messages.ClientMessage = (
+                    _client_message_adapter.validate_python(data)
                 )
             except (json.JSONDecodeError, pydantic.ValidationError) as exc:
-                await room_manager.send_to_player(
+                await room_manager.room_manager.send_to_player(
                     room,
                     slot.player_index,
-                    ErrorMessage(error=f'Invalid message: {exc}').model_dump_json(),
+                    ws_messages.ErrorMessage(
+                        error=f'Invalid message: {exc}'
+                    ).model_dump_json(),
                 )
                 continue
 
-            if isinstance(client_msg, SubmitAction):
+            if isinstance(client_msg, ws_messages.SubmitAction):
                 await _handle_submit_action(room, slot.player_index, client_msg)
             # JoinGame is redundant (join is via URL); RequestUndo is Phase 9.
 
     except fastapi.WebSocketDisconnect:
-        room_manager.disconnect_player(room_code, player_name)
+        room_manager.room_manager.disconnect_player(room_code, player_name)
 
 
 async def _handle_submit_action(
-    room: GameRoom,
+    room: room_manager.GameRoom,
     player_index: int,
-    msg: SubmitAction,
+    msg: ws_messages.SubmitAction,
 ) -> None:
     """Validate and apply a :class:`SubmitAction` message, then broadcast."""
 
     if room.game_state is None:
-        await room_manager.send_to_player(
+        await room_manager.room_manager.send_to_player(
             room,
             player_index,
-            ErrorMessage(error='Game has not started yet').model_dump_json(),
+            ws_messages.ErrorMessage(
+                error='Game has not started yet'
+            ).model_dump_json(),
         )
         return
 
     result = processor.apply_action(room.game_state, msg.action)
     if not result.success:
-        await room_manager.send_to_player(
+        await room_manager.room_manager.send_to_player(
             room,
             player_index,
-            ErrorMessage(
+            ws_messages.ErrorMessage(
                 error=result.error_message or 'Invalid action'
             ).model_dump_json(),
         )
@@ -140,7 +139,7 @@ async def _handle_submit_action(
     room.game_state = new_state
 
     # Check for game-over before broadcasting the state update.
-    if new_state.phase == GamePhase.ENDED:
+    if new_state.phase == game_state.GamePhase.ENDED:
         winner_index = new_state.winner_index
         if winner_index is not None:
             winner_slot = room.get_player_by_index(winner_index)
@@ -149,13 +148,17 @@ async def _handle_submit_action(
                 winner_name = ''
             else:
                 winner_name = winner_slot.name
-            game_over_msg = GameOver(
+            game_over_msg = ws_messages.GameOver(
                 winner_player_index=winner_index,
                 winner_name=winner_name,
                 final_victory_points=[p.victory_points for p in new_state.players],
             )
-            await room_manager.broadcast(room, game_over_msg.model_dump_json())
+            await room_manager.room_manager.broadcast(
+                room, game_over_msg.model_dump_json()
+            )
             return
 
-    state_update = GameStateUpdate(game_state=serialize_model(new_state))
-    await room_manager.broadcast(room, state_update.model_dump_json())
+    state_update = ws_messages.GameStateUpdate(
+        game_state=serializers.serialize_model(new_state)
+    )
+    await room_manager.room_manager.broadcast(room, state_update.model_dump_json())

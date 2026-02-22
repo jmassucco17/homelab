@@ -8,6 +8,7 @@ import unittest.mock
 
 import fastapi
 
+from games.app.catan.models import game_state as gs_module
 from games.app.catan.server import room_manager as rm_module
 
 
@@ -231,8 +232,6 @@ class TestRoomManagerStartGame(unittest.TestCase):
 
     def test_start_game_initial_pending_action_is_place_settlement(self) -> None:
         """Initial game state starts with PLACE_SETTLEMENT pending (setup phase)."""
-        from games.app.catan.models import game_state as gs_module  # noqa: PLC0415
-
         room = self.mgr.get_room(self.code)
         assert room is not None
         state = self.mgr.start_game(room)
@@ -243,8 +242,6 @@ class TestRoomManagerStartGame(unittest.TestCase):
 
     def test_start_game_phase_is_setup_forward(self) -> None:
         """Initial game state is in SETUP_FORWARD phase."""
-        from games.app.catan.models import game_state as gs_module  # noqa: PLC0415
-
         room = self.mgr.get_room(self.code)
         assert room is not None
         state = self.mgr.start_game(room)

@@ -22,10 +22,8 @@ import fastapi.responses
 import fastapi.templating
 import pydantic
 
-from ..catan.models.serializers import serialize_model
-from ..catan.models.ws_messages import GameStarted, GameStateUpdate
-from ..catan.server import ws_handler
-from ..catan.server.room_manager import room_manager
+from ..catan.models import serializers, ws_messages
+from ..catan.server import room_manager, ws_handler
 
 APP_DIR = pathlib.Path(__file__).resolve().parent.parent
 templates = fastapi.templating.Jinja2Templates(directory=APP_DIR / 'templates')
@@ -70,14 +68,14 @@ async def catan_lobby(request: fastapi.Request) -> fastapi.responses.HTMLRespons
 @router.post('/catan/rooms', response_model=RoomCreatedResponse)
 async def create_room() -> RoomCreatedResponse:
     """Create a new game room and return its 4-character code."""
-    code = room_manager.create_room()
+    code = room_manager.room_manager.create_room()
     return RoomCreatedResponse(room_code=code)
 
 
 @router.get('/catan/rooms/{room_code}', response_model=RoomStatusResponse)
 async def room_status(room_code: str) -> RoomStatusResponse:
     """Return the current status of a game room."""
-    room = room_manager.get_room(room_code)
+    room = room_manager.room_manager.get_room(room_code)
     if room is None:
         raise fastapi.HTTPException(
             status_code=404, detail=f'Room {room_code!r} not found'
@@ -97,7 +95,7 @@ async def start_game(room_code: str) -> dict[str, str]:
     Requires at least 2 players.  Broadcasts :class:`GameStarted` followed
     by the initial :class:`GameStateUpdate` to every connected client.
     """
-    room = room_manager.get_room(room_code)
+    room = room_manager.room_manager.get_room(room_code)
     if room is None:
         raise fastapi.HTTPException(
             status_code=404, detail=f'Room {room_code!r} not found'
@@ -109,15 +107,17 @@ async def start_game(room_code: str) -> dict[str, str]:
     if room.game_state is not None:
         raise fastapi.HTTPException(status_code=400, detail='Game has already started')
 
-    game_state = room_manager.start_game(room)
+    game_state = room_manager.room_manager.start_game(room)
 
-    started_msg = GameStarted(
+    started_msg = ws_messages.GameStarted(
         player_names=[slot.name for slot in room.players],
         turn_order=list(range(len(room.players))),
     )
-    await room_manager.broadcast(room, started_msg.model_dump_json())
+    await room_manager.room_manager.broadcast(room, started_msg.model_dump_json())
 
-    state_update = GameStateUpdate(game_state=serialize_model(game_state))
-    await room_manager.broadcast(room, state_update.model_dump_json())
+    state_update = ws_messages.GameStateUpdate(
+        game_state=serializers.serialize_model(game_state)
+    )
+    await room_manager.room_manager.broadcast(room, state_update.model_dump_json())
 
     return {'status': 'started'}

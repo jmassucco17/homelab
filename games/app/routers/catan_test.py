@@ -13,14 +13,14 @@ from games.app.catan.server import room_manager as rm_module
 
 
 def _fresh_client() -> tuple[fastapi.testclient.TestClient, rm_module.RoomManager]:
-    """Return a TestClient with a fresh RoomManager to prevent cross-test state."""
+    """Return a TestClient with a fresh RoomManager to prevent cross-test state.
+
+    Patching ``rm_module.room_manager`` is sufficient because both
+    ``ws_handler`` and the catan router access the singleton via
+    ``room_manager.room_manager`` (module-attribute lookup at call time).
+    """
     mgr = rm_module.RoomManager()
     rm_module.room_manager = mgr
-    import games.app.catan.server.ws_handler as wsh  # noqa: PLC0415
-    import games.app.routers.catan as cat  # noqa: PLC0415
-
-    wsh.room_manager = mgr
-    cat.room_manager = mgr
     return fastapi.testclient.TestClient(main.app), mgr
 
 

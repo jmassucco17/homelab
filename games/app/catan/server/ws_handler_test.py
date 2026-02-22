@@ -11,19 +11,19 @@ import fastapi.testclient
 from games.app import main
 from games.app.catan.models import actions as actions_module
 from games.app.catan.models import game_state as gs_module
-from games.app.catan.models.ws_messages import ServerMessageType
+from games.app.catan.models import ws_messages
 from games.app.catan.server import room_manager as rm_module
 
 
 def _fresh_client() -> tuple[fastapi.testclient.TestClient, rm_module.RoomManager]:
-    """Return a TestClient with a fresh RoomManager to prevent cross-test state."""
+    """Return a TestClient with a fresh RoomManager to prevent cross-test state.
+
+    Patching ``rm_module.room_manager`` is sufficient because both
+    ``ws_handler`` and the catan router access the singleton via
+    ``room_manager.room_manager`` (module-attribute lookup at call time).
+    """
     mgr = rm_module.RoomManager()
     rm_module.room_manager = mgr
-    import games.app.catan.server.ws_handler as wsh  # noqa: PLC0415
-    import games.app.routers.catan as cat  # noqa: PLC0415
-
-    wsh.room_manager = mgr
-    cat.room_manager = mgr
     return fastapi.testclient.TestClient(main.app), mgr
 
 
@@ -44,7 +44,9 @@ class TestCatanWebSocket(unittest.TestCase):
         """Connecting to a nonexistent room gets an error message."""
         with self.client.websocket_connect('/catan/ws/ZZZZ/Alice') as ws:
             msg = json.loads(ws.receive_text())
-            self.assertEqual(msg['message_type'], ServerMessageType.ERROR_MESSAGE)
+            self.assertEqual(
+                msg['message_type'], ws_messages.ServerMessageType.ERROR_MESSAGE
+            )
 
     def test_ws_room_full_sends_error(self) -> None:
         """A 5th player attempting to join a full room gets an error."""
@@ -70,7 +72,7 @@ class TestCatanWebSocket(unittest.TestCase):
                             msg = json.loads(ws5.receive_text())
                             self.assertEqual(
                                 msg['message_type'],
-                                ServerMessageType.ERROR_MESSAGE,
+                                ws_messages.ServerMessageType.ERROR_MESSAGE,
                             )
 
     # ------------------------------------------------------------------
@@ -82,7 +84,9 @@ class TestCatanWebSocket(unittest.TestCase):
         code = self._create_room()
         with self.client.websocket_connect(f'/catan/ws/{code}/Alice') as ws:
             msg = json.loads(ws.receive_text())
-            self.assertEqual(msg['message_type'], ServerMessageType.PLAYER_JOINED)
+            self.assertEqual(
+                msg['message_type'], ws_messages.ServerMessageType.PLAYER_JOINED
+            )
             self.assertEqual(msg['player_name'], 'Alice')
             self.assertEqual(msg['player_index'], 0)
             self.assertEqual(msg['total_players'], 1)
@@ -96,14 +100,15 @@ class TestCatanWebSocket(unittest.TestCase):
                 # Alice receives Bob's PlayerJoined.
                 alice_msg = json.loads(ws1.receive_text())
                 self.assertEqual(
-                    alice_msg['message_type'], ServerMessageType.PLAYER_JOINED
+                    alice_msg['message_type'],
+                    ws_messages.ServerMessageType.PLAYER_JOINED,
                 )
                 self.assertEqual(alice_msg['player_name'], 'Bob')
                 self.assertEqual(alice_msg['player_index'], 1)
                 # Bob receives their own PlayerJoined.
                 bob_msg = json.loads(ws2.receive_text())
                 self.assertEqual(
-                    bob_msg['message_type'], ServerMessageType.PLAYER_JOINED
+                    bob_msg['message_type'], ws_messages.ServerMessageType.PLAYER_JOINED
                 )
                 self.assertEqual(bob_msg['player_name'], 'Bob')
 
@@ -125,14 +130,16 @@ class TestCatanWebSocket(unittest.TestCase):
 
                 alice_started = json.loads(ws1.receive_text())
                 self.assertEqual(
-                    alice_started['message_type'], ServerMessageType.GAME_STARTED
+                    alice_started['message_type'],
+                    ws_messages.ServerMessageType.GAME_STARTED,
                 )
                 self.assertIn('Alice', alice_started['player_names'])
                 self.assertIn('Bob', alice_started['player_names'])
 
                 bob_started = json.loads(ws2.receive_text())
                 self.assertEqual(
-                    bob_started['message_type'], ServerMessageType.GAME_STARTED
+                    bob_started['message_type'],
+                    ws_messages.ServerMessageType.GAME_STARTED,
                 )
 
     def test_start_game_broadcasts_initial_state_update(self) -> None:
@@ -149,14 +156,16 @@ class TestCatanWebSocket(unittest.TestCase):
                 ws1.receive_text()  # GameStarted
                 alice_update = json.loads(ws1.receive_text())
                 self.assertEqual(
-                    alice_update['message_type'], ServerMessageType.GAME_STATE_UPDATE
+                    alice_update['message_type'],
+                    ws_messages.ServerMessageType.GAME_STATE_UPDATE,
                 )
                 self.assertIn('game_state', alice_update)
 
                 ws2.receive_text()  # GameStarted
                 bob_update = json.loads(ws2.receive_text())
                 self.assertEqual(
-                    bob_update['message_type'], ServerMessageType.GAME_STATE_UPDATE
+                    bob_update['message_type'],
+                    ws_messages.ServerMessageType.GAME_STATE_UPDATE,
                 )
 
     # ------------------------------------------------------------------
@@ -177,7 +186,9 @@ class TestCatanWebSocket(unittest.TestCase):
                 )
             )
             msg = json.loads(ws.receive_text())
-            self.assertEqual(msg['message_type'], ServerMessageType.ERROR_MESSAGE)
+            self.assertEqual(
+                msg['message_type'], ws_messages.ServerMessageType.ERROR_MESSAGE
+            )
 
     def test_submit_action_broadcasts_state_update(self) -> None:
         """A valid action (accepted by stub engine) broadcasts a GameStateUpdate."""
@@ -207,11 +218,13 @@ class TestCatanWebSocket(unittest.TestCase):
 
                 alice_update = json.loads(ws1.receive_text())
                 self.assertEqual(
-                    alice_update['message_type'], ServerMessageType.GAME_STATE_UPDATE
+                    alice_update['message_type'],
+                    ws_messages.ServerMessageType.GAME_STATE_UPDATE,
                 )
                 bob_update = json.loads(ws2.receive_text())
                 self.assertEqual(
-                    bob_update['message_type'], ServerMessageType.GAME_STATE_UPDATE
+                    bob_update['message_type'],
+                    ws_messages.ServerMessageType.GAME_STATE_UPDATE,
                 )
 
     def test_invalid_action_sends_error_to_acting_player_only(self) -> None:
@@ -251,7 +264,8 @@ class TestCatanWebSocket(unittest.TestCase):
                     )
                     error_msg = json.loads(ws1.receive_text())
                     self.assertEqual(
-                        error_msg['message_type'], ServerMessageType.ERROR_MESSAGE
+                        error_msg['message_type'],
+                        ws_messages.ServerMessageType.ERROR_MESSAGE,
                     )
                     self.assertIn('Not your turn', error_msg['error'])
 
@@ -262,7 +276,9 @@ class TestCatanWebSocket(unittest.TestCase):
             ws.receive_text()
             ws.send_text('not valid json {{{')
             msg = json.loads(ws.receive_text())
-            self.assertEqual(msg['message_type'], ServerMessageType.ERROR_MESSAGE)
+            self.assertEqual(
+                msg['message_type'], ws_messages.ServerMessageType.ERROR_MESSAGE
+            )
 
     def test_invalid_message_type_sends_error(self) -> None:
         """Sending a message with an unknown type returns an ErrorMessage."""
@@ -271,7 +287,9 @@ class TestCatanWebSocket(unittest.TestCase):
             ws.receive_text()
             ws.send_text(json.dumps({'message_type': 'unknown_type'}))
             msg = json.loads(ws.receive_text())
-            self.assertEqual(msg['message_type'], ServerMessageType.ERROR_MESSAGE)
+            self.assertEqual(
+                msg['message_type'], ws_messages.ServerMessageType.ERROR_MESSAGE
+            )
 
     # ------------------------------------------------------------------
     # Game-over broadcast
@@ -322,14 +340,15 @@ class TestCatanWebSocket(unittest.TestCase):
                     )
                     alice_msg = json.loads(ws1.receive_text())
                     self.assertEqual(
-                        alice_msg['message_type'], ServerMessageType.GAME_OVER
+                        alice_msg['message_type'],
+                        ws_messages.ServerMessageType.GAME_OVER,
                     )
                     self.assertEqual(alice_msg['winner_player_index'], 0)
                     self.assertEqual(alice_msg['winner_name'], 'Alice')
 
                     bob_msg = json.loads(ws2.receive_text())
                     self.assertEqual(
-                        bob_msg['message_type'], ServerMessageType.GAME_OVER
+                        bob_msg['message_type'], ws_messages.ServerMessageType.GAME_OVER
                     )
 
 

@@ -21,7 +21,7 @@ import string
 import fastapi
 
 from ..engine import turn_manager
-from ..models.game_state import GameState
+from ..models import game_state as gs
 
 # Seconds a disconnected player slot is held open for reconnection.
 RECONNECT_WINDOW_SECONDS: int = 60
@@ -72,7 +72,7 @@ class GameRoom:
     def __init__(self, room_code: str) -> None:
         self.room_code = room_code
         self.players: list[PlayerSlot] = []
-        self.game_state: GameState | None = None
+        self.game_state: gs.GameState | None = None
         self.created_at: datetime.datetime = datetime.datetime.now(datetime.UTC)
 
     # ------------------------------------------------------------------
@@ -227,7 +227,7 @@ class RoomManager:
     # Game initialisation
     # ------------------------------------------------------------------
 
-    def start_game(self, room: GameRoom) -> GameState:
+    def start_game(self, room: GameRoom) -> gs.GameState:
         """Initialise a new :class:`GameState` for *room* and store it.
 
         Uses :func:`~games.app.catan.engine.turn_manager.create_initial_game_state`
@@ -236,9 +236,9 @@ class RoomManager:
         """
         names = [slot.name for slot in room.players]
         colors = [slot.color for slot in room.players]
-        game_state = turn_manager.create_initial_game_state(names, colors)
-        room.game_state = game_state
-        return game_state
+        state = turn_manager.create_initial_game_state(names, colors)
+        room.game_state = state
+        return state
 
 
 # Module-level singleton consumed by the HTTP and WebSocket routers.
