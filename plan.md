@@ -1,215 +1,329 @@
-# Website Styling Modernization Plan
+# Secrets Management Improvement Plan
+
+## Overview
+
+This document reviews the current approach to managing secrets in this repo
+(`docs/secrets.md` + `_deploy.yml`) and proposes concrete improvements ranked by
+security impact and implementation cost.
+
+---
 
 ## Current State
 
-The site currently uses hand-crafted vanilla CSS spread across several locations:
+### How secrets are stored today
 
-| File | Purpose |
-|------|---------|
-| `shared-assets/assets/styles/main.css` | Shared design system — CSS custom properties (theme colors), typography, layout primitives (`.grid`, `.card`, `section`, `footer`) |
-| `blog/app/static/styles/blog-index.css` | Blog listing page overrides |
-| `blog/app/static/styles/blog-post.css` | Blog post typography, code blocks, animations |
-| `travel-site/app/static/css/gallery.css` | Travel gallery layout (uses **hardcoded** colors — not on the design system) |
-| `travel-site/app/static/css/map.css` | Travel map layout (also uses **hardcoded** colors) |
-| `travel-site/app/static/css/admin.css` | Admin upload UI |
+All secrets live as **repository-level** GitHub Actions secrets (Settings → Secrets and
+variables → Actions). There is no use of GitHub Environments.
 
-**Strengths of the current approach:**
-- CSS custom properties already define a two-theme system (dark/light).
-- Stylelint + Prettier enforces consistent formatting.
-- `shared-assets` service acts as a CDN, so all sub-sites can pull the same base CSS.
+| Secret | Scope | Notes |
+|--------|-------|-------|
+| `TAILSCALE_OAUTH_CLIENT_ID` | Repo | Shared by prod and staging |
+| `TAILSCALE_OAUTH_SECRET` | Repo | Shared by prod and staging |
+| `SSH_PRIVATE_KEY` | Repo | Shared by prod and staging |
+| `SERVER_HOST` | Repo | Shared by prod and staging |
+| `SERVER_USER` | Repo | Shared by prod and staging |
+| `NETWORKING_ENV` | Repo | Full contents of `networking/.env` for **prod** |
+| `STAGING_NETWORKING_ENV` | Repo | Full contents of `networking/.env` for **staging** |
+| `TMDB_API_KEY` | Repo | Prod only (conditional in workflow) |
 
-**Pain points:**
-- No CSS preprocessor means no nesting, no mixins, no partials — larger files are harder to maintain.
-- `travel-site` CSS is completely disconnected from the design system (hardcoded hex values instead of `var(--color-*)` tokens).
-- No consistent spacing / typography scale — values are chosen ad-hoc per file.
-- No PostCSS pipeline, so modern CSS syntax (e.g. `color-mix()`, relative colors, nesting) is used inconsistently and not transpiled for older browsers.
-- Linting is per-repo with no shared config between services.
+### How secrets are used in `_deploy.yml`
 
----
-
-## Inspiration Options
-
-### Option A — Polished Terminal / Hacker (evolution of current dark theme)
-
-The existing dark theme is already "cool tech" in vibe. Leaning further in that direction gives the site a distinctive, memorable identity that matches the homelab subject matter.
-
-**References:**
-- [terminal.shop](https://terminal.shop) — minimal, monospace, CLI-inspired
-- [charm.sh](https://charm.sh) — neon-on-dark, polished CLI tools brand
-- [htmx.org](https://htmx.org) — concise, dark, monospace heavy
-
-**Design language:**
-- Primary font: `Fira Code` (already in use) for headings and UI chrome
-- Body text: `JetBrains Mono` or `IBM Plex Mono` for a slight upgrade
-- Palette: deep navy/charcoal background, electric blue/cyan accent, subtle green for "ok" states
-- Micro-animations: cursor blink on title, scanline overlay, typed-text hero
-- Section dividers: ASCII-art style horizontal rules (`───────────────`)
-
-**Pros:** Cohesive with the homelab theme; existing color tokens are close already.  
-**Cons:** Monospace everywhere reduces readability in long-form blog posts.
+1. **`NETWORKING_ENV` / `STAGING_NETWORKING_ENV`** — Written to `networking/.env` via:
+   ```yaml
+   run: |
+     printf '%s' "${{ secrets.NETWORKING_ENV }}" > networking/.env
+   ```
+2. **`TMDB_API_KEY`** — Written to `tools/.env` via:
+   ```yaml
+   run: printf 'TMDB_API_KEY=%s\n' "${{ secrets.TMDB_API_KEY }}" > tools/.env
+   ```
+3. **`SSH_PRIVATE_KEY`** — Written to `~/.ssh/deploy_key`, then used by `ssh` and `scp`.
+4. **`SERVER_HOST` / `SERVER_USER`** — Interpolated directly into shell strings:
+   ```yaml
+   run: ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+     "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" ...
+   ```
 
 ---
 
-### Option B — Clean Developer Portfolio (modern minimal)
+## Problems Identified
 
-Strips back to clean whitespace, strong typography hierarchy, and tasteful accents. Think a senior engineer's portfolio or a well-regarded technical blog.
+### Problem 1 — Direct `${{ secrets.X }}` interpolation into shell commands (High)
 
-**References:**
-- [leerob.io](https://leerob.io) — minimal, fast, system fonts, subtle transitions
-- [paco.me](https://paco.me) — ultra-minimal, strong type scale
-- [rauno.me](https://rauno.me) — refined motion, high-contrast cards
+GitHub Actions substitutes `${{ secrets.X }}` by embedding the raw secret value into
+the YAML/shell text **before** the shell runner sees it. This means:
 
-**Design language:**
-- Primary font: `Inter` (already loaded in `blog-post.css`) for headings and UI
-- Body text: `Merriweather` (already loaded) for blog posts
-- Palette: near-white background (#fafafa), near-black text, single mid-tone accent (indigo or teal)
-- Components: thin borders, generous padding, sharp shadows on hover
-- Dark mode: slightly warm dark (`#18181b`) instead of the current cold navy
+- If a secret value contains characters meaningful to the shell (quotes, `$`, backticks,
+  newlines), the shell command can be **malformed or broken**. For example, if
+  `NETWORKING_ENV` contains a double-quote, the `printf` call in `_deploy.yml` will
+  fail or behave unexpectedly because it is surrounded by `"…"` in the YAML `run:` block.
+- The secret value is embedded in the step's command string, which is more visible
+  (though GitHub does mask known secret values in logs, this relies on exact string
+  matching and can miss multiline secrets or truncated values).
 
-**Pros:** Professional, readable, easy to extend; fonts are already loaded.  
-**Cons:** Less distinctive — many portfolios look like this.
+**Affected steps in `_deploy.yml`:**
+- `Write networking/.env from secret` — `printf '%s' "${{ secrets.NETWORKING_ENV }}"`
+- `Write tools/.env from secret` — `printf 'TMDB_API_KEY=%s\n' "${{ secrets.TMDB_API_KEY }}"`
+- `Upload archive to server` — `"${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}"`
+- `Deploy services on server` — same `SERVER_USER@SERVER_HOST` interpolation
+- `Set up SSH key` — `"${{ secrets.SERVER_HOST }}"` passed to `ssh-keyscan`
 
----
+The fix is to pass secrets through the `env:` block and reference them as shell
+environment variables (`$VAR` instead of `${{ secrets.VAR }}`):
 
-### Option C — Warm Editorial / Magazine
-
-Warmer color palette inspired by high-quality editorial sites. Good fit if the travel blog becomes a first-class part of the site.
-
-**References:**
-- [every.to](https://every.to) — newsletter / editorial, great typography
-- [increment.com](https://increment.com) — technical magazine aesthetic
-- [narative.co](https://narative.co) — warm, photo-forward
-
-**Design language:**
-- Primary font: `Playfair Display` or `Libre Baskerville` for display headings
-- Body text: `Source Serif 4` or `Georgia` for long-form reading
-- Palette: cream/off-white background, warm brown/amber accents, dusty rose highlights
-- Section dividers: thin horizontal rules with decorative fleurons
-- Cards: photo-dominant with caption overlays rather than icon+text
-
-**Pros:** Excellent for travel content; very readable long-form.  
-**Cons:** Harder to make "dark mode" feel right; clashes with the hacker/tech vibe of the homelab content.
-
----
-
-### Option D — Glassmorphism / Gradient (bold, contemporary)
-
-High-contrast gradients, frosted-glass cards, and strong depth cues. Trending in 2024–2025 developer sites and SaaS landing pages.
-
-**References:**
-- [vercel.com](https://vercel.com) — gradient glows, sharp dark backgrounds
-- [linear.app](https://linear.app) — gradient mesh hero, crisp cards
-- [stripe.com](https://stripe.com) — frosted glass, layered depth
-
-**Design language:**
-- Background: deep dark with subtle gradient mesh or noise texture
-- Cards: `backdrop-filter: blur()` frosted glass effect
-- Accents: vivid gradient (purple→blue, or teal→cyan) on hero, CTAs, and borders
-- Typography: `Geist` or `Plus Jakarta Sans` — clean geometric sans-serif
-- Hover states: glow / neon border effect
-
-**Pros:** Eye-catching and modern; very popular right now.  
-**Cons:** Performance cost of `backdrop-filter`; can feel trendy/dated in two years.
-
----
-
-## Technology Stack Options
-
-### Option 1 — Vanilla CSS + PostCSS *(recommended for this project)*
-
-Keep plain `.css` files but add a **PostCSS** build step to the `shared-assets` service. This unlocks:
-- `postcss-nesting` — author CSS with the native nesting spec (`& .child {}`)
-- `postcss-custom-media` — named breakpoints (`@media (--tablet) {}`)
-- `autoprefixer` — vendor prefixes without manual effort
-- `postcss-import` — merge `@import` statements into one minified bundle at build time
-
-The output is still a plain CSS file served by Nginx — no JavaScript runtime required.
-
-```
-shared-assets/
-  styles/
-    base/
-      _tokens.css      ← CSS custom properties (colors, spacing, type scale)
-      _reset.css       ← minimal modern reset (no normalize.css bloat)
-      _typography.css  ← font imports + base scale
-    components/
-      _buttons.css
-      _cards.css
-      _nav.css
-    layout/
-      _grid.css
-      _page.css
-    themes/
-      _dark.css
-      _light.css
-    main.css           ← @import all partials → PostCSS builds this
+```yaml
+- name: Write networking/.env from secret
+  env:
+    NETWORKING_ENV: ${{ secrets.NETWORKING_ENV }}
+  run: printf '%s' "$NETWORKING_ENV" > networking/.env
 ```
 
-**Tooling additions:** `postcss`, `postcss-cli`, `postcss-nesting`, `autoprefixer`  
-**Build command:** `postcss styles/main.css -o dist/main.css`  
-**Fits existing setup because:** Already has `npm`, `stylelint`, `prettier`. One new npm script and a `postcss.config.js`.
+This is shell-safe because the variable is evaluated by the shell, not embedded in the
+script text.
 
 ---
 
-### Option 2 — SASS/SCSS
+### Problem 2 — Monolithic `.env` blobs are hard to rotate and audit (Medium)
 
-The classic CSS preprocessor. Adds variables, nesting, mixins, functions, `@use`/`@forward` module system.
+Storing the entire `networking/.env` as a single opaque GitHub secret means:
 
-**Pros:** Mature ecosystem; every CSS developer knows it; excellent IDE support.  
-**Cons:** Adds a Dart Sass binary to the build; CSS variables (which are already used for theming) and SCSS variables serve overlapping purposes; the `dart-sass` package is 6 MB.
-
-**Verdict:** SCSS makes most sense if you want powerful mixins for repetitive patterns. For this project's scale, PostCSS nesting and CSS variables cover the use case with less overhead.
-
----
-
-### Option 3 — Tailwind CSS
-
-Utility-first CSS framework. Write classes directly in HTML (`class="flex gap-4 p-6 rounded-lg"`).
-
-**Pros:** Very fast to prototype; zero dead CSS in production (tree-shaking built in); excellent DX with the IntelliSense plugin.  
-**Cons:** Jinja2 templates are not a first-class Tailwind target (works, but no HMR); HTML becomes verbose; harder to extract reusable component classes from `.jinja2` templates across multiple services; conflicts with the existing design-system approach.
-
-**Verdict:** Better suited to React/Vue component libraries than server-rendered Jinja templates. Not recommended.
+- **Rotating one credential** (e.g. the Cloudflare API token) requires fetching the
+  current blob out of band, editing it, and re-uploading the entire thing. There is no
+  UI affordance for "update just this field."
+- **Auditing changes** is impossible — GitHub's secret update history only records
+  *when* a secret was updated, not what changed inside it.
+- The format of the blob must stay in sync with the fields that `docker-compose.yml`
+  expects, but this constraint is invisible when editing the secret in the GitHub UI.
 
 ---
 
-### Option 4 — Open Props + vanilla CSS
+### Problem 3 — No GitHub Environments; no deployment protection rules (Medium)
 
-[Open Props](https://open-props.style) is a library of well-tuned CSS custom properties (spacing scale, color palette, type scale, easings, shadows). Drop it in as a CDN link and build on top of it.
+All secrets are repo-level. Any workflow job that runs can read any secret regardless of
+whether it is deploying to production or staging. This means:
 
-**Pros:** Zero build step; plug-and-play design tokens; excellent dark mode support; very small (`~7 kB` for just the props you use).  
-**Cons:** Adds a third-party CDN dependency; naming conventions differ from current `--color-*` tokens (migration required).
-
-**Verdict:** Good option if the goal is a quick design system upgrade with zero build tooling. Can be combined with Option 1.
+- There is no gate that requires a human to approve a production deployment before it
+  proceeds — any push to `main` immediately deploys to prod with no review step.
+- There is no distinction in the audit log between "this run used prod secrets" and
+  "this run used staging secrets."
+- The separate `NETWORKING_ENV` / `STAGING_NETWORKING_ENV` naming convention is a
+  manual workaround for the absence of environment-scoped secrets. When both environments
+  have their own secret named `NETWORKING_ENV`, the conditional logic in the workflow
+  (`if staging … else …`) goes away.
 
 ---
 
-## Recommended Plan
+### Problem 4 — `StrictHostKeyChecking=no` bypasses host-key verification (Medium)
 
-**Recommended combination: Inspiration B or A + Technology Stack 1 (PostCSS)**
+`_deploy.yml` runs `ssh-keyscan` to pre-populate `~/.ssh/known_hosts`, then immediately
+passes `-o StrictHostKeyChecking=no` to both `scp` and `ssh`. The flag makes the
+`known_hosts` population pointless — if the host key has been replaced (e.g. via a
+MITM or server rebuild), the connection proceeds anyway.
 
-### Phase 1 — Consolidate the Design System
+`ssh-keyscan` is also a TOFU (Trust On First Use) approach: it trusts whatever key the
+server returns at scan time, providing no guarantee of authenticity against a compromised
+network path.
 
-1. Refactor `shared-assets/assets/styles/main.css` into partials (`_tokens.css`, `_reset.css`, etc.) using the folder structure above.
-2. Add PostCSS build step to `shared-assets` (new `npm run build:css` script and `Dockerfile` step).
-3. Migrate `travel-site` CSS to use `var(--color-*)` tokens from the shared design system instead of hardcoded hex values.
-4. Bump the `?v=` query string on CDN links to bust the cache.
+---
 
-### Phase 2 — Choose and Apply a Visual Refresh
+### Problem 5 — SSH key and target user are not scoped to a deploy role (Low)
 
-5. Pick one of the inspiration options above (owner decision).
-6. Update `_tokens.css` with the new color palette, spacing scale, and type scale.
-7. Update fonts in `_typography.css`; remove unused Google Fonts imports.
-8. Refine component styles (cards, buttons, nav) to match the chosen direction.
+`docs/secrets.md` documents `SERVER_USER` as "typically `root` or a deploy user" without
+enforcing a non-root choice. An SSH key that logs in as `root` has unrestricted access
+to the server; a compromised CI runner or leaked key would allow full server takeover.
 
-### Phase 3 — Per-Service Polish
+---
 
-9. Update `blog-post.css` typography to match the new scale.
-10. Update travel-site `gallery.css` and `map.css` to use design tokens.
-11. Verify dark/light theme toggle still works correctly with the new tokens.
+## Proposed Improvements
 
-### Phase 4 — Maintenance Improvements
+The items below are ordered from highest-impact / lowest-effort to lowest-impact / highest
+effort.
 
-12. Add `postcss-preset-env` to allow modern CSS syntax with a fallback target (e.g. `last 2 versions`).
-13. Add a `lint:css` check to CI (currently linting exists but may not be wired into GitHub Actions).
-14. Document the design token naming convention in `shared-assets/README.md`.
+---
+
+### Improvement 1 — Pass all secrets via `env:` blocks (High impact, Low effort)
+
+**Change:** In every `run:` step in `_deploy.yml` that currently uses
+`${{ secrets.X }}` inside the shell script text, move the secret to an `env:` key on
+that step and reference it as `$VAR_NAME`.
+
+**Example — before:**
+```yaml
+- name: Write tools/.env from secret
+  run: printf 'TMDB_API_KEY=%s\n' "${{ secrets.TMDB_API_KEY }}" > tools/.env
+```
+
+**Example — after:**
+```yaml
+- name: Write tools/.env from secret
+  env:
+    TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+  run: printf 'TMDB_API_KEY=%s\n' "$TMDB_API_KEY" > tools/.env
+```
+
+Apply the same change to the SSH host/user references and the `ssh-keyscan` call.
+
+**Files affected:** `.github/workflows/_deploy.yml`
+
+---
+
+### Improvement 2 — Adopt GitHub Environments with environment-scoped secrets (High impact, Medium effort)
+
+**Change:** Create two GitHub Environments (`prod` and `staging`) under **Settings →
+Environments** in the repository, then:
+
+1. Move `NETWORKING_ENV` into the `prod` environment, renamed to `NETWORKING_ENV`.
+2. Move `STAGING_NETWORKING_ENV` into the `staging` environment, also named
+   `NETWORKING_ENV` (same name, different scope).
+3. Move `TMDB_API_KEY` into the `prod` environment (it is only used for prod).
+4. Leave the Tailscale and SSH secrets at the repo level since they are shared, **or**
+   duplicate them into both environments for tighter scoping.
+5. In `_deploy.yml`, declare `environment: ${{ inputs.environment }}` on the `deploy`
+   job. GitHub will automatically supply the right `NETWORKING_ENV` for the chosen
+   environment — the `if staging … else …` conditional in the "Write networking/.env"
+   step can be removed entirely.
+6. Add a **required reviewer** protection rule to the `prod` environment so that any
+   production deployment (including automatic pushes to `main`) requires manual approval.
+
+**Before (workflow):**
+```yaml
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write networking/.env from secret
+        run: |
+          if [ "${{ inputs.environment }}" = "staging" ]; then
+            printf '%s' "${{ secrets.STAGING_NETWORKING_ENV }}" > networking/.env
+          else
+            printf '%s' "${{ secrets.NETWORKING_ENV }}" > networking/.env
+          fi
+```
+
+**After (workflow):**
+```yaml
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Write networking/.env from secret
+        env:
+          NETWORKING_ENV: ${{ secrets.NETWORKING_ENV }}
+        run: printf '%s' "$NETWORKING_ENV" > networking/.env
+```
+
+**Files affected:** `.github/workflows/_deploy.yml`, `.github/workflows/build-and-deploy.yml`
+
+---
+
+### Improvement 3 — Break up the monolithic `NETWORKING_ENV` blob into individual secrets (Medium impact, Medium effort)
+
+**Change:** Replace the single `NETWORKING_ENV` blob with one GitHub secret per
+`.env` variable. The `_deploy.yml` step then assembles `networking/.env` from the
+individual secrets at deploy time:
+
+```yaml
+- name: Write networking/.env
+  env:
+    CLOUDFLARE_API_EMAIL: ${{ secrets.CLOUDFLARE_API_EMAIL }}
+    CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    CLOUDFLARE_TRUSTED_IPS: ${{ secrets.CLOUDFLARE_TRUSTED_IPS }}
+    GOOGLE_OAUTH2_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH2_CLIENT_ID }}
+    GOOGLE_OAUTH2_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH2_CLIENT_SECRET }}
+    GOOGLE_OAUTH2_COOKIE_SECRET: ${{ secrets.GOOGLE_OAUTH2_COOKIE_SECRET }}
+    OAUTH2_AUTHORIZED_EMAILS: ${{ secrets.OAUTH2_AUTHORIZED_EMAILS }}
+  run: |
+    cat > networking/.env <<EOF
+    CLOUDFLARE_API_EMAIL=${CLOUDFLARE_API_EMAIL}
+    CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+    CLOUDFLARE_TRUSTED_IPS=${CLOUDFLARE_TRUSTED_IPS}
+    GOOGLE_OAUTH2_CLIENT_ID=${GOOGLE_OAUTH2_CLIENT_ID}
+    GOOGLE_OAUTH2_CLIENT_SECRET=${GOOGLE_OAUTH2_CLIENT_SECRET}
+    GOOGLE_OAUTH2_COOKIE_SECRET=${GOOGLE_OAUTH2_COOKIE_SECRET}
+    OAUTH2_AUTHORIZED_EMAILS=${OAUTH2_AUTHORIZED_EMAILS}
+    EOF
+```
+
+Benefits:
+- Rotating the Cloudflare token only requires updating `CLOUDFLARE_API_TOKEN`.
+- The set of required secrets is visible and enumerated in the workflow YAML, not hidden
+  inside an opaque blob.
+- Adding a new `.env` field means adding a new secret and a new line in the workflow —
+  both changes are visible in code review.
+
+Downside: more secrets to configure initially (one-time setup cost).
+
+**Note:** `CLOUDFLARE_TRUSTED_IPS` is a list of IP ranges and contains no sensitive
+data. It could alternatively be stored as a plain (non-secret) **Actions variable**
+(Settings → Secrets and variables → Variables tab) or directly in the repo config.
+
+**Files affected:** `.github/workflows/_deploy.yml`, `docs/secrets.md`
+
+---
+
+### Improvement 4 — Store the server's SSH host key fingerprint as a secret (Medium impact, Low effort)
+
+**Change:** Instead of running `ssh-keyscan` (which trusts whatever the server returns
+at scan time) and then overriding it with `-o StrictHostKeyChecking=no`, store the
+server's known-good SSH host key as a GitHub secret (`SERVER_SSH_HOST_KEY`) and use it
+to populate `known_hosts`:
+
+```yaml
+- name: Set up SSH key
+  env:
+    SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+    SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
+    SERVER_HOST: ${{ secrets.SERVER_HOST }}
+  run: |
+    mkdir -p ~/.ssh
+    printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+    chmod 600 ~/.ssh/deploy_key
+    printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
+```
+
+Then remove `-o StrictHostKeyChecking=no` from all `ssh` and `scp` calls. With a
+pinned host key in `known_hosts`, strict checking is both safe and meaningful.
+
+To obtain the value of `SERVER_SSH_HOST_KEY`, run on the server:
+```bash
+ssh-keyscan -H <server-host> 2>/dev/null
+```
+and store the output line (e.g. `|1|…| ssh-ed25519 AAAA…`) as the secret. If the
+server is ever rebuilt and the host key changes, update the secret to match.
+
+**Files affected:** `.github/workflows/_deploy.yml`, `docs/secrets.md`
+
+---
+
+### Improvement 5 — Use a dedicated, non-root deploy user (Low impact, Medium effort)
+
+**Change:** Create a `deploy` user on the server with:
+- Write access to `/opt/homelab`
+- Membership in the `docker` group (to run `docker compose`)
+- No other elevated permissions (no `sudo`, no `root` shell)
+
+Update `SERVER_USER` to `deploy` and document this requirement in `docs/secrets.md`.
+
+This limits the blast radius of a compromised CI runner or leaked SSH key: an attacker
+can update the homelab deployment but cannot run arbitrary root commands.
+
+**Files affected:** `docs/secrets.md` (documentation only; server setup is manual)
+
+---
+
+## Summary Table
+
+| # | Improvement | Security impact | Effort | Removes issue |
+|---|-------------|----------------|--------|---------------|
+| 1 | Pass secrets via `env:` blocks | High | Low | Problem 1 |
+| 2 | GitHub Environments + protection rules | High | Medium | Problem 3 |
+| 3 | Individual secrets per `.env` field | Medium | Medium | Problem 2 |
+| 4 | Pinned SSH host key in `known_hosts` | Medium | Low | Problem 4 |
+| 5 | Dedicated non-root deploy user | Low | Medium | Problem 5 |
+
+**Recommended order of implementation:** 1 → 4 → 2 → 3 → 5
+
+Items 1 and 4 are pure workflow changes with no GitHub UI setup required and can be done
+in a single PR. Item 2 requires creating Environments in GitHub settings before the
+workflow change can be merged. Items 3 and 5 can follow as separate PRs.
