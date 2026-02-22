@@ -1,11 +1,12 @@
 """Unit tests for maps routes through the combined travel application."""
 
+import collections.abc
 import unittest
 
+import fastapi.testclient
 import sqlalchemy
 import sqlalchemy.pool
 import sqlmodel
-from fastapi.testclient import TestClient
 
 from travel.app import main
 from travel.app.maps import database as maps_db
@@ -31,7 +32,10 @@ class TestMapsRoutes(unittest.TestCase):
         """Set up test client with in-memory databases."""
         self.engine = make_in_memory_engine()
 
-        def override_get_session():
+        def override_get_session() -> collections.abc.Generator[
+            sqlmodel.Session, None, None
+        ]:
+            """Yield an in-memory database session for testing."""
             with sqlmodel.Session(self.engine) as session:
                 yield session
 
@@ -39,7 +43,7 @@ class TestMapsRoutes(unittest.TestCase):
         overrides[photos_db.get_session] = override_get_session
         overrides[photos_db.get_admin_session] = override_get_session
         overrides[maps_db.get_session] = override_get_session
-        self.client = TestClient(main.app)
+        self.client = fastapi.testclient.TestClient(main.app)
 
     def tearDown(self) -> None:
         """Restore original dependency overrides."""
