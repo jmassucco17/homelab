@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Check source files for XXX comment markers."""
 
 import pathlib
 import re
