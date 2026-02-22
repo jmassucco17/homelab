@@ -20,13 +20,8 @@ import string
 
 import fastapi
 
-from ..board_generator import generate_board
-from ..models.game_state import GameState, TurnState
-from ..models.player import (
-    DEV_CARD_COUNTS,
-    DevCardType,
-    Player,
-)
+from ..engine import turn_manager
+from ..models.game_state import GameState
 
 # Seconds a disconnected player slot is held open for reconnection.
 RECONNECT_WINDOW_SECONDS: int = 60
@@ -235,32 +230,13 @@ class RoomManager:
     def start_game(self, room: GameRoom) -> GameState:
         """Initialise a new :class:`GameState` for *room* and store it.
 
-        Generates a random board, assigns players from the current slots,
-        shuffles the development-card deck, and sets the first turn state.
+        Uses :func:`~games.app.catan.engine.turn_manager.create_initial_game_state`
+        to create a properly configured state, including the setup-phase pending
+        action and a shuffled development-card deck.
         """
-        board = generate_board()
-
-        players = [
-            Player(
-                player_index=slot.player_index,
-                name=slot.name,
-                color=slot.color,
-            )
-            for slot in room.players
-        ]
-
-        dev_card_deck: list[DevCardType] = []
-        for card_type, count in DEV_CARD_COUNTS.items():
-            dev_card_deck.extend([card_type] * count)
-        random.shuffle(dev_card_deck)
-
-        turn_state = TurnState(player_index=0)
-        game_state = GameState(
-            players=players,
-            board=board,
-            turn_state=turn_state,
-            dev_card_deck=dev_card_deck,
-        )
+        names = [slot.name for slot in room.players]
+        colors = [slot.color for slot in room.players]
+        game_state = turn_manager.create_initial_game_state(names, colors)
         room.game_state = game_state
         return game_state
 

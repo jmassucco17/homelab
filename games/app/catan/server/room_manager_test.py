@@ -229,6 +229,27 @@ class TestRoomManagerStartGame(unittest.TestCase):
         self.mgr.start_game(room)
         self.assertNotEqual(room.phase, 'lobby')
 
+    def test_start_game_initial_pending_action_is_place_settlement(self) -> None:
+        """Initial game state starts with PLACE_SETTLEMENT pending (setup phase)."""
+        from games.app.catan.models import game_state as gs_module  # noqa: PLC0415
+
+        room = self.mgr.get_room(self.code)
+        assert room is not None
+        state = self.mgr.start_game(room)
+        self.assertEqual(
+            state.turn_state.pending_action,
+            gs_module.PendingActionType.PLACE_SETTLEMENT,
+        )
+
+    def test_start_game_phase_is_setup_forward(self) -> None:
+        """Initial game state is in SETUP_FORWARD phase."""
+        from games.app.catan.models import game_state as gs_module  # noqa: PLC0415
+
+        room = self.mgr.get_room(self.code)
+        assert room is not None
+        state = self.mgr.start_game(room)
+        self.assertEqual(state.phase, gs_module.GamePhase.SETUP_FORWARD)
+
 
 if __name__ == '__main__':
     unittest.main()
