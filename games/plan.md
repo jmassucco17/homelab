@@ -38,106 +38,27 @@ One known iOS Safari caveat: **WebSockets over HTTP are blocked**; connections m
 
 ---
 
-## Phase 0 — Infrastructure (parallel with all other phases)
+## Phase 0 — Infrastructure ✅ (completed in [PR #23](https://github.com/jmassucco17/homelab/pull/23))
 
-**Agent: infra-agent**
-No other phase can be deployed until this is done, but development of game logic and UI can proceed locally in parallel.
-
-- [ ] Create `games/Dockerfile` — mirror `blog/Dockerfile`, serving from `games/app/`
-- [ ] Create `games/docker-compose.yml` — Traefik labels for `games.jamesmassucco.com`, port 8000, healthcheck
-- [ ] Create `games/start.sh` — mirror `blog/start.sh`
-- [ ] Update `scripts/start_all.sh` — add `"games"` to the `PROJECTS` array
-- [ ] Update `networking/docker-compose.yml` — add DNS/certificate entry for `games.jamesmassucco.com` (follow pattern of other sub-domains in that file)
-- [ ] Update `.github/dependabot.yml` — add Docker entry for `/games` directory
-- [ ] Create `games/app/` skeleton — FastAPI app entry point `games/app/main.py` with a `/health` endpoint and a root route that renders `index.html`
-- [ ] Create `games/app/templates/base.html` — shared HTML shell (nav bar linking to Snake, Pong, and Catan; link to shared-assets CSS if applicable)
-- [ ] Create `games/app/static/` — directory for per-game JS/CSS files
+Created the Docker infrastructure (`Dockerfile`, `docker-compose.yml`, `start.sh`), updated `start_local.sh`, added `games.jamesmassucco.com` to Traefik routing and Cloudflare DDNS, added Dependabot coverage, and bootstrapped the FastAPI app skeleton with `/health` endpoint, `base.html` template shell, and `static/` directory.
 
 ---
 
-## Phase 1 — Snake (self-contained; no backend state needed)
+## Phase 1 — Snake ✅ (completed in [PR #23](https://github.com/jmassucco17/homelab/pull/23))
 
-**Agent: snake-agent** — depends only on Phase 0 skeleton (can develop against a local static HTML file before Phase 0 is complete)
-
-### 1a — Game logic (`games/app/static/snake/snake.js`)
-- [ ] Implement core game loop using `requestAnimationFrame`
-- [ ] Grid-based snake movement, wall and self-collision detection
-- [ ] Food spawning and score tracking
-- [ ] Keyboard controls (arrow keys / WASD)
-- [ ] Game-over screen with restart button
-- [ ] Speed increase as score grows
-
-### 1b — UI/template (`games/app/templates/snake.html`)
-- [ ] HTML Canvas element sized to game grid
-- [ ] Score display, high-score stored in `localStorage`
-- [ ] Mobile-friendly touch swipe controls
-- [ ] Responsive CSS
-
-### 1c — Backend route (`games/app/routers/snake.py`)
-- [ ] `GET /snake` — renders `snake.html` template
-- [ ] Register router in `main.py`
+Implemented the full Snake game: canvas-based game loop with `requestAnimationFrame`, grid movement, wall/self-collision, food spawning, score tracking with `localStorage` high-score, keyboard (arrow/WASD) and touch swipe controls, speed scaling, game-over screen with restart. Backend route `GET /snake` renders `snake.html`.
 
 ---
 
-## Phase 2 — Pong (self-contained; no backend state needed)
+## Phase 2 — Pong ✅ (completed in [PR #36](https://github.com/jmassucco17/homelab/pull/36))
 
-**Agent: pong-agent** — runs fully in parallel with Phase 1
-
-### 2a — Game logic (`games/app/static/pong/pong.js`)
-- [ ] Canvas-based rendering (paddles, ball, score)
-- [ ] Physics: ball velocity, bouncing off walls and paddles, angle variation based on hit position
-- [ ] Single-player mode: right paddle controlled by simple AI (tracks ball Y position with a configurable speed cap)
-- [ ] Two-player local mode: left paddle = W/S keys, right paddle = Up/Down arrows
-- [ ] Mobile two-player mode: left paddle = left-side touch drag, right paddle = right-side touch drag (two-thumb play)
-- [ ] Game-over at first player to reach 7 points; rematch button
-
-### 2b — UI/template (`games/app/templates/pong.html`)
-- [ ] Mode selection screen (1P vs 2P)
-- [ ] Responsive canvas; pause on tab blur
-
-### 2c — Backend route (`games/app/routers/pong.py`)
-- [ ] `GET /pong` — renders `pong.html` template
-- [ ] Register router in `main.py`
+Implemented the full Pong game: canvas rendering of paddles/ball/score, physics with angle variation on hit position, single-player AI mode (right paddle tracks ball Y with speed cap), two-player local mode (W/S vs Up/Down), mobile two-thumb touch drag controls, mode selection screen, pause on tab blur, game-over at 7 points with rematch button. Backend route `GET /pong` renders `pong.html`.
 
 ---
 
-## Phase 3 — Catan: Architecture & Shared Contracts
+## Phase 3 — Catan: Architecture & Shared Contracts ✅ (completed in [PR #37](https://github.com/jmassucco17/homelab/pull/37))
 
-**Agent: catan-arch-agent** — must complete before Phases 4–8 begin; can run in parallel with Phases 1 and 2
-
-This phase produces the shared data models and API contracts that all other Catan agents depend on. No runnable game code is produced here, but it unblocks all parallel Catan workstreams.
-
-- [ ] **Board model** (`games/app/catan/models/board.py`)
-  - Hexagonal grid representation (cube coordinates)
-  - Tile types: forest, pasture, fields, hills, mountains, desert
-  - Number tokens (2–12, excluding 7)
-  - Port locations and types (3:1 and 2:1)
-  - Vertex and edge data structures (for settlements/cities/roads)
-  - Robber position
-- [ ] **Player model** (`games/app/catan/models/player.py`)
-  - Resources (wood, brick, wheat, sheep, ore)
-  - Development card hand
-  - Build inventory (settlements, cities, roads remaining)
-  - Victory points
-  - Ports owned
-- [ ] **Game state model** (`games/app/catan/models/game_state.py`)
-  - Player list and turn order
-  - Current phase (setup, main, ended)
-  - Current turn: player index, roll value, pending actions
-  - Longest road / largest army tracking
-  - Dice roll history
-- [ ] **Action schemas** (`games/app/catan/models/actions.py`)
-  - Pydantic models for every legal action: `PlaceSettlement`, `PlaceRoad`, `PlaceCity`, `RollDice`, `BuildDevCard`, `PlayKnight`, `PlayRoadBuilding`, `PlayYearOfPlenty`, `PlayMonopoly`, `TradeOffer`, `TradeWithBank`, `TradeWithPort`, `EndTurn`, `MoveRobber`, `StealResource`
-  - `ActionResult` model (success, updated state, error message)
-- [ ] **WebSocket message schemas** (`games/app/catan/models/ws_messages.py`)
-  - Client→Server: `JoinGame`, `SubmitAction`, `RequestUndo` (setup only)
-  - Server→Client: `GameStateUpdate`, `ErrorMessage`, `PlayerJoined`, `GameStarted`, `GameOver`
-- [ ] **Board generation algorithm** (`games/app/catan/board_generator.py`)
-  - Standard random layout (shuffle tiles and number tokens per Catan rules)
-  - Optional: balanced placement algorithm (no adjacent red numbers)
-  - Return serializable `Board` instance
-- [ ] **Serialization helpers** (`games/app/catan/models/serializers.py`)
-  - JSON-serializable forms of all models (for WebSocket transport and persistence)
+Implemented all shared data models and API contracts: `Board` with cube-coordinate hex grid, `HexTile`, `Vertex`, `Edge`, `Port`; `Player` with `Resources`, `DevCardHand`, `BuildInventory`; `GameState` with `TurnState` and `GamePhase`; all 19 `Action` Pydantic schemas plus `ActionResult`; WebSocket message schemas (`JoinGame`, `SubmitAction`, `RequestUndo`, `GameStateUpdate`, `ErrorMessage`, `PlayerJoined`, `GameStarted`, `GameOver`); the `board_generator.py` with full vertex/edge adjacency graph and port placement; and JSON serialization helpers.
 
 ---
 
@@ -145,7 +66,7 @@ This phase produces the shared data models and API contracts that all other Cata
 
 **Agent: catan-engine-agent** — depends on Phase 3 contracts; runs in parallel with Phases 5–8
 
-- [ ] **Rules engine** (`games/app/catan/engine/rules.py`)
+- [x] **Rules engine** (`games/app/catan/engine/rules.py`)
   - `get_legal_actions(game_state, player_index) -> list[Action]`
   - Setup phase: initial placement rules (no adjacency), road adjacent to own settlement
   - Main phase: build cost checks, placement validity (vertex/edge ownership, connectivity)
@@ -153,16 +74,16 @@ This phase produces the shared data models and API contracts that all other Cata
   - Longest road calculation (DFS over edge graph)
   - Largest army tracking
   - Victory condition check (≥10 VP)
-- [ ] **Action processor** (`games/app/catan/engine/processor.py`)
+- [x] **Action processor** (`games/app/catan/engine/processor.py`)
   - `apply_action(game_state, action) -> ActionResult`
   - Pure function (no side effects); returns new `GameState`
   - Handles all action types defined in Phase 3
   - Resource bank validation (finite resource cards)
-- [ ] **Turn manager** (`games/app/catan/engine/turn_manager.py`)
+- [x] **Turn manager** (`games/app/catan/engine/turn_manager.py`)
   - Setup phase order (1→2→…→N→N→…→1 snake-draft)
   - Main phase turn cycling
   - Dice roll → distribute resources → check robber → await player actions
-- [ ] **Unit tests** (`games/tests/catan/test_engine.py`)
+- [x] **Unit tests** (`games/app/tests/catan/test_engine.py`)
   - Legal action generation edge cases (can't build where occupied, etc.)
   - Resource distribution on roll (including 7)
   - Robber placement and stealing

@@ -147,6 +147,7 @@ services:
       CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN}
       DOMAINS: >
         jamesmassucco.com,
+        staging.jamesmassucco.com,
         dashboard.jamesmassucco.com,
         blog.jamesmassucco.com,
         oauth.jamesmassucco.com,

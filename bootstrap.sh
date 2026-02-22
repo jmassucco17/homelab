@@ -85,6 +85,35 @@ install_python_deps() {
     python3 -m pip install -r requirements.txt --quiet
 
     echo "$current_hash" > "$hash_file"
+
+    # Fix SSL certificate issues on macOS
+    if [ "$MACHINE" = "Mac" ]; then
+        fix_ssl_certificates
+    fi
+}
+
+fix_ssl_certificates() {
+    echo "🔐 Ensuring SSL certificates are configured..."
+
+    # Install certifi if not already installed
+    python3 -m pip install --upgrade certifi --quiet
+
+    # Set SSL_CERT_FILE in shell profile if not already set
+    local cert_path
+    cert_path=$(python3 -m certifi)
+    local shell_rc="${HOME}/.zshrc"
+
+    if ! grep -q "SSL_CERT_FILE" "$shell_rc" 2>/dev/null; then
+        echo "📝 Adding SSL_CERT_FILE to $shell_rc..."
+        {
+            echo ""
+            echo "# SSL certificate path for Python (auto-added by bootstrap.sh)"
+            echo "export SSL_CERT_FILE=\$(python3 -m certifi)"
+        } >> "$shell_rc"
+    fi
+
+    # Set for current session
+    export SSL_CERT_FILE="$cert_path"
 }
 
 setup_pre_commit() {
