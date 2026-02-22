@@ -1,0 +1,39 @@
+name: 'Build and Push Docker Image'
+description: 'Extract metadata, build, and push Docker image to GHCR'
+inputs:
+  image:
+    description: 'Image name (e.g., ghcr.io/jmassucco17/homelab/blog)'
+    required: true
+  context:
+    description: 'Build context path'
+    required: true
+  dockerfile:
+    description: 'Path to Dockerfile'
+    required: true
+  cache-scope:
+    description: 'Cache scope name'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ inputs.image }}
+        tags: |
+          type=sha,format=short
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push
+      uses: docker/build-push-action@v6
+      with:
+        context: ${{ inputs.context }}
+        file: ${{ inputs.dockerfile }}
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha,scope=${{ inputs.cache-scope }}
+        cache-to: type=gha,mode=max,scope=${{ inputs.cache-scope }}

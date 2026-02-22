@@ -1,0 +1,93 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - prod
+          - staging
+        default: 'prod'
+      seed_from_prod:
+        description: '[staging only] Seed data from production volume'
+        type: boolean
+        default: false
+      networking:
+        description: 'Deploy networking'
+        type: boolean
+        default: true
+      shared-assets:
+        description: 'Deploy shared-assets'
+        type: boolean
+        default: true
+      homepage:
+        description: 'Deploy homepage'
+        type: boolean
+        default: true
+      blog:
+        description: 'Deploy blog'
+        type: boolean
+        default: true
+      travel:
+        description: 'Deploy travel'
+        type: boolean
+        default: true
+      games:
+        description: 'Deploy games'
+        type: boolean
+        default: true
+      tools:
+        description: 'Deploy tools'
+        type: boolean
+        default: true
+
+jobs:
+  # Determine environment based on trigger and inputs
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.determine-env.outputs.environment }}
+    steps:
+      - name: Determine environment
+        id: determine-env
+        # If the workflow is triggered by a push (to main), it's prod;
+        # otherwise, use the input
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "environment=prod" >> "$GITHUB_OUTPUT"
+          else
+            echo "environment=${{ inputs.environment }}" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: setup
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/_build.yml
+    with:
+      environment: ${{ needs.setup.outputs.environment }}
+
+  deploy:
+    needs: [setup, build]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/_deploy.yml
+    secrets: inherit
+    with:
+      # Values after `||` are used on push to main
+      environment: ${{ needs.setup.outputs.environment }}
+      seed_from_prod: ${{ inputs.seed_from_prod || false }}
+      networking: ${{ inputs.networking || true }}
+      shared-assets: ${{ inputs['shared-assets'] || true }}
+      homepage: ${{ inputs.homepage || true }}
+      blog: ${{ inputs.blog || true }}
+      travel: ${{ inputs.travel || true }}
+      games: ${{ inputs.games || true }}
+      tools: ${{ inputs.tools || true }}

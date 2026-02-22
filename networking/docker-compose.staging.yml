@@ -1,0 +1,49 @@
+# Staging networking: adds OAuth2-proxy for *.staging.jamesmassucco.com.
+# The oauth-auth-staging forwardAuth middleware is defined on this container's
+# labels so any staging service can reference it without touching prod networking.
+#
+# Usage: scripts/start_service.sh networking --staging
+# Prerequisites: networking/.env must contain GOOGLE_OAUTH2_STAGING_COOKIE_SECRET
+services:
+  oauth2-proxy-staging:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+    container_name: oauth2-proxy-staging
+    environment:
+      OAUTH2_PROXY_PROVIDER: google
+      OAUTH2_PROXY_CLIENT_ID: ${GOOGLE_OAUTH2_CLIENT_ID}
+      OAUTH2_PROXY_CLIENT_SECRET: ${GOOGLE_OAUTH2_CLIENT_SECRET}
+      OAUTH2_PROXY_EMAIL_DOMAINS: '*'
+      OAUTH2_PROXY_AUTHENTICATED_EMAILS: ${OAUTH2_AUTHORIZED_EMAILS}
+      OAUTH2_PROXY_REDIRECT_URL: https://oauth.staging.jamesmassucco.com/oauth2/callback
+      OAUTH2_PROXY_COOKIE_SECRET: ${GOOGLE_OAUTH2_STAGING_COOKIE_SECRET}
+      OAUTH2_PROXY_COOKIE_DOMAIN: .staging.jamesmassucco.com
+      OAUTH2_PROXY_COOKIE_SECURE: true
+      OAUTH2_PROXY_COOKIE_SAMESITE: lax
+      OAUTH2_PROXY_SIGN_IN_PAGE: auto
+      OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: true
+      OAUTH2_PROXY_WHITELIST_DOMAINS: .staging.jamesmassucco.com
+      OAUTH2_PROXY_SET_XAUTHREQUEST: true
+      OAUTH2_PROXY_REVERSE_PROXY: true
+      OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
+      OAUTH2_PROXY_UPSTREAMS: static://200
+      OAUTH2_PROXY_SHOW_DEBUG_ON_ERROR: true
+    networks:
+      - web
+    labels:
+      - traefik.enable=true
+      # Route oauth.staging.jamesmassucco.com to this container
+      - traefik.http.routers.oauth-staging.rule=Host(`oauth.staging.jamesmassucco.com`)
+      - traefik.http.routers.oauth-staging.entrypoints=websecure
+      - traefik.http.routers.oauth-staging.tls.certresolver=cloudflare
+      - traefik.http.services.oauth-staging.loadbalancer.server.port=4180
+      # Define oauth-auth-staging middleware — referenced by staging service routers
+      - traefik.http.middlewares.oauth-auth-staging.forwardauth.address=https://oauth.staging.jamesmassucco.com/
+      - traefik.http.middlewares.oauth-auth-staging.forwardauth.trustForwardHeader=true
+      - traefik.http.middlewares.oauth-auth-staging.forwardauth.authResponseHeaders=X-Auth-Request-User,X-Auth-Request-Email
+    env_file:
+      - .env
+    restart: unless-stopped
+
+networks:
+  web:
+    external: true

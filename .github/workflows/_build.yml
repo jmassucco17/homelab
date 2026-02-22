@@ -1,0 +1,80 @@
+name: Build Images (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Environment to build for (prod or staging)'
+        required: false
+        type: string
+        default: 'prod'
+
+jobs:
+  build-base:
+    name: build python-base
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Docker and login
+        uses: ./.github/actions/docker-setup
+
+      - name: Build and push python-base
+        uses: ./.github/actions/docker-build-push
+        with:
+          image: ghcr.io/jmassucco17/homelab/python-base
+          context: .
+          dockerfile: python-base/Dockerfile
+          cache-scope: python-base
+
+  build:
+    name: build ${{ matrix.service }}
+    needs: build-base
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - service: shared-assets
+            image: ghcr.io/jmassucco17/homelab/shared-assets
+            context: shared-assets
+            file: shared-assets/Dockerfile
+          - service: homepage
+            image: ghcr.io/jmassucco17/homelab/homepage
+            context: homepage
+            file: homepage/Dockerfile
+          - service: blog
+            image: ghcr.io/jmassucco17/homelab/blog
+            context: .
+            file: blog/Dockerfile
+          - service: games
+            image: ghcr.io/jmassucco17/homelab/games
+            context: .
+            file: games/Dockerfile
+          - service: tools
+            image: ghcr.io/jmassucco17/homelab/tools
+            context: .
+            file: tools/Dockerfile
+          - service: travel
+            image: ghcr.io/jmassucco17/homelab/travel
+            context: .
+            file: travel/Dockerfile
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Docker and login
+        uses: ./.github/actions/docker-setup
+
+      - name: Build and push ${{ matrix.service }}
+        uses: ./.github/actions/docker-build-push
+        with:
+          image: ${{ matrix.image }}
+          context: ${{ matrix.context }}
+          dockerfile: ${{ matrix.file }}
+          cache-scope: ${{ matrix.service }}
