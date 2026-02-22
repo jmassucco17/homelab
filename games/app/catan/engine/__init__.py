@@ -1,1 +1,1 @@
-"""Catan rules engine package."""
+"""Catan game engine: rules, action processor, and turn management."""

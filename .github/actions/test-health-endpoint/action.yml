@@ -1,0 +1,19 @@
+name: Test health endpoint
+description: Tests that a FastAPI service's /health endpoint returns {"status":"healthy"}
+
+inputs:
+  service:
+    description: Service container name (e.g. blog, travel, games, tools)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Test health endpoint
+      shell: bash
+      run: |
+        docker exec ${{ inputs.service }} python3 -c '
+        import json, urllib.request
+        resp = urllib.request.urlopen("http://127.0.0.1:8000/health")
+        assert json.loads(resp.read())["status"] == "healthy"
+        '

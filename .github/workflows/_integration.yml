@@ -1,0 +1,251 @@
+name: Docker integration tests
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  compose-validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Create networking/.env stub
+        run: |
+          cat > networking/.env <<'EOF'
+          CLOUDFLARE_API_EMAIL=test@example.com
+          CLOUDFLARE_API_TOKEN=test-token
+          CLOUDFLARE_TRUSTED_IPS=0.0.0.0/0
+          GOOGLE_OAUTH2_CLIENT_ID=test-client-id
+          GOOGLE_OAUTH2_CLIENT_SECRET=test-client-secret
+          GOOGLE_OAUTH2_COOKIE_SECRET=00000000000000000000000000000000
+          OAUTH2_AUTHORIZED_EMAILS=test@example.com
+          EOF
+
+      - name: Validate all Compose files
+        run: |
+          for dir in networking shared-assets homepage blog travel games tools; do
+            echo "--- Validating $dir ---"
+
+            # Validate base compose file
+            echo "  Base: $dir/docker-compose.yml"
+            docker compose -f "$dir/docker-compose.yml" config --quiet
+
+            # Validate prod overlay if it exists
+            if [ -f "$dir/docker-compose.prod.yml" ]; then
+              echo "  Prod: $dir/docker-compose.yml + $dir/docker-compose.prod.yml"
+              docker compose -f "$dir/docker-compose.yml" -f "$dir/docker-compose.prod.yml" config --quiet
+            fi
+
+            # Validate staging overlay if it exists
+            if [ -f "$dir/docker-compose.staging.yml" ]; then
+              echo "  Staging: $dir/docker-compose.yml + $dir/docker-compose.staging.yml"
+              docker compose -f "$dir/docker-compose.yml" -f "$dir/docker-compose.staging.yml" config --quiet
+            fi
+          done
+
+  networking:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Create networking/.env with test credentials
+        run: |
+          COOKIE_SECRET=$(python3 -c "import secrets; print(secrets.token_hex(16))")
+          cat > networking/.env << EOF
+          CLOUDFLARE_API_EMAIL=test@example.com
+          CLOUDFLARE_API_TOKEN=test-token
+          CLOUDFLARE_TRUSTED_IPS=0.0.0.0/0
+          GOOGLE_OAUTH2_CLIENT_ID=test-client-id
+          GOOGLE_OAUTH2_CLIENT_SECRET=test-client-secret
+          GOOGLE_OAUTH2_COOKIE_SECRET=${COOKIE_SECRET}
+          OAUTH2_AUTHORIZED_EMAILS=test@example.com
+          EOF
+
+      - name: Create acme.json with correct permissions
+        run: |
+          touch networking/acme.json
+          chmod 600 networking/acme.json
+
+      - name: Create docker web network
+        run: docker network create web 2>/dev/null || true
+
+      - name: Pull cloudflare-ddns image (validates tag exists)
+        run: |
+          cd networking
+          docker compose pull cloudflare-ddns
+
+      - name: Start networking services (excluding cloudflare-ddns)
+        run: |
+          cd networking
+          docker compose up -d --wait traefik oauth2-proxy whoami
+
+      - name: Test traefik ping endpoint
+        run: docker exec traefik wget -qO- http://127.0.0.1:8080/ping
+
+      - name: Test oauth2-proxy is listening
+        run: |
+          PROXY_IP=$(docker inspect oauth2-proxy --format='{{.NetworkSettings.Networks.web.IPAddress}}')
+          docker run --rm --network web alpine wget -qO- "http://${PROXY_IP}:4180/ping"
+
+      - name: Test whoami is responding
+        run: |
+          WHOAMI_IP=$(docker inspect whoami --format='{{.NetworkSettings.Networks.web.IPAddress}}')
+          docker run --rm --network web alpine wget -qO- "http://${WHOAMI_IP}/"
+
+      - name: Stop networking services
+        uses: ./.github/actions/stop-service
+        if: always()
+        with:
+          service: networking
+
+  shared-assets:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Start shared-assets service
+        uses: ./.github/actions/start-service
+        with:
+          service: shared-assets
+
+      - name: Test CSS file is served
+        run: |
+          result=$(docker exec shared-assets wget -qO- http://127.0.0.1/styles/main.css)
+          echo "$result" | grep -q '@import'
+
+      - name: Test JS file is served
+        run: |
+          result=$(docker exec shared-assets wget -qO- http://127.0.0.1/scripts/theme-toggle.js)
+          echo "$result" | grep -q 'function'
+
+      - name: Test missing file returns 404
+        run: |
+          docker exec shared-assets wget -qO- http://127.0.0.1/nonexistent.txt 2>&1 | grep -q '404'
+
+      - name: Stop shared-assets service
+        uses: ./.github/actions/stop-service
+        if: always()
+        with:
+          service: shared-assets
+
+  homepage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Start homepage service
+        uses: ./.github/actions/start-service
+        with:
+          service: homepage
+
+      - name: Test index endpoint returns HTML
+        run: |
+          result=$(docker exec homepage wget -qO- http://127.0.0.1/)
+          echo "$result" | grep -qi '<html'
+
+      - name: Stop homepage service
+        uses: ./.github/actions/stop-service
+        if: always()
+        with:
+          service: homepage
+
+  blog:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Start blog service
+        uses: ./.github/actions/start-service
+        with:
+          service: blog
+
+      - name: Test health endpoint
+        uses: ./.github/actions/test-health-endpoint
+        with:
+          service: blog
+
+      - name: Stop blog service
+        uses: ./.github/actions/stop-service
+        if: always()
+        with:
+          service: blog
+
+  travel:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Start travel service
+        uses: ./.github/actions/start-service
+        with:
+          service: travel
+
+      - name: Test health endpoint
+        uses: ./.github/actions/test-health-endpoint
+        with:
+          service: travel
+
+      - name: Stop travel service
+        uses: ./.github/actions/stop-service
+        if: always()
+        with:
+          service: travel
+
+  games:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Start games service
+        uses: ./.github/actions/start-service
+        with:
+          service: games
+
+      - name: Test health endpoint
+        uses: ./.github/actions/test-health-endpoint
+        with:
+          service: games
+
+      - name: Stop games service
+        uses: ./.github/actions/stop-service
+        if: always()
+        with:
+          service: games
+
+  tools:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Start tools service
+        uses: ./.github/actions/start-service
+        with:
+          service: tools
+
+      - name: Test health endpoint
+        uses: ./.github/actions/test-health-endpoint
+        with:
+          service: tools
+
+      - name: Stop tools service
+        uses: ./.github/actions/stop-service
+        if: always()
+        with:
+          service: tools
