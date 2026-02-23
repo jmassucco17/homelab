@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import random
 
-from games.app.catan.engine import rules, turn_manager
-from games.app.catan.models import actions, board, game_state, player
+from ..models import actions, board, game_state, player
+from . import rules, turn_manager
 
 _LONGEST_ROAD_THRESHOLD = 4  # player must exceed this length to claim (i.e. ≥ 5 roads)
 _SETUP_PHASES = (

@@ -127,6 +127,7 @@ jobs:
         uses: ./.github/actions/start-service
         with:
           service: shared-assets
+          build: 'true'
 
       - name: Test CSS file is served
         run: |
@@ -159,6 +160,7 @@ jobs:
         uses: ./.github/actions/start-service
         with:
           service: homepage
+          build: 'true'
 
       - name: Test index endpoint returns HTML
         run: |
@@ -182,6 +184,7 @@ jobs:
         uses: ./.github/actions/start-service
         with:
           service: blog
+          build: 'true'
 
       - name: Test health endpoint
         uses: ./.github/actions/test-health-endpoint
@@ -205,6 +208,7 @@ jobs:
         uses: ./.github/actions/start-service
         with:
           service: travel
+          build: 'true'
 
       - name: Test health endpoint
         uses: ./.github/actions/test-health-endpoint
@@ -228,6 +232,7 @@ jobs:
         uses: ./.github/actions/start-service
         with:
           service: games
+          build: 'true'
 
       - name: Test health endpoint
         uses: ./.github/actions/test-health-endpoint
@@ -251,6 +256,7 @@ jobs:
         uses: ./.github/actions/start-service
         with:
           service: tools
+          build: 'true'
 
       - name: Test health endpoint
         uses: ./.github/actions/test-health-endpoint

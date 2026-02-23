@@ -6,7 +6,7 @@ and victory conditions.
 
 from __future__ import annotations
 
-from games.app.catan.models import actions, board, game_state, player
+from ..models import actions, board, game_state, player
 
 _SETUP_PHASES = (
     game_state.GamePhase.SETUP_FORWARD,

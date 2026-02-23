@@ -7,8 +7,8 @@ from __future__ import annotations
 
 import random
 
-from games.app.catan import board_generator
-from games.app.catan.models import game_state, player
+from .. import board_generator
+from ..models import game_state, player
 
 
 def create_initial_game_state(
