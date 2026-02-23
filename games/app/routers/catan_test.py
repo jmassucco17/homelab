@@ -199,7 +199,7 @@ class TestAddAIEndpoint(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
         self.assertEqual(data['status'], 'added')
-        self.assertIn('AI Easy', data['player_name'])
+        self.assertIn('AI, easy', data['player_name'])
         self.assertEqual(data['player_index'], 0)
         self.assertEqual(data['total_players'], 1)
 
@@ -274,7 +274,7 @@ class TestAddAIEndpoint(unittest.TestCase):
 
             msg = json.loads(ws.receive_text())
             self.assertEqual(msg['message_type'], 'player_joined')
-            self.assertIn('AI Medium', msg['player_name'])
+            self.assertIn('AI, medium', msg['player_name'])
             self.assertEqual(msg['player_index'], 1)
 
     def test_add_multiple_ai_players(self) -> None:
@@ -303,7 +303,7 @@ class TestAddAIEndpoint(unittest.TestCase):
         resp = self.client.post(f'/catan/rooms/{code}/add-ai')
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
-        self.assertIn('AI Easy', data['player_name'])
+        self.assertIn('AI, easy', data['player_name'])
 
 
 if __name__ == '__main__':
