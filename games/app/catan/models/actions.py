@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import enum
 import typing
+from typing import Literal
 
 import pydantic
 
@@ -47,56 +48,52 @@ class BaseAction(pydantic.BaseModel):
 class PlaceSettlement(BaseAction):
     """Place a settlement on a vertex."""
 
-    action_type: typing.Literal[ActionType.PLACE_SETTLEMENT] = (
-        ActionType.PLACE_SETTLEMENT
-    )
+    action_type: Literal[ActionType.PLACE_SETTLEMENT] = ActionType.PLACE_SETTLEMENT
     vertex_id: int
 
 
 class PlaceRoad(BaseAction):
     """Place a road on an edge."""
 
-    action_type: typing.Literal[ActionType.PLACE_ROAD] = ActionType.PLACE_ROAD
+    action_type: Literal[ActionType.PLACE_ROAD] = ActionType.PLACE_ROAD
     edge_id: int
 
 
 class PlaceCity(BaseAction):
     """Upgrade an existing settlement to a city on a vertex."""
 
-    action_type: typing.Literal[ActionType.PLACE_CITY] = ActionType.PLACE_CITY
+    action_type: Literal[ActionType.PLACE_CITY] = ActionType.PLACE_CITY
     vertex_id: int
 
 
 class RollDice(BaseAction):
     """Roll the two dice to start a main-phase turn."""
 
-    action_type: typing.Literal[ActionType.ROLL_DICE] = ActionType.ROLL_DICE
+    action_type: Literal[ActionType.ROLL_DICE] = ActionType.ROLL_DICE
 
 
 class BuildDevCard(BaseAction):
     """Purchase one development card from the deck."""
 
-    action_type: typing.Literal[ActionType.BUILD_DEV_CARD] = ActionType.BUILD_DEV_CARD
+    action_type: Literal[ActionType.BUILD_DEV_CARD] = ActionType.BUILD_DEV_CARD
 
 
 class PlayKnight(BaseAction):
     """Play a Knight card before or after rolling to move the robber."""
 
-    action_type: typing.Literal[ActionType.PLAY_KNIGHT] = ActionType.PLAY_KNIGHT
+    action_type: Literal[ActionType.PLAY_KNIGHT] = ActionType.PLAY_KNIGHT
 
 
 class PlayRoadBuilding(BaseAction):
     """Play a Road Building card to place up to two free roads."""
 
-    action_type: typing.Literal[ActionType.PLAY_ROAD_BUILDING] = (
-        ActionType.PLAY_ROAD_BUILDING
-    )
+    action_type: Literal[ActionType.PLAY_ROAD_BUILDING] = ActionType.PLAY_ROAD_BUILDING
 
 
 class PlayYearOfPlenty(BaseAction):
     """Play a Year of Plenty card to take any two resources from the bank."""
 
-    action_type: typing.Literal[ActionType.PLAY_YEAR_OF_PLENTY] = (
+    action_type: Literal[ActionType.PLAY_YEAR_OF_PLENTY] = (
         ActionType.PLAY_YEAR_OF_PLENTY
     )
     resource1: ResourceType
@@ -106,14 +103,14 @@ class PlayYearOfPlenty(BaseAction):
 class PlayMonopoly(BaseAction):
     """Play a Monopoly card to steal all of one resource type from every opponent."""
 
-    action_type: typing.Literal[ActionType.PLAY_MONOPOLY] = ActionType.PLAY_MONOPOLY
+    action_type: Literal[ActionType.PLAY_MONOPOLY] = ActionType.PLAY_MONOPOLY
     resource: ResourceType
 
 
 class TradeOffer(BaseAction):
     """Propose a domestic trade to one or all other players."""
 
-    action_type: typing.Literal[ActionType.TRADE_OFFER] = ActionType.TRADE_OFFER
+    action_type: Literal[ActionType.TRADE_OFFER] = ActionType.TRADE_OFFER
     # Maps resource name → quantity being offered.
     offering: dict[str, int]
     # Maps resource name → quantity being requested in return.
@@ -125,7 +122,7 @@ class TradeOffer(BaseAction):
 class TradeWithBank(BaseAction):
     """Trade four of one resource to the bank for one of another."""
 
-    action_type: typing.Literal[ActionType.TRADE_WITH_BANK] = ActionType.TRADE_WITH_BANK
+    action_type: Literal[ActionType.TRADE_WITH_BANK] = ActionType.TRADE_WITH_BANK
     giving: ResourceType
     receiving: ResourceType
 
@@ -133,7 +130,7 @@ class TradeWithBank(BaseAction):
 class TradeWithPort(BaseAction):
     """Trade via a port the player's settlements border (2:1 specific, 3:1 generic)."""
 
-    action_type: typing.Literal[ActionType.TRADE_WITH_PORT] = ActionType.TRADE_WITH_PORT
+    action_type: Literal[ActionType.TRADE_WITH_PORT] = ActionType.TRADE_WITH_PORT
     giving: ResourceType
     giving_count: int  # 2 for a specific-resource port, 3 for a generic port
     receiving: ResourceType
@@ -142,29 +139,27 @@ class TradeWithPort(BaseAction):
 class EndTurn(BaseAction):
     """End the current player's turn and advance to the next player."""
 
-    action_type: typing.Literal[ActionType.END_TURN] = ActionType.END_TURN
+    action_type: Literal[ActionType.END_TURN] = ActionType.END_TURN
 
 
 class MoveRobber(BaseAction):
     """Move the robber to a new tile (after rolling 7 or playing a Knight)."""
 
-    action_type: typing.Literal[ActionType.MOVE_ROBBER] = ActionType.MOVE_ROBBER
+    action_type: Literal[ActionType.MOVE_ROBBER] = ActionType.MOVE_ROBBER
     tile_index: int  # index into Board.tiles
 
 
 class StealResource(BaseAction):
     """Steal one random resource from a player adjacent to the newly placed robber."""
 
-    action_type: typing.Literal[ActionType.STEAL_RESOURCE] = ActionType.STEAL_RESOURCE
+    action_type: Literal[ActionType.STEAL_RESOURCE] = ActionType.STEAL_RESOURCE
     target_player_index: int
 
 
 class DiscardResources(BaseAction):
     """Discard half of hand when holding more than 7 cards after a 7 is rolled."""
 
-    action_type: typing.Literal[ActionType.DISCARD_RESOURCES] = (
-        ActionType.DISCARD_RESOURCES
-    )
+    action_type: Literal[ActionType.DISCARD_RESOURCES] = ActionType.DISCARD_RESOURCES
     # Maps resource name → quantity to discard.
     resources: dict[str, int]
 
@@ -172,21 +167,21 @@ class DiscardResources(BaseAction):
 class AcceptTrade(BaseAction):
     """Accept a pending domestic trade offer."""
 
-    action_type: typing.Literal[ActionType.ACCEPT_TRADE] = ActionType.ACCEPT_TRADE
+    action_type: Literal[ActionType.ACCEPT_TRADE] = ActionType.ACCEPT_TRADE
     trade_id: str
 
 
 class RejectTrade(BaseAction):
     """Decline a pending domestic trade offer."""
 
-    action_type: typing.Literal[ActionType.REJECT_TRADE] = ActionType.REJECT_TRADE
+    action_type: Literal[ActionType.REJECT_TRADE] = ActionType.REJECT_TRADE
     trade_id: str
 
 
 class CancelTrade(BaseAction):
     """Cancel a trade offer (initiated by the offering player)."""
 
-    action_type: typing.Literal[ActionType.CANCEL_TRADE] = ActionType.CANCEL_TRADE
+    action_type: Literal[ActionType.CANCEL_TRADE] = ActionType.CANCEL_TRADE
     trade_id: str
 
 

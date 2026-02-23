@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import enum
 import typing
+from typing import Literal
 
 import pydantic
 
@@ -40,9 +41,7 @@ class ServerMessageType(enum.StrEnum):
 class JoinGame(pydantic.BaseModel):
     """Sent by a client to join a game room."""
 
-    message_type: typing.Literal[ClientMessageType.JOIN_GAME] = (
-        ClientMessageType.JOIN_GAME
-    )
+    message_type: Literal[ClientMessageType.JOIN_GAME] = ClientMessageType.JOIN_GAME
     player_name: str
     room_code: str
 
@@ -50,7 +49,7 @@ class JoinGame(pydantic.BaseModel):
 class SubmitAction(pydantic.BaseModel):
     """Sent by a client to submit a game action."""
 
-    message_type: typing.Literal[ClientMessageType.SUBMIT_ACTION] = (
+    message_type: Literal[ClientMessageType.SUBMIT_ACTION] = (
         ClientMessageType.SUBMIT_ACTION
     )
     action: Action
@@ -59,7 +58,7 @@ class SubmitAction(pydantic.BaseModel):
 class RequestUndo(pydantic.BaseModel):
     """Sent by a client to undo the most recent placement (setup phase only)."""
 
-    message_type: typing.Literal[ClientMessageType.REQUEST_UNDO] = (
+    message_type: Literal[ClientMessageType.REQUEST_UNDO] = (
         ClientMessageType.REQUEST_UNDO
     )
 
