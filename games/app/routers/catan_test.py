@@ -186,5 +186,123 @@ class TestCatanRouter(unittest.TestCase):
                 self.assertEqual(resp.json()['phase'], 'setup_forward')
 
 
+class TestAddAIEndpoint(unittest.TestCase):
+    """Tests for the POST /catan/rooms/{room_code}/add-ai endpoint."""
+
+    def setUp(self) -> None:
+        self.client, self.mgr = _fresh_client()
+
+    def test_add_ai_to_room(self) -> None:
+        """Adding AI to a room returns success."""
+        code = self.client.post('/catan/rooms').json()['room_code']
+        resp = self.client.post(f'/catan/rooms/{code}/add-ai?difficulty=easy')
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data['status'], 'added')
+        self.assertIn('AI Easy', data['player_name'])
+        self.assertEqual(data['player_index'], 0)
+        self.assertEqual(data['total_players'], 1)
+
+    def test_add_ai_unknown_room(self) -> None:
+        """Adding AI to unknown room returns 404."""
+        resp = self.client.post('/catan/rooms/ZZZZ/add-ai?difficulty=easy')
+        self.assertEqual(resp.status_code, 404)
+
+    def test_add_ai_invalid_difficulty(self) -> None:
+        """Adding AI with invalid difficulty returns 400."""
+        code = self.client.post('/catan/rooms').json()['room_code']
+        resp = self.client.post(f'/catan/rooms/{code}/add-ai?difficulty=invalid')
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn('Invalid difficulty', resp.json()['detail'])
+
+    def test_add_ai_to_full_room(self) -> None:
+        """Adding AI to a full room (4 players) returns 400."""
+        code = self.client.post('/catan/rooms').json()['room_code']
+        with self.client.websocket_connect(f'/catan/ws/{code}/Alice') as ws1:
+            ws1.receive_text()
+            with self.client.websocket_connect(f'/catan/ws/{code}/Bob') as ws2:
+                ws1.receive_text()
+                ws2.receive_text()
+                with self.client.websocket_connect(f'/catan/ws/{code}/Carol') as ws3:
+                    ws1.receive_text()
+                    ws2.receive_text()
+                    ws3.receive_text()
+                    with self.client.websocket_connect(f'/catan/ws/{code}/Dave') as ws4:
+                        ws1.receive_text()
+                        ws2.receive_text()
+                        ws3.receive_text()
+                        ws4.receive_text()
+                        resp = self.client.post(
+                            f'/catan/rooms/{code}/add-ai?difficulty=easy'
+                        )
+                        self.assertEqual(resp.status_code, 400)
+
+    def test_add_ai_after_game_started(self) -> None:
+        """Adding AI after game has started returns 400."""
+        code = self.client.post('/catan/rooms').json()['room_code']
+        with self.client.websocket_connect(f'/catan/ws/{code}/Alice') as ws1:
+            ws1.receive_text()
+            with self.client.websocket_connect(f'/catan/ws/{code}/Bob') as ws2:
+                ws1.receive_text()
+                ws2.receive_text()
+
+                self.client.post(f'/catan/rooms/{code}/start')
+
+                # Drain GameStarted + GameStateUpdate.
+                ws1.receive_text()
+                ws1.receive_text()
+                ws2.receive_text()
+                ws2.receive_text()
+
+                resp = self.client.post(f'/catan/rooms/{code}/add-ai?difficulty=easy')
+                self.assertEqual(resp.status_code, 400)
+                self.assertIn('Cannot add AI after game has started', resp.json()['detail'])
+
+    def test_add_ai_broadcasts_player_joined(self) -> None:
+        """Adding AI broadcasts PlayerJoined to connected clients."""
+        code = self.client.post('/catan/rooms').json()['room_code']
+        with self.client.websocket_connect(f'/catan/ws/{code}/Alice') as ws:
+            ws.receive_text()  # Alice's PlayerJoined
+
+            resp = self.client.post(f'/catan/rooms/{code}/add-ai?difficulty=medium')
+            self.assertEqual(resp.status_code, 200)
+
+            # Alice should receive AI's PlayerJoined
+            import json
+
+            msg = json.loads(ws.receive_text())
+            self.assertEqual(msg['message_type'], 'player_joined')
+            self.assertIn('AI Medium', msg['player_name'])
+            self.assertEqual(msg['player_index'], 1)
+
+    def test_add_multiple_ai_players(self) -> None:
+        """Can add multiple AI players with different difficulties."""
+        code = self.client.post('/catan/rooms').json()['room_code']
+
+        resp1 = self.client.post(f'/catan/rooms/{code}/add-ai?difficulty=easy')
+        self.assertEqual(resp1.status_code, 200)
+        self.assertEqual(resp1.json()['player_index'], 0)
+
+        resp2 = self.client.post(f'/catan/rooms/{code}/add-ai?difficulty=medium')
+        self.assertEqual(resp2.status_code, 200)
+        self.assertEqual(resp2.json()['player_index'], 1)
+
+        resp3 = self.client.post(f'/catan/rooms/{code}/add-ai?difficulty=hard')
+        self.assertEqual(resp3.status_code, 200)
+        self.assertEqual(resp3.json()['player_index'], 2)
+
+        # Verify room status
+        room_resp = self.client.get(f'/catan/rooms/{code}')
+        self.assertEqual(room_resp.json()['player_count'], 3)
+
+    def test_add_ai_default_difficulty_is_easy(self) -> None:
+        """Not specifying difficulty defaults to easy."""
+        code = self.client.post('/catan/rooms').json()['room_code']
+        resp = self.client.post(f'/catan/rooms/{code}/add-ai')
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertIn('AI Easy', data['player_name'])
+
+
 if __name__ == '__main__':
     unittest.main()
