@@ -15,11 +15,15 @@ from __future__ import annotations
 import datetime
 import random
 import string
+from typing import TYPE_CHECKING
 
 import fastapi
 
 from ..engine import turn_manager
 from ..models import game_state as gs
+
+if TYPE_CHECKING:
+    from ..ai import base
 
 # Player colours assigned in join order (index 0–3).
 _PLAYER_COLORS: list[str] = ['red', 'blue', 'white', 'orange']
@@ -38,17 +42,21 @@ class PlayerSlot:
         player_index: int,
         name: str,
         color: str,
-        websocket: fastapi.WebSocket,
+        websocket: fastapi.WebSocket | None = None,
+        is_ai: bool = False,
+        ai_type: str | None = None,
     ) -> None:
         self.player_index = player_index
         self.name = name
         self.color = color
         self.websocket: fastapi.WebSocket | None = websocket
+        self.is_ai = is_ai
+        self.ai_type = ai_type  # 'easy', 'medium', or 'hard' if is_ai is True
 
     @property
     def is_connected(self) -> bool:
         """True if this player currently has an active WebSocket."""
-        return self.websocket is not None
+        return self.websocket is not None or self.is_ai
 
 
 class GameRoom:
@@ -59,6 +67,8 @@ class GameRoom:
         self.players: list[PlayerSlot] = []
         self.game_state: gs.GameState | None = None
         self.created_at: datetime.datetime = datetime.datetime.now(datetime.UTC)
+        # AI instances indexed by player_index (only for AI players)
+        self.ai_instances: dict[int, base.CatanAI] = {}
 
     # ------------------------------------------------------------------
     # Convenience properties
@@ -170,6 +180,45 @@ class RoomManager:
         if slot is not None:
             slot.websocket = None
 
+    def add_ai_player(self, room_code: str, ai_type: str = 'easy') -> PlayerSlot | None:
+        """Add an AI player to a room.
+
+        Args:
+            room_code: The room code to add the AI to.
+            ai_type: The AI difficulty level ('easy', 'medium', or 'hard').
+
+        Returns:
+            The created PlayerSlot for the AI, or None if the room is full or started.
+        """
+        room = self._rooms.get(room_code)
+        if room is None or not room.can_join():
+            return None
+
+        ai_name = f'AI {ai_type.capitalize()} {len(room.players) + 1}'
+        color = _PLAYER_COLORS[len(room.players)]
+        slot = PlayerSlot(
+            player_index=len(room.players),
+            name=ai_name,
+            color=color,
+            websocket=None,
+            is_ai=True,
+            ai_type=ai_type,
+        )
+        room.players.append(slot)
+
+        # Create and store the AI instance
+        from ..ai import easy, hard, medium
+
+        ai_classes = {
+            'easy': easy.EasyAI,
+            'medium': medium.MediumAI,
+            'hard': hard.HardAI,
+        }
+        ai_class = ai_classes.get(ai_type, easy.EasyAI)
+        room.ai_instances[slot.player_index] = ai_class()
+
+        return slot
+
     # ------------------------------------------------------------------
     # Messaging helpers
     # ------------------------------------------------------------------
@@ -214,7 +263,11 @@ class RoomManager:
         """
         names = [slot.name for slot in room.players]
         colors = [slot.color for slot in room.players]
-        state = turn_manager.create_initial_game_state(names, colors)
+        is_ai_list = [slot.is_ai for slot in room.players]
+        ai_types = [slot.ai_type for slot in room.players]
+        state = turn_manager.create_initial_game_state(
+            names, colors, is_ai_list=is_ai_list, ai_types=ai_types
+        )
         room.game_state = state
         return state
 
