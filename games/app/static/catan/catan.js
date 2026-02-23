@@ -225,6 +225,50 @@ async function initGame() {
       }
       statusEl.textContent = labels[status] || status
     },
+
+    onTradeProposed: (msg) => {
+      ui.setActiveTrade({
+        trade_id: msg.trade_id,
+        offering_player: msg.offering_player,
+        offering: msg.offering,
+        requesting: msg.requesting,
+        target_player: msg.target_player,
+      })
+      const offeringPlayer = ui.gameState?.players[msg.offering_player]
+      if (offeringPlayer && msg.offering_player !== myPlayerIndex) {
+        ui.updateLog(`🤝 ${offeringPlayer.name} proposed a trade`)
+      }
+    },
+
+    onTradeAccepted: (msg) => {
+      ui.setActiveTrade(null)
+      const offeringPlayer = ui.gameState?.players[msg.offering_player]
+      const acceptingPlayer = ui.gameState?.players[msg.accepting_player]
+      if (offeringPlayer && acceptingPlayer) {
+        ui.updateLog(`✅ ${acceptingPlayer.name} accepted ${offeringPlayer.name}'s trade`)
+        ui.showToast('Trade completed!', 'success')
+      }
+    },
+
+    onTradeRejected: (msg) => {
+      const rejectingPlayer = ui.gameState?.players[msg.rejecting_player]
+      if (rejectingPlayer && msg.rejecting_player !== myPlayerIndex) {
+        ui.updateLog(`❌ ${rejectingPlayer.name} rejected the trade`)
+      }
+      if (ui.activeTrade && ui.activeTrade.trade_id === msg.trade_id) {
+        if (msg.rejecting_player === myPlayerIndex) {
+          ui.setActiveTrade(null)
+        }
+      }
+    },
+
+    onTradeCancelled: (msg) => {
+      ui.setActiveTrade(null)
+      const offeringPlayer = ui.gameState?.players[msg.offering_player]
+      if (offeringPlayer && msg.offering_player !== myPlayerIndex) {
+        ui.updateLog(`🚫 ${offeringPlayer.name} cancelled their trade offer`)
+      }
+    },
   })
 
   wsClient.connect()

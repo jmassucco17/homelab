@@ -80,6 +80,8 @@ class GameRoom:
         self.created_at: datetime.datetime = datetime.datetime.now(datetime.UTC)
         # AI instances indexed by player_index (only for AI players)
         self.ai_instances: dict[int, base.CatanAI] = {}
+        # Active trade offer (if any)
+        self.pending_trade: object | None = None
 
     # ------------------------------------------------------------------
     # Convenience properties

@@ -67,6 +67,10 @@ export class CatanUI {
     /** @type {number|null} */
     this.myPlayerIndex = null
     this.onAction = options.onAction || (() => {})
+    /** @type {object|null} */
+    this.activeTrade = null
+    /** @type {object|null} Track previous resource counts for change detection */
+    this.previousResources = null
   }
 
   // -------------------------------------------------------------------------
@@ -145,6 +149,7 @@ export class CatanUI {
     this._renderBuildMenu()
     this._renderActionButtons()
     this._renderDiceDisplay()
+    this._renderTradeNotifications()
   }
 
   _renderPlayers() {
@@ -209,6 +214,9 @@ export class CatanUI {
     el.querySelectorAll('.play-dev-btn').forEach((btn) => {
       btn.addEventListener('click', () => this._handleDevCardPlay(btn.dataset.type))
     })
+
+    // Animate resources that changed
+    this._animateResourceChanges(res)
   }
 
   _renderBuildMenu() {
@@ -287,11 +295,18 @@ export class CatanUI {
       el.appendChild(btn)
 
       // Bank trade shortcut
-      const tradeBtn = document.createElement('button')
-      tradeBtn.className = 'action-btn trade-btn'
-      tradeBtn.textContent = '🔄 Bank Trade'
-      tradeBtn.addEventListener('click', () => this._showBankTradeDialog())
-      el.appendChild(tradeBtn)
+      const bankTradeBtn = document.createElement('button')
+      bankTradeBtn.className = 'action-btn trade-btn'
+      bankTradeBtn.textContent = '🔄 Bank Trade'
+      bankTradeBtn.addEventListener('click', () => this._showBankTradeDialog())
+      el.appendChild(bankTradeBtn)
+
+      // Player trade button
+      const playerTradeBtn = document.createElement('button')
+      playerTradeBtn.className = 'action-btn trade-btn'
+      playerTradeBtn.textContent = '🤝 Propose Trade'
+      playerTradeBtn.addEventListener('click', () => this._showPlayerTradeDialog())
+      el.appendChild(playerTradeBtn)
     }
   }
 
@@ -396,11 +411,206 @@ export class CatanUI {
     })
   }
 
+  _showPlayerTradeDialog() {
+    if (!this.gameState || this.myPlayerIndex === null) return
+    const player = this.gameState.players[this.myPlayerIndex]
+
+    // Build resource selection strings
+    const resStr = (res) => `${RESOURCE_EMOJIS[res]} ${res} (${player.resources[res] || 0})`
+
+    // Ask what they're offering
+    const offeringStr = prompt(
+      'Propose Trade — What will you offer?\nFormat: resource:amount, resource:amount\nExample: wood:2, brick:1\n\nOptions: ' +
+        RESOURCE_OPTIONS.map(resStr).join(', '),
+    )
+    if (!offeringStr) return
+    const offering = this._parseResourceDict(offeringStr)
+    if (!offering) {
+      this.showToast('Invalid format. Use "resource:amount, resource:amount"', 'error')
+      return
+    }
+
+    // Ask what they're requesting
+    const requestingStr = prompt(
+      'What do you want in return?\nFormat: resource:amount, resource:amount\nExample: wheat:1, ore:1\n\nOptions: ' +
+        RESOURCE_OPTIONS.map((r) => `${RESOURCE_EMOJIS[r]} ${r}`).join(', '),
+    )
+    if (!requestingStr) return
+    const requesting = this._parseResourceDict(requestingStr)
+    if (!requesting) {
+      this.showToast('Invalid format. Use "resource:amount, resource:amount"', 'error')
+      return
+    }
+
+    // Ask which player (or all)
+    const otherPlayers = this.gameState.players
+      .filter((p) => p.player_index !== this.myPlayerIndex)
+      .map((p) => `${p.player_index}: ${p.name}`)
+      .join('\n')
+    const targetStr = prompt(
+      `Trade with which player?\nEnter player number, or leave blank to offer to all players.\n\n${otherPlayers}`,
+    )
+
+    let targetPlayer = null
+    if (targetStr && targetStr.trim()) {
+      targetPlayer = parseInt(targetStr.trim(), 10)
+      if (
+        isNaN(targetPlayer) ||
+        targetPlayer === this.myPlayerIndex ||
+        !this.gameState.players[targetPlayer]
+      ) {
+        this.showToast('Invalid player number.', 'error')
+        return
+      }
+    }
+
+    this.onAction({
+      action_type: 'trade_offer',
+      player_index: this.myPlayerIndex,
+      offering,
+      requesting,
+      target_player: targetPlayer,
+    })
+  }
+
+  _parseResourceDict(str) {
+    try {
+      const result = {}
+      const pairs = str.split(',').map((s) => s.trim())
+      for (const pair of pairs) {
+        const [res, amtStr] = pair.split(':').map((s) => s.trim().toLowerCase())
+        const amt = parseInt(amtStr, 10)
+        if (!RESOURCE_OPTIONS.includes(res) || isNaN(amt) || amt <= 0) {
+          return null
+        }
+        result[res] = (result[res] || 0) + amt
+      }
+      return Object.keys(result).length > 0 ? result : null
+    } catch {
+      return null
+    }
+  }
+
+  _renderTradeNotifications() {
+    const el = document.getElementById('catan-trade-notifications')
+    if (!el) return
+    if (!this.activeTrade) {
+      el.innerHTML = ''
+      el.style.display = 'none'
+      return
+    }
+
+    const trade = this.activeTrade
+    const offeringPlayer = this.gameState.players[trade.offering_player]
+    const isMyTrade = trade.offering_player === this.myPlayerIndex
+    const isTargeted = trade.target_player === null || trade.target_player === this.myPlayerIndex
+
+    if (isMyTrade) {
+      // Show cancel button for the offering player
+      el.innerHTML = `<div class="trade-notification mine">
+        <h4>🤝 Your Trade Offer</h4>
+        <p><strong>Offering:</strong> ${this._formatResourceDict(trade.offering)}</p>
+        <p><strong>Requesting:</strong> ${this._formatResourceDict(trade.requesting)}</p>
+        <p><strong>Target:</strong> ${trade.target_player !== null ? this.gameState.players[trade.target_player].name : 'All players'}</p>
+        <button class="trade-action-btn cancel-btn">❌ Cancel Trade</button>
+      </div>`
+      el.querySelector('.cancel-btn').addEventListener('click', () => {
+        this.onAction({
+          action_type: 'cancel_trade',
+          player_index: this.myPlayerIndex,
+          trade_id: trade.trade_id,
+        })
+      })
+    } else if (isTargeted && !isMyTrade) {
+      // Show accept/reject buttons for targeted players
+      el.innerHTML = `<div class="trade-notification incoming">
+        <h4>🤝 Trade Offer from ${escapeHtml(offeringPlayer.name)}</h4>
+        <p><strong>They offer:</strong> ${this._formatResourceDict(trade.offering)}</p>
+        <p><strong>They want:</strong> ${this._formatResourceDict(trade.requesting)}</p>
+        <div class="trade-actions">
+          <button class="trade-action-btn accept-btn">✅ Accept</button>
+          <button class="trade-action-btn reject-btn">❌ Reject</button>
+        </div>
+      </div>`
+      el.querySelector('.accept-btn').addEventListener('click', () => {
+        this.onAction({
+          action_type: 'accept_trade',
+          player_index: this.myPlayerIndex,
+          trade_id: trade.trade_id,
+        })
+      })
+      el.querySelector('.reject-btn').addEventListener('click', () => {
+        this.onAction({
+          action_type: 'reject_trade',
+          player_index: this.myPlayerIndex,
+          trade_id: trade.trade_id,
+        })
+      })
+    } else {
+      // Not involved in this trade
+      el.innerHTML = ''
+      el.style.display = 'none'
+      return
+    }
+
+    el.style.display = 'block'
+  }
+
+  _formatResourceDict(dict) {
+    return Object.entries(dict)
+      .map(([res, amt]) => `${RESOURCE_EMOJIS[res] || res} ×${amt}`)
+      .join(', ')
+  }
+
+  /**
+   * Update active trade state (called from message handlers).
+   * @param {object|null} trade  PendingTrade data or null to clear
+   */
+  setActiveTrade(trade) {
+    this.activeTrade = trade
+    this._renderTradeNotifications()
+  }
+
   // -------------------------------------------------------------------------
   // Helpers
   // -------------------------------------------------------------------------
 
   _resourceTotal(resources) {
     return Object.values(resources || {}).reduce((a, b) => a + b, 0)
+  }
+
+  /**
+   * Animate resource cards when their counts change.
+   * @param {object} currentResources  Current resource counts
+   */
+  _animateResourceChanges(currentResources) {
+    if (!this.previousResources) {
+      // First render, just store the current state
+      this.previousResources = { ...currentResources }
+      return
+    }
+
+    // Find which resources changed
+    RESOURCE_OPTIONS.forEach((resource) => {
+      const prev = this.previousResources[resource] || 0
+      const curr = currentResources[resource] || 0
+      if (prev !== curr) {
+        // Trigger animation for this resource
+        const card = document.querySelector(`.resource-card[data-resource="${resource}"]`)
+        if (card) {
+          // Remove the class first (in case it's already animating)
+          card.classList.remove('resource-change')
+          // Force reflow to restart animation
+          void card.offsetHeight
+          // Add the class to trigger animation
+          card.classList.add('resource-change')
+          // Remove the class after animation completes
+          setTimeout(() => card.classList.remove('resource-change'), 500)
+        }
+      }
+    })
+
+    // Update stored resources
+    this.previousResources = { ...currentResources }
   }
 }
