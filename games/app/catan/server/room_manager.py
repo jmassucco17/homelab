@@ -15,15 +15,12 @@ from __future__ import annotations
 import datetime
 import random
 import string
-from typing import TYPE_CHECKING
 
 import fastapi
 
+from ..ai import base
 from ..engine import turn_manager
 from ..models import game_state as gs
-
-if TYPE_CHECKING:
-    from ..ai import base
 
 # Player colours assigned in join order (index 0–3).
 _PLAYER_COLORS: list[str] = ['red', 'blue', 'white', 'orange']
@@ -263,11 +260,8 @@ class RoomManager:
         """
         names = [slot.name for slot in room.players]
         colors = [slot.color for slot in room.players]
-        is_ai_list = [slot.is_ai for slot in room.players]
         ai_types = [slot.ai_type for slot in room.players]
-        state = turn_manager.create_initial_game_state(
-            names, colors, is_ai_list=is_ai_list, ai_types=ai_types
-        )
+        state = turn_manager.create_initial_game_state(names, colors, ai_types=ai_types)
         room.game_state = state
         return state
 
