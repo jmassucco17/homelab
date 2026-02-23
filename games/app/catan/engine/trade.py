@@ -11,10 +11,8 @@ import uuid
 
 import pydantic
 
-from games.app.catan.models.actions import TradeOffer
-from games.app.catan.models.board import PortType, ResourceType
-from games.app.catan.models.game_state import GamePhase, GameState
-from games.app.catan.models.player import Player, Resources
+from games.app.catan.models import actions, board, game_state
+from games.app.catan.models import player as player_module
 
 
 class TradeStatus(enum.StrEnum):
@@ -25,6 +23,8 @@ class TradeStatus(enum.StrEnum):
 
 
 class PendingTrade(pydantic.BaseModel):
+    """Represents an in-flight player-to-player trade offer."""
+
     trade_id: str
     offering_player: int
     offering: dict[str, int]
@@ -35,77 +35,121 @@ class PendingTrade(pydantic.BaseModel):
     status: TradeStatus = TradeStatus.PENDING
 
 
-def get_bank_trade_ratio(resource: ResourceType, player: Player) -> int:
-    specific_port = PortType(resource.value)
-    if specific_port in player.ports_owned:
+def get_bank_trade_ratio(
+    resource: board.ResourceType, offering_player: player_module.Player
+) -> int:
+    """Return the number of cards the player must give for one card in return.
+
+    Checks for a matching 2:1 specific-resource port first, then falls back to
+    3:1 generic port, then the default 4:1 ratio.
+    """
+    # A specific-resource port (e.g. wood port) allows 2:1 for that resource.
+    specific_port = board.PortType(resource.value)
+    if specific_port in offering_player.ports_owned:
         return 2
-    if PortType.GENERIC in player.ports_owned:
+    # A generic port allows 3:1 for any resource.
+    if board.PortType.GENERIC in offering_player.ports_owned:
         return 3
+    # No port: standard 4:1 bank trade.
     return 4
 
 
 def can_bank_trade(
-    player: Player, giving: ResourceType, receiving: ResourceType
+    offering_player: player_module.Player,
+    giving: board.ResourceType,
+    receiving: board.ResourceType,
 ) -> tuple[bool, str]:
+    """Check whether a player can execute a bank trade.
+
+    Returns (True, '') on success, or (False, reason) on failure.
+    """
     if giving == receiving:
         return False, 'Cannot trade a resource for itself'
-    ratio = get_bank_trade_ratio(giving, player)
-    if player.resources.get(giving) < ratio:
-        have = player.resources.get(giving)
-        return False, f'Need {ratio} {giving} to bank trade, have {have}'
+    required_ratio = get_bank_trade_ratio(giving, offering_player)
+    current_amount = offering_player.resources.get(giving)
+    if current_amount < required_ratio:
+        return (
+            False,
+            f'Need {required_ratio} {giving} to bank trade, have {current_amount}',
+        )
     return True, ''
 
 
 def apply_bank_trade(
-    player: Player, giving: ResourceType, receiving: ResourceType
-) -> Player:
-    ratio = get_bank_trade_ratio(giving, player)
-    new_resources = player.resources.subtract({giving.value: ratio}).add(
-        Resources(**{receiving.value: 1})
+    offering_player: player_module.Player,
+    giving: board.ResourceType,
+    receiving: board.ResourceType,
+) -> player_module.Player:
+    """Execute a bank trade, returning an updated Player with resources exchanged."""
+    required_ratio = get_bank_trade_ratio(giving, offering_player)
+    # Subtract the cards given to the bank, then add the one card received.
+    after_giving = offering_player.resources.subtract({giving.value: required_ratio})
+    new_resources = after_giving.add(
+        player_module.Resources().with_resource(receiving, 1)
     )
-    return player.model_copy(update={'resources': new_resources})
+    return offering_player.model_copy(update={'resources': new_resources})
 
 
 def can_port_trade(
-    player: Player, giving: ResourceType, giving_count: int, receiving: ResourceType
+    offering_player: player_module.Player,
+    giving: board.ResourceType,
+    giving_count: int,
+    receiving: board.ResourceType,
 ) -> tuple[bool, str]:
+    """Check whether a player can execute a port trade.
+
+    Returns (True, '') on success, or (False, reason) on failure.
+    """
     if giving == receiving:
         return False, 'Cannot trade a resource for itself'
-    specific_port = PortType(giving.value)
-    if giving_count == 2 and specific_port not in player.ports_owned:
-        return False, f'Need a {giving} port to trade 2:1'
-    if giving_count == 3 and PortType.GENERIC not in player.ports_owned:
-        return False, 'Need a generic port to trade 3:1'
     if giving_count not in (2, 3):
         return False, f'Invalid giving_count {giving_count} for port trade'
-    if player.resources.get(giving) < giving_count:
-        have = player.resources.get(giving)
-        return False, f'Need {giving_count} {giving}, have {have}'
+    # A 2:1 trade requires owning the specific-resource port for the given resource.
+    specific_port = board.PortType(giving.value)
+    if giving_count == 2 and specific_port not in offering_player.ports_owned:
+        return False, f'Need a {giving} port to trade 2:1'
+    # A 3:1 trade requires owning at least one generic port.
+    if giving_count == 3 and board.PortType.GENERIC not in offering_player.ports_owned:
+        return False, 'Need a generic port to trade 3:1'
+    current_amount = offering_player.resources.get(giving)
+    if current_amount < giving_count:
+        return False, f'Need {giving_count} {giving}, have {current_amount}'
     return True, ''
 
 
 def apply_port_trade(
-    player: Player, giving: ResourceType, giving_count: int, receiving: ResourceType
-) -> Player:
-    new_resources = player.resources.subtract({giving.value: giving_count}).add(
-        Resources(**{receiving.value: 1})
+    offering_player: player_module.Player,
+    giving: board.ResourceType,
+    giving_count: int,
+    receiving: board.ResourceType,
+) -> player_module.Player:
+    """Execute a port trade, returning an updated Player with resources exchanged."""
+    # Subtract the cards given to the port, then add the one card received.
+    after_giving = offering_player.resources.subtract({giving.value: giving_count})
+    new_resources = after_giving.add(
+        player_module.Resources().with_resource(receiving, 1)
     )
-    return player.model_copy(update={'resources': new_resources})
+    return offering_player.model_copy(update={'resources': new_resources})
 
 
-def _resources_from_dict(d: dict[str, int]) -> Resources:
-    return Resources(**{k: v for k, v in d.items() if v > 0})
+def _resources_from_dict(resource_dict: dict[str, int]) -> player_module.Resources:
+    """Convert a resource count dict (from a trade offer) into a Resources model."""
+    return player_module.Resources(**{k: v for k, v in resource_dict.items() if v > 0})
 
 
 def create_trade_offer(
-    game_state: GameState, action: TradeOffer
+    current_state: game_state.GameState, action: actions.TradeOffer
 ) -> tuple[bool, str, PendingTrade | None]:
-    if game_state.phase != GamePhase.MAIN:
+    """Validate and create a pending trade offer from the active player.
+
+    Returns (True, '', PendingTrade) on success, or (False, reason, None) on failure.
+    """
+    if current_state.phase != game_state.GamePhase.MAIN:
         return False, 'Trades can only be made during the main phase', None
-    if game_state.turn_state.player_index != action.player_index:
+    if current_state.turn_state.player_index != action.player_index:
         return False, 'Only the active player can propose a trade', None
-    player = game_state.players[action.player_index]
-    if not player.resources.can_afford(action.offering):
+    offering_player = current_state.players[action.player_index]
+    if not offering_player.resources.can_afford(action.offering):
         return False, 'Insufficient resources to offer', None
     trade = PendingTrade(
         trade_id=str(uuid.uuid4()),
@@ -118,17 +162,26 @@ def create_trade_offer(
 
 
 def accept_trade(
-    game_state: GameState, pending_trade: PendingTrade, accepting_player: int
-) -> tuple[bool, str, GameState | None]:
+    current_state: game_state.GameState,
+    pending_trade: PendingTrade,
+    accepting_player: int,
+) -> tuple[bool, str, game_state.GameState | None]:
+    """Execute an accepted trade, atomically transferring resources between players.
+
+    Returns (True, '', new_GameState) on success, or (False, reason, None) on failure.
+    """
     if pending_trade.status != TradeStatus.PENDING:
         return False, 'Trade is no longer pending', None
-    offerer = game_state.players[pending_trade.offering_player]
-    accepter = game_state.players[accepting_player]
+    offerer = current_state.players[pending_trade.offering_player]
+    accepter = current_state.players[accepting_player]
+    # Re-validate both sides still have the required resources at acceptance time.
     if not offerer.resources.can_afford(pending_trade.offering):
         return False, 'Offering player no longer has sufficient resources', None
     if not accepter.resources.can_afford(pending_trade.requesting):
         return False, 'Accepting player does not have sufficient resources', None
 
+    # Transfer resources: offerer gives their offer and receives the request;
+    # accepter does the reverse.
     new_offerer_resources = offerer.resources.subtract(pending_trade.offering).add(
         _resources_from_dict(pending_trade.requesting)
     )
@@ -136,7 +189,7 @@ def accept_trade(
         _resources_from_dict(pending_trade.offering)
     )
 
-    new_players = list(game_state.players)
+    new_players = list(current_state.players)
     new_players[pending_trade.offering_player] = offerer.model_copy(
         update={'resources': new_offerer_resources}
     )
@@ -144,19 +197,24 @@ def accept_trade(
         update={'resources': new_accepter_resources}
     )
 
-    new_turn_state = game_state.turn_state.model_copy(update={'active_trade_id': None})
-    new_state = game_state.model_copy(
+    # Clear the active trade once it completes.
+    new_turn_state = current_state.turn_state.model_copy(
+        update={'active_trade_id': None}
+    )
+    new_state = current_state.model_copy(
         update={'players': new_players, 'turn_state': new_turn_state}
     )
     return True, '', new_state
 
 
 def reject_trade(pending_trade: PendingTrade, rejecting_player: int) -> PendingTrade:
-    new_rejected = list(pending_trade.rejected_by)
-    if rejecting_player not in new_rejected:
-        new_rejected.append(rejecting_player)
-    return pending_trade.model_copy(update={'rejected_by': new_rejected})
+    """Record a player's rejection of the trade offer (idempotent)."""
+    updated_rejected_by = list(pending_trade.rejected_by)
+    if rejecting_player not in updated_rejected_by:
+        updated_rejected_by.append(rejecting_player)
+    return pending_trade.model_copy(update={'rejected_by': updated_rejected_by})
 
 
 def cancel_trade(pending_trade: PendingTrade) -> PendingTrade:
+    """Cancel a pending trade offer, marking it as CANCELLED."""
     return pending_trade.model_copy(update={'status': TradeStatus.CANCELLED})
