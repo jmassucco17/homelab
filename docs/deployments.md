@@ -83,9 +83,10 @@ Deploy the current state of `main` to the production VPS. Images are pre-built b
 3. Creates a `.tar.gz` archive of the repo (excluding `.git`, `node_modules`, etc.) and
    appends `networking/.env`.
 4. SCPs the archive to `/tmp/homelab-deploy.tar.gz` on the server.
-5. SSHes in, extracts to `/opt/homelab`, and calls `start_service.sh <service>` for each
-   enabled service in dependency order:
-   `networking → shared-assets → homepage → blog → games → tools → travel`
+5. Deploys `networking` first (extracts archive, sets up Docker networks, seeds staging data
+   if requested, then calls `start_service.sh networking`). Once `networking` is up, deploys
+   all remaining services **in parallel** via a second SSH session:
+   `monitoring (prod only), shared-assets, homepage, blog, games, tools, travel`
 6. `start_service.sh` pulls the pre-built image from GHCR and runs
    `docker compose up -d --wait`.
 
