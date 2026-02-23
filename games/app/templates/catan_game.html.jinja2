@@ -1,0 +1,93 @@
+{% extends "base.html.jinja2" %}
+
+{% block title %}Catan{% endblock %}
+
+{% block extra_head %}
+  <style>
+    /* Override body overflow so the game canvas fills the viewport */
+    body {
+      overflow: hidden;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div id="catan-game-area" class="catan-game-area">
+    <!-- ------------------------------------------------------------------ -->
+    <!-- Waiting room (visible until the game starts)                        -->
+    <!-- ------------------------------------------------------------------ -->
+    <div id="waiting-room" class="catan-waiting-room">
+      <h2>🏝️ Catan — Waiting Room</h2>
+      <p>
+        Room Code:
+        <strong id="room-code-display" class="room-code-badge">----</strong>
+      </p>
+      <p class="waiting-hint">Share this code with friends so they can join!</p>
+
+      <div id="waiting-players-list" class="waiting-players-list"></div>
+
+      <div class="waiting-room-actions">
+        <button id="add-ai-btn" class="lobby-btn">🤖 Add AI Player</button>
+        <button id="start-game-btn" class="lobby-btn primary" disabled>▶ Start Game</button>
+      </div>
+
+      <p class="waiting-note">Start Game requires at least 2 players.</p>
+    </div>
+
+    <!-- ------------------------------------------------------------------ -->
+    <!-- Active game layout (hidden until the game starts)                   -->
+    <!-- ------------------------------------------------------------------ -->
+    <div id="game-area" class="catan-game-layout hidden">
+      <!-- Board canvas -->
+      <div class="catan-board-container" id="board-container">
+        <canvas id="catan-board-canvas"></canvas>
+      </div>
+
+      <!-- Right panel -->
+      <div class="catan-side-panel" id="catan-ui-container">
+        <!-- Connection status -->
+        <div id="connection-status" class="connection-status">🟡 Connecting…</div>
+
+        <!-- Dice display -->
+        <div id="catan-dice-display" class="catan-dice-display">🎲 —</div>
+
+        <!-- All-players overview -->
+        <div id="catan-players-panel" class="catan-players-panel"></div>
+
+        <!-- Local player hand -->
+        <div id="catan-hand-panel" class="catan-hand-panel"></div>
+
+        <!-- Build menu -->
+        <div id="catan-build-menu" class="catan-build-menu"></div>
+
+        <!-- Roll dice / end turn / bank trade buttons -->
+        <div id="catan-action-buttons" class="catan-action-buttons"></div>
+
+        <!-- Contextual build hint (shown briefly when player clicks a build button) -->
+        <div id="catan-build-hint" class="catan-build-hint" style="display: none"></div>
+
+        <!-- Scrollable action history log -->
+        <div id="catan-action-log" class="catan-action-log"></div>
+      </div>
+    </div>
+
+    <!-- ------------------------------------------------------------------ -->
+    <!-- Toast notification container                                        -->
+    <!-- ------------------------------------------------------------------ -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- ------------------------------------------------------------------ -->
+    <!-- Game-over overlay                                                   -->
+    <!-- ------------------------------------------------------------------ -->
+    <div id="catan-game-over" class="catan-game-over-overlay" style="display: none">
+      <div class="game-over-card">
+        <div id="game-over-message" class="game-over-message"></div>
+        <a href="/catan" class="lobby-btn primary">Back to Lobby</a>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script type="module" src="/static/catan/catan.js"></script>
+{% endblock %}

@@ -46,6 +46,10 @@ on:
         description: 'Deploy tools'
         type: boolean
         default: true
+      monitoring:
+        description: 'Deploy monitoring'
+        type: boolean
+        default: true
 
 jobs:
   # Determine environment based on trigger and inputs
@@ -91,3 +95,4 @@ jobs:
       travel: ${{ inputs.travel || true }}
       games: ${{ inputs.games || true }}
       tools: ${{ inputs.tools || true }}
+      monitoring: ${{ inputs.monitoring || true }}

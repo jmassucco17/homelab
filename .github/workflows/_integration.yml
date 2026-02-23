@@ -24,9 +24,19 @@ jobs:
           OAUTH2_AUTHORIZED_EMAILS=test@example.com
           EOF
 
+      - name: Create monitoring/.env stub
+        run: |
+          cat > monitoring/.env <<'EOF'
+          GRAFANA_CLOUD_PROM_URL=https://prometheus.example.com/api/prom/push
+          GRAFANA_CLOUD_PROM_USER=123456
+          GRAFANA_CLOUD_LOKI_URL=https://loki.example.com/loki/api/v1/push
+          GRAFANA_CLOUD_LOKI_USER=123456
+          GRAFANA_CLOUD_API_KEY=test-api-key
+          EOF
+
       - name: Validate all Compose files
         run: |
-          for dir in networking shared-assets homepage blog travel games tools; do
+          for dir in networking monitoring shared-assets homepage blog travel games tools; do
             echo "--- Validating $dir ---"
 
             # Validate base compose file
@@ -74,6 +84,9 @@ jobs:
       - name: Create docker web network
         run: docker network create web 2>/dev/null || true
 
+      - name: Create docker internal_metrics network
+        run: docker network create internal_metrics 2>/dev/null || true
+
       - name: Pull cloudflare-ddns image (validates tag exists)
         run: |
           cd networking
@@ -114,6 +127,7 @@ jobs:
         uses: ./.github/actions/start-service
         with:
           service: shared-assets
+          build: 'true'
 
       - name: Test CSS file is served
         run: |
@@ -146,6 +160,7 @@ jobs:
         uses: ./.github/actions/start-service
         with:
           service: homepage
+          build: 'true'
 
       - name: Test index endpoint returns HTML
         run: |
@@ -169,6 +184,7 @@ jobs:
         uses: ./.github/actions/start-service
         with:
           service: blog
+          build: 'true'
 
       - name: Test health endpoint
         uses: ./.github/actions/test-health-endpoint
@@ -192,6 +208,7 @@ jobs:
         uses: ./.github/actions/start-service
         with:
           service: travel
+          build: 'true'
 
       - name: Test health endpoint
         uses: ./.github/actions/test-health-endpoint
@@ -215,6 +232,7 @@ jobs:
         uses: ./.github/actions/start-service
         with:
           service: games
+          build: 'true'
 
       - name: Test health endpoint
         uses: ./.github/actions/test-health-endpoint
@@ -238,6 +256,7 @@ jobs:
         uses: ./.github/actions/start-service
         with:
           service: tools
+          build: 'true'
 
       - name: Test health endpoint
         uses: ./.github/actions/test-health-endpoint
@@ -249,3 +268,44 @@ jobs:
         if: always()
         with:
           service: tools
+
+  monitoring:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Create monitoring/.env stub
+        run: |
+          cat > monitoring/.env <<'EOF'
+          GRAFANA_CLOUD_PROM_URL=https://prometheus.example.com/api/prom/push
+          GRAFANA_CLOUD_PROM_USER=123456
+          GRAFANA_CLOUD_LOKI_URL=https://loki.example.com/loki/api/v1/push
+          GRAFANA_CLOUD_LOKI_USER=123456
+          GRAFANA_CLOUD_API_KEY=test-api-key
+          EOF
+
+      - name: Create internal_metrics Docker network
+        run: docker network create internal_metrics 2>/dev/null || true
+
+      - name: Start node-exporter and cadvisor
+        run: |
+          cd monitoring
+          docker compose up -d --wait node-exporter cadvisor
+
+      - name: Test node-exporter serves metrics
+        run: |
+          docker run --rm --network internal_metrics alpine \
+            wget -qO- http://node-exporter:9100/metrics | grep -q 'node_'
+
+      - name: Test cadvisor serves metrics
+        run: |
+          docker run --rm --network internal_metrics alpine \
+            wget -qO- http://cadvisor:8080/metrics | grep -q 'container_'
+
+      - name: Stop monitoring services
+        if: always()
+        run: |
+          cd monitoring
+          docker compose down --remove-orphans

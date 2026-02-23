@@ -1,0 +1,51 @@
+services:
+  # Export host system metrics (CPU, RAM, disk, network)
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: node-exporter
+    pid: host
+    command:
+      - '--path.rootfs=/host'
+    volumes:
+      - /:/host:ro,rslave
+    networks:
+      - internal_metrics
+    restart: unless-stopped
+
+  # Export Docker container metrics
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - internal_metrics
+    restart: unless-stopped
+
+  # Unified collection agent: scrapes metrics and ships logs to Grafana Cloud
+  alloy:
+    image: grafana/alloy:v1.4.2
+    container_name: alloy
+    volumes:
+      - ./alloy-config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --storage.path=/var/lib/alloy/data
+    env_file:
+      - .env
+    networks:
+      - internal_metrics
+    depends_on:
+      - node-exporter
+      - cadvisor
+    restart: unless-stopped
+
+networks:
+  internal_metrics:
+    external: true

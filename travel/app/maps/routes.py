@@ -1,26 +1,32 @@
+"""API routes for the travel maps feature."""
+
 import pathlib
+import typing
 
-from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
-from sqlmodel import Session
+import fastapi
+import fastapi.responses
+import fastapi.templating
+import pydantic
+import sqlmodel
 
-from . import services
-from .database import get_session
+from . import database, services
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
 
-router = APIRouter()
-templates = Jinja2Templates(directory=APP_DIR / 'templates')
+router = fastapi.APIRouter()
+templates = fastapi.templating.Jinja2Templates(directory=APP_DIR / 'templates')
 
 
-class MapCreate(BaseModel):
+class MapCreate(pydantic.BaseModel):
+    """Request body for creating or updating a map."""
+
     name: str
     description: str | None = None
 
 
-class LocationCreate(BaseModel):
+class LocationCreate(pydantic.BaseModel):
+    """Request body for creating a new location."""
+
     name: str
     latitude: float
     longitude: float
@@ -28,17 +34,24 @@ class LocationCreate(BaseModel):
     description: str | None = None
 
 
-class LocationUpdate(BaseModel):
+class LocationUpdate(pydantic.BaseModel):
+    """Request body for updating a location's details."""
+
     nickname: str | None = None
     description: str | None = None
 
 
-class LocationReorder(BaseModel):
+class LocationReorder(pydantic.BaseModel):
+    """Request body for reordering locations."""
+
     location_ids: list[int]
 
 
-@router.get('/', response_class=HTMLResponse)
-async def index(request: Request, session: Session = Depends(get_session)):
+@router.get('/', response_class=fastapi.responses.HTMLResponse)
+async def index(
+    request: fastapi.Request,
+    session: sqlmodel.Session = fastapi.Depends(database.get_session),
+) -> fastapi.responses.HTMLResponse:
     """Display list of all maps."""
     maps = services.get_all_maps(session)
     maps_list = [
@@ -56,22 +69,24 @@ async def index(request: Request, session: Session = Depends(get_session)):
     )
 
 
-@router.get('/new', response_class=HTMLResponse)
-async def new_map_form(request: Request):
+@router.get('/new', response_class=fastapi.responses.HTMLResponse)
+async def new_map_form(request: fastapi.Request) -> fastapi.responses.HTMLResponse:
     """Display form to create a new map."""
     return templates.TemplateResponse(
         request=request, name='map-edit.html.jinja2', context={'map': None}
     )
 
 
-@router.get('/{map_id}/view', response_class=HTMLResponse)
+@router.get('/{map_id}/view', response_class=fastapi.responses.HTMLResponse)
 async def view_map(
-    request: Request, map_id: int, session: Session = Depends(get_session)
-):
+    request: fastapi.Request,
+    map_id: int,
+    session: sqlmodel.Session = fastapi.Depends(database.get_session),
+) -> fastapi.responses.HTMLResponse:
     """Display a map in view mode."""
     map_obj = services.get_map_by_id(session, map_id)
     if not map_obj:
-        raise HTTPException(status_code=404, detail='Map not found')
+        raise fastapi.HTTPException(status_code=404, detail='Map not found')
 
     map_dict = {
         'id': map_obj.id,
@@ -96,14 +111,16 @@ async def view_map(
     )
 
 
-@router.get('/{map_id}/edit', response_class=HTMLResponse)
+@router.get('/{map_id}/edit', response_class=fastapi.responses.HTMLResponse)
 async def edit_map_form(
-    request: Request, map_id: int, session: Session = Depends(get_session)
-):
+    request: fastapi.Request,
+    map_id: int,
+    session: sqlmodel.Session = fastapi.Depends(database.get_session),
+) -> fastapi.responses.HTMLResponse:
     """Display form to edit an existing map."""
     map_obj = services.get_map_by_id(session, map_id)
     if not map_obj:
-        raise HTTPException(status_code=404, detail='Map not found')
+        raise fastapi.HTTPException(status_code=404, detail='Map not found')
 
     map_dict = {
         'id': map_obj.id,
@@ -129,18 +146,23 @@ async def edit_map_form(
 
 
 @router.post('/api/maps')
-async def create_map(map_data: MapCreate, session: Session = Depends(get_session)):
+async def create_map(
+    map_data: MapCreate,
+    session: sqlmodel.Session = fastapi.Depends(database.get_session),
+) -> dict[str, typing.Any]:
     """Create a new map."""
     map_obj = services.create_map(session, map_data.name, map_data.description)
     return {'id': map_obj.id, 'name': map_obj.name, 'description': map_obj.description}
 
 
 @router.get('/api/maps/{map_id}')
-async def get_map(map_id: int, session: Session = Depends(get_session)):
+async def get_map(
+    map_id: int, session: sqlmodel.Session = fastapi.Depends(database.get_session)
+) -> dict[str, typing.Any]:
     """Get map details with locations."""
     map_obj = services.get_map_by_id(session, map_id)
     if not map_obj:
-        raise HTTPException(status_code=404, detail='Map not found')
+        raise fastapi.HTTPException(status_code=404, detail='Map not found')
 
     return {
         'id': map_obj.id,
@@ -165,12 +187,14 @@ async def get_map(map_id: int, session: Session = Depends(get_session)):
 
 @router.put('/api/maps/{map_id}')
 async def update_map(
-    map_id: int, map_data: MapCreate, session: Session = Depends(get_session)
-):
+    map_id: int,
+    map_data: MapCreate,
+    session: sqlmodel.Session = fastapi.Depends(database.get_session),
+) -> dict[str, typing.Any]:
     """Update a map."""
     map_obj = services.update_map(session, map_id, map_data.name, map_data.description)
     if not map_obj:
-        raise HTTPException(status_code=404, detail='Map not found')
+        raise fastapi.HTTPException(status_code=404, detail='Map not found')
 
     return {
         'id': map_obj.id,
@@ -180,11 +204,13 @@ async def update_map(
 
 
 @router.delete('/api/maps/{map_id}')
-async def delete_map(map_id: int, session: Session = Depends(get_session)):
+async def delete_map(
+    map_id: int, session: sqlmodel.Session = fastapi.Depends(database.get_session)
+) -> dict[str, bool]:
     """Delete a map."""
     success = services.delete_map(session, map_id)
     if not success:
-        raise HTTPException(status_code=404, detail='Map not found')
+        raise fastapi.HTTPException(status_code=404, detail='Map not found')
 
     return {'success': True}
 
@@ -193,8 +219,8 @@ async def delete_map(map_id: int, session: Session = Depends(get_session)):
 async def add_location(
     map_id: int,
     location_data: LocationCreate,
-    session: Session = Depends(get_session),
-):
+    session: sqlmodel.Session = fastapi.Depends(database.get_session),
+) -> dict[str, typing.Any]:
     """Add a location to a map."""
     location = services.add_location_to_map(
         session,
@@ -206,7 +232,7 @@ async def add_location(
         location_data.description,
     )
     if not location:
-        raise HTTPException(status_code=404, detail='Map not found')
+        raise fastapi.HTTPException(status_code=404, detail='Map not found')
 
     return {
         'id': location.id,
@@ -223,8 +249,8 @@ async def add_location(
 async def update_location(
     location_id: int,
     location_data: LocationUpdate,
-    session: Session = Depends(get_session),
-):
+    session: sqlmodel.Session = fastapi.Depends(database.get_session),
+) -> dict[str, typing.Any]:
     """Update a location's nickname and description."""
     location = services.update_location(
         session,
@@ -233,7 +259,7 @@ async def update_location(
         location_data.description,
     )
     if not location:
-        raise HTTPException(status_code=404, detail='Location not found')
+        raise fastapi.HTTPException(status_code=404, detail='Location not found')
 
     return {
         'id': location.id,
@@ -243,19 +269,23 @@ async def update_location(
 
 
 @router.delete('/api/locations/{location_id}')
-async def delete_location(location_id: int, session: Session = Depends(get_session)):
+async def delete_location(
+    location_id: int,
+    session: sqlmodel.Session = fastapi.Depends(database.get_session),
+) -> dict[str, bool]:
     """Delete a location."""
     success = services.delete_location(session, location_id)
     if not success:
-        raise HTTPException(status_code=404, detail='Location not found')
+        raise fastapi.HTTPException(status_code=404, detail='Location not found')
 
     return {'success': True}
 
 
 @router.post('/api/locations/reorder')
 async def reorder_locations(
-    reorder_data: LocationReorder, session: Session = Depends(get_session)
-):
+    reorder_data: LocationReorder,
+    session: sqlmodel.Session = fastapi.Depends(database.get_session),
+) -> dict[str, bool]:
     """Reorder locations."""
     success = services.reorder_locations(session, reorder_data.location_ids)
     return {'success': success}

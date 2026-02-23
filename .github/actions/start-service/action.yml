@@ -5,6 +5,10 @@ inputs:
   service:
     description: Service directory name (e.g. blog, homepage, travel)
     required: true
+  build:
+    description: Build image from source instead of pulling from registry
+    required: false
+    default: 'false'
 
 runs:
   using: composite
@@ -15,4 +19,9 @@ runs:
 
     - name: Start service via start_service.sh
       shell: bash
-      run: bash "${{ github.workspace }}/scripts/start_service.sh" "${{ inputs.service }}"
+      run: |
+        ARGS=("${{ inputs.service }}")
+        if [[ "${{ inputs.build }}" == "true" ]]; then
+          ARGS+=("--build")
+        fi
+        bash "${{ github.workspace }}/scripts/start_service.sh" "${ARGS[@]}"

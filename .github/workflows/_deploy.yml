@@ -39,6 +39,10 @@ on:
         description: 'Deploy tools'
         type: boolean
         default: true
+      monitoring:
+        description: 'Deploy monitoring'
+        type: boolean
+        default: true
 
 jobs:
   deploy:
@@ -64,50 +68,89 @@ jobs:
           oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
           tags: tag:github
 
-      - name: Write networking/.env from secret
+      - name: Write networking/.env
+        env:
+          CLOUDFLARE_API_EMAIL: ${{ secrets.CLOUDFLARE_API_EMAIL }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_TRUSTED_IPS: ${{ vars.CLOUDFLARE_TRUSTED_IPS }}
+          GOOGLE_OAUTH2_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH2_CLIENT_ID }}
+          GOOGLE_OAUTH2_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH2_CLIENT_SECRET }}
+          GOOGLE_OAUTH2_COOKIE_SECRET: ${{ secrets.GOOGLE_OAUTH2_COOKIE_SECRET }}
+          OAUTH2_AUTHORIZED_EMAILS: ${{ secrets.OAUTH2_AUTHORIZED_EMAILS }}
         run: |
-          if [ "${{ inputs.environment }}" = "staging" ]; then
-            printf '%s' "${{ secrets.STAGING_NETWORKING_ENV }}" > networking/.env
-          else
-            printf '%s' "${{ secrets.NETWORKING_ENV }}" > networking/.env
-          fi
+          {
+            printf 'CLOUDFLARE_API_EMAIL=%s\n' "$CLOUDFLARE_API_EMAIL"
+            printf 'CLOUDFLARE_API_TOKEN=%s\n' "$CLOUDFLARE_API_TOKEN"
+            printf 'CLOUDFLARE_TRUSTED_IPS=%s\n' "$CLOUDFLARE_TRUSTED_IPS"
+            printf 'GOOGLE_OAUTH2_CLIENT_ID=%s\n' "$GOOGLE_OAUTH2_CLIENT_ID"
+            printf 'GOOGLE_OAUTH2_CLIENT_SECRET=%s\n' "$GOOGLE_OAUTH2_CLIENT_SECRET"
+            printf 'GOOGLE_OAUTH2_COOKIE_SECRET=%s\n' "$GOOGLE_OAUTH2_COOKIE_SECRET"
+            printf 'OAUTH2_AUTHORIZED_EMAILS=%s\n' "$OAUTH2_AUTHORIZED_EMAILS"
+          } > networking/.env
 
-      - name: Write tools/.env from secret
+      - name: Write tools/.env
         if: inputs.environment == 'prod'
-        run: printf 'TMDB_API_KEY=%s\n' "${{ secrets.TMDB_API_KEY }}" > tools/.env
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+        run: printf 'TMDB_API_KEY=%s\n' "$TMDB_API_KEY" > tools/.env
+
+      - name: Write monitoring/.env
+        if: inputs.environment == 'prod'
+        env:
+          GRAFANA_CLOUD_PROM_URL: ${{ secrets.GRAFANA_CLOUD_PROM_URL }}
+          GRAFANA_CLOUD_PROM_USER: ${{ secrets.GRAFANA_CLOUD_PROM_USER }}
+          GRAFANA_CLOUD_LOKI_URL: ${{ secrets.GRAFANA_CLOUD_LOKI_URL }}
+          GRAFANA_CLOUD_LOKI_USER: ${{ secrets.GRAFANA_CLOUD_LOKI_USER }}
+          GRAFANA_CLOUD_API_KEY: ${{ secrets.GRAFANA_CLOUD_API_KEY }}
+        run: |
+          {
+            printf 'GRAFANA_CLOUD_PROM_URL=%s\n' "$GRAFANA_CLOUD_PROM_URL"
+            printf 'GRAFANA_CLOUD_PROM_USER=%s\n' "$GRAFANA_CLOUD_PROM_USER"
+            printf 'GRAFANA_CLOUD_LOKI_URL=%s\n' "$GRAFANA_CLOUD_LOKI_URL"
+            printf 'GRAFANA_CLOUD_LOKI_USER=%s\n' "$GRAFANA_CLOUD_LOKI_USER"
+            printf 'GRAFANA_CLOUD_API_KEY=%s\n' "$GRAFANA_CLOUD_API_KEY"
+          } > monitoring/.env
 
       - name: Set up SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
         run: |
           mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H "${{ secrets.SERVER_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
 
       - name: Create deployment archive
         run: |
           grep -v '^#' .gitignore | grep -v '^$' > /tmp/exclude_list
-          printf '.git/\n*.tar.gz\n*.tar\n' >> /tmp/exclude_list
-          tar --exclude-from=/tmp/exclude_list -cf /tmp/homelab-deploy.tar .
+          printf '*.tar.gz\n*.tar\n' >> /tmp/exclude_list
+          tar --exclude-from=/tmp/exclude_list --exclude='.git' -cf /tmp/homelab-deploy.tar .
           if [ "${{ inputs.environment }}" = "staging" ]; then
             tar --append -f /tmp/homelab-deploy.tar networking/.env
           else
-            tar --append -f /tmp/homelab-deploy.tar networking/.env tools/.env
+            tar --append -f /tmp/homelab-deploy.tar networking/.env tools/.env monitoring/.env
           fi
           gzip /tmp/homelab-deploy.tar
 
       - name: Upload archive to server
+        env:
+          SERVER_USER: ${{ vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
         run: |
           scp -i ~/.ssh/deploy_key \
-            -o StrictHostKeyChecking=no \
             /tmp/homelab-deploy.tar.gz \
-            "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/homelab-deploy.tar.gz"
+            "${SERVER_USER}@${SERVER_HOST}:/tmp/homelab-deploy.tar.gz"
 
       - name: Deploy services on server
         env:
+          SERVER_USER: ${{ vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
           STAGING_IMAGE_TAG: ${{ steps.image-tag.outputs.tag }}
           SEED_FROM_PROD: ${{ inputs.seed_from_prod }}
           DEPLOY_NETWORKING: ${{ inputs.networking }}
+          DEPLOY_MONITORING: ${{ inputs.monitoring }}
           DEPLOY_SHARED_ASSETS: ${{ inputs['shared-assets'] }}
           DEPLOY_HOMEPAGE: ${{ inputs.homepage }}
           DEPLOY_BLOG: ${{ inputs.blog }}
@@ -116,17 +159,17 @@ jobs:
           DEPLOY_TOOLS: ${{ inputs.tools }}
         run: |
           ssh -i ~/.ssh/deploy_key \
-            -o StrictHostKeyChecking=no \
-            "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" \
-            "ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' SEED_FROM_PROD='${SEED_FROM_PROD}' DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' DEPLOY_SHARED_ASSETS='${DEPLOY_SHARED_ASSETS}' DEPLOY_HOMEPAGE='${DEPLOY_HOMEPAGE}' DEPLOY_BLOG='${DEPLOY_BLOG}' DEPLOY_TRAVEL='${DEPLOY_TRAVEL}' DEPLOY_GAMES='${DEPLOY_GAMES}' DEPLOY_TOOLS='${DEPLOY_TOOLS}' bash -s" << 'REMOTE'
+            "${SERVER_USER}@${SERVER_HOST}" \
+            "ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' SEED_FROM_PROD='${SEED_FROM_PROD}' DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' DEPLOY_MONITORING='${DEPLOY_MONITORING}' DEPLOY_SHARED_ASSETS='${DEPLOY_SHARED_ASSETS}' DEPLOY_HOMEPAGE='${DEPLOY_HOMEPAGE}' DEPLOY_BLOG='${DEPLOY_BLOG}' DEPLOY_TRAVEL='${DEPLOY_TRAVEL}' DEPLOY_GAMES='${DEPLOY_GAMES}' DEPLOY_TOOLS='${DEPLOY_TOOLS}' bash -s" << 'REMOTE'
           set -euo pipefail
           mkdir -p /opt/homelab
           cd /opt/homelab
           echo "Extracting deployment archive..."
-          tar -xzf /tmp/homelab-deploy.tar.gz
+          tar --overwrite -xzf /tmp/homelab-deploy.tar.gz
           touch networking/acme.json
           chmod 600 networking/acme.json
           docker network create web 2>/dev/null || true
+          docker network create internal_metrics 2>/dev/null || true
 
           # Optionally seed staging travel data from production before deploying
           if [ "${ENVIRONMENT}" = "staging" ] && [ "${SEED_FROM_PROD}" = "true" ]; then
@@ -158,6 +201,10 @@ jobs:
 
           # Deploy services in dependency order
           deploy_if_enabled networking      "$DEPLOY_NETWORKING"
+          # monitoring is prod-only (no staging counterpart)
+          if [ "${ENVIRONMENT}" = "prod" ]; then
+            deploy_if_enabled monitoring    "$DEPLOY_MONITORING"
+          fi
           deploy_if_enabled shared-assets   "$DEPLOY_SHARED_ASSETS"
           deploy_if_enabled homepage        "$DEPLOY_HOMEPAGE"
           deploy_if_enabled blog            "$DEPLOY_BLOG"

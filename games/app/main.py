@@ -7,7 +7,7 @@ import fastapi.responses
 import fastapi.staticfiles
 import fastapi.templating
 
-from .routers import pong, snake
+from .routers import catan, pong, snake
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
 
@@ -23,12 +23,13 @@ templates = fastapi.templating.Jinja2Templates(directory=APP_DIR / 'templates')
 
 app.include_router(snake.router)
 app.include_router(pong.router)
+app.include_router(catan.router)
 
 
 @app.get('/', response_class=fastapi.responses.HTMLResponse)
 async def index(request: fastapi.Request) -> fastapi.responses.HTMLResponse:
     """Render the games landing page."""
-    return templates.TemplateResponse(request=request, name='index.html')
+    return templates.TemplateResponse(request=request, name='index.html.jinja2')
 
 
 @app.api_route('/health', methods=['GET', 'HEAD'])
