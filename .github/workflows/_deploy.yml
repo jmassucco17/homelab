@@ -124,8 +124,8 @@ jobs:
       - name: Create deployment archive
         run: |
           grep -v '^#' .gitignore | grep -v '^$' > /tmp/exclude_list
-          printf '.git/\n*.tar.gz\n*.tar\n' >> /tmp/exclude_list
-          tar --exclude-from=/tmp/exclude_list -cf /tmp/homelab-deploy.tar .
+          printf '*.tar.gz\n*.tar\n' >> /tmp/exclude_list
+          tar --exclude-from=/tmp/exclude_list --exclude='.git' -cf /tmp/homelab-deploy.tar .
           if [ "${{ inputs.environment }}" = "staging" ]; then
             tar --append -f /tmp/homelab-deploy.tar networking/.env
           else
