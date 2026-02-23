@@ -139,6 +139,8 @@ class Player(pydantic.BaseModel):
     player_index: int
     name: str
     color: str
+    is_ai: bool = False
+    ai_type: str | None = None  # 'easy', 'medium', or 'hard' if is_ai is True
     resources: Resources = pydantic.Field(default_factory=Resources)
     dev_cards: DevCardHand = pydantic.Field(default_factory=DevCardHand)
     # Cards bought this turn; not playable until next turn.

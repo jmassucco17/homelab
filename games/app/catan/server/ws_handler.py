@@ -23,6 +23,7 @@ import json
 import fastapi
 import pydantic
 
+from ..ai import driver
 from ..engine import processor
 from ..models import game_state, serializers, ws_messages
 from . import room_manager
@@ -162,3 +163,58 @@ async def _handle_submit_action(
         game_state=serializers.serialize_model(new_state)
     )
     await room_manager.room_manager.broadcast(room, state_update.model_dump_json())
+
+    # Execute AI turns if the current player is an AI
+    await execute_ai_turns_if_needed(room)
+
+
+async def execute_ai_turns_if_needed(room: room_manager.GameRoom) -> None:
+    """Execute AI turns for the current player if they are an AI.
+
+    Continues executing AI turns until a human player's turn or game ends.
+    Broadcasts state updates after each AI turn.
+    """
+    if room.game_state is None or room.game_state.phase == game_state.GamePhase.ENDED:
+        return
+
+    # Keep executing AI turns while the current player is an AI
+    while True:
+        current_player_index = room.game_state.turn_state.player_index
+        current_slot = room.get_player_by_index(current_player_index)
+
+        if current_slot is None or not current_slot.is_ai:
+            break
+
+        # Get the AI instance for this player
+        ai_instance = room.ai_instances.get(current_player_index)
+        if ai_instance is None:
+            break
+
+        # Execute one AI turn
+        room.game_state = await driver.run_ai_turn(
+            room.game_state, current_player_index, ai_instance
+        )
+
+        # Check for game over
+        if room.game_state.phase == game_state.GamePhase.ENDED:
+            winner_index = room.game_state.winner_index
+            if winner_index is not None:
+                winner_slot = room.get_player_by_index(winner_index)
+                winner_name = winner_slot.name if winner_slot else ''
+                game_over_msg = ws_messages.GameOver(
+                    winner_player_index=winner_index,
+                    winner_name=winner_name,
+                    final_victory_points=[
+                        p.victory_points for p in room.game_state.players
+                    ],
+                )
+                await room_manager.room_manager.broadcast(
+                    room, game_over_msg.model_dump_json()
+                )
+            return
+
+        # Broadcast the updated state
+        state_update = ws_messages.GameStateUpdate(
+            game_state=serializers.serialize_model(room.game_state)
+        )
+        await room_manager.room_manager.broadcast(room, state_update.model_dump_json())
