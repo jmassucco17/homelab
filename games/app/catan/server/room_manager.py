@@ -29,7 +29,7 @@ _PLAYER_COLORS: list[str] = ['red', 'blue', 'white', 'orange']
 _AI_NAME_ELEMENTS: list[str] = ['Joe', 'John', 'Jicky']
 
 
-def _generate_ai_name() -> str:
+def generate_ai_name() -> str:
     """Generate a random AI first name by selecting 1 or 2 elements from the name list.
 
     Returns:
@@ -205,7 +205,7 @@ class RoomManager:
         if room is None or not room.can_join():
             return None
 
-        first_name = _generate_ai_name()
+        first_name = generate_ai_name()
         ai_name = f'{first_name} (AI, {ai_type})'
         color = _PLAYER_COLORS[len(room.players)]
         slot = PlayerSlot(

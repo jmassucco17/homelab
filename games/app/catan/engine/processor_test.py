@@ -5,7 +5,7 @@ from __future__ import annotations
 import unittest
 
 from games.app.catan.engine.processor import apply_action
-from games.app.catan.engine.turn_manager import advance_turn, create_initial_game_state
+from games.app.catan.engine.turn_manager import create_initial_game_state
 from games.app.catan.models.actions import (
     DiscardResources,
     EndTurn,
@@ -165,7 +165,9 @@ class TestActionProcessor(unittest.TestCase):
                 non_desert_tiles += 1
 
         initial_resources = state.players[1].resources.total()
-        result = apply_action(state, PlaceSettlement(player_index=1, vertex_id=vertex_id))
+        result = apply_action(
+            state, PlaceSettlement(player_index=1, vertex_id=vertex_id)
+        )
         assert result.success and result.updated_state is not None
         final_resources = result.updated_state.players[1].resources.total()
 

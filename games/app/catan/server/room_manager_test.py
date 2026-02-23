@@ -9,7 +9,7 @@ import fastapi
 
 from games.app.catan.models import game_state as gs_module
 from games.app.catan.server import room_manager as rm_module
-from games.app.catan.server.room_manager import _generate_ai_name
+from games.app.catan.server.room_manager import generate_ai_name
 
 
 class TestRoomManager(unittest.TestCase):
@@ -188,7 +188,7 @@ class TestAINameGeneration(unittest.TestCase):
 
     def test_generate_ai_name_returns_string(self) -> None:
         """_generate_ai_name returns a non-empty string."""
-        name = _generate_ai_name()
+        name = generate_ai_name()
         self.assertIsInstance(name, str)
         self.assertGreater(len(name), 0)
 
@@ -196,7 +196,7 @@ class TestAINameGeneration(unittest.TestCase):
         """Generated names only contain valid name elements."""
         valid_elements = {'Joe', 'John', 'Jicky'}
         for _ in range(20):  # Test multiple times due to randomness
-            name = _generate_ai_name()
+            name = generate_ai_name()
             words = name.split()
             self.assertGreaterEqual(len(words), 1)
             self.assertLessEqual(len(words), 2)
@@ -206,7 +206,7 @@ class TestAINameGeneration(unittest.TestCase):
     def test_generate_ai_name_no_duplicates(self) -> None:
         """Generated names don't contain duplicate elements."""
         for _ in range(20):  # Test multiple times due to randomness
-            name = _generate_ai_name()
+            name = generate_ai_name()
             words = name.split()
             self.assertEqual(len(words), len(set(words)))
 
@@ -248,7 +248,7 @@ class TestRoomManagerAddAI(unittest.TestCase):
         # Note: Due to randomness, names *could* be the same, but statistically unlikely
         # with multiple attempts. We'll just verify format is correct for each.
         slots = [self.mgr.add_ai_player(self.code, 'easy') for _ in range(3)]
-        for i, slot in enumerate(slots):
+        for slot in slots:
             assert slot is not None
             self.assertTrue(slot.name.endswith('(AI, easy)'))
             self.assertIsInstance(slot.name, str)
