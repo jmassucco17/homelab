@@ -41,6 +41,15 @@ updates:
         patterns: ['*']
 
   - package-ecosystem: 'docker'
+    directory: '/monitoring'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    groups:
+      docker-images:
+        patterns: ['*']
+
+  - package-ecosystem: 'docker'
     directory: '/python-base'
     schedule:
       interval: 'weekly'
