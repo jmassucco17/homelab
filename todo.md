@@ -3,7 +3,6 @@
 ## In progress
 
 - Finish package based deployment, remove plan doc, and test for both local and prod deployments
-- Move Traefik configuration from Docker labels to file-based config for better visibility
 
 ## New features/projects:
 
