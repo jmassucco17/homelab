@@ -174,7 +174,11 @@ def _main_legal_actions(
     if pending == game_state.PendingActionType.ROLL_DICE:
         if player_index != active:
             return []
-        return [actions.RollDice(player_index=player_index)]
+        result: list[actions.Action] = [actions.RollDice(player_index=player_index)]
+        # Knights may be played before rolling (standard Catan rules).
+        if state.players[player_index].dev_cards.knight > 0:
+            result.append(actions.PlayKnight(player_index=player_index))
+        return result
 
     if pending == game_state.PendingActionType.MOVE_ROBBER:
         if player_index != active:
