@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Catan Lobby{% endblock %}
+
+{% block content %}
+  <h1>🏝️ Settlers of Catan</h1>
+  <p>Create a new game room or join an existing one with a room code.</p>
+
+  <section class="catan-lobby">
+    <div class="grid">
+      <!-- Create a new room -->
+      <div class="card">
+        <h3>Create Room</h3>
+        <p>Start a new game and share the room code with up to 3 friends.</p>
+        <button id="btn-create-room" class="btn-primary">Create Room</button>
+        <p id="create-room-result" style="display: none">
+          Room code: <strong id="room-code-display"></strong>
+        </p>
+      </div>
+
+      <!-- Join an existing room -->
+      <div class="card">
+        <h3>Join Room</h3>
+        <p>Enter a 4-character room code to join an existing game.</p>
+        <div class="catan-form-group">
+          <input
+            type="text"
+            id="input-room-code"
+            placeholder="Room code (e.g. AB12)"
+            maxlength="4"
+            style="text-transform: uppercase"
+          />
+          <input type="text" id="input-player-name" placeholder="Your name" maxlength="20" />
+          <button id="btn-join-room" class="btn-primary">Join Room</button>
+        </div>
+        <p id="join-room-error" class="catan-error" style="display: none"></p>
+      </div>
+    </div>
+
+    <!-- Waiting room (shown after join) -->
+    <div id="waiting-room" style="display: none">
+      <h2>Waiting Room — <span id="waiting-room-code"></span></h2>
+      <ul id="player-list"></ul>
+      <p id="waiting-msg">Waiting for more players… (2–4 required)</p>
+      <button id="btn-start-game" class="btn-primary" style="display: none">Start Game</button>
+      <button id="btn-add-ai" class="btn-secondary" style="display: none">Add AI Player</button>
+    </div>
+  </section>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script src="/static/catan/catan.js" defer></script>
+{% endblock %}
