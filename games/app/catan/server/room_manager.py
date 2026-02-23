@@ -6,10 +6,8 @@ the FastAPI :class:`WebSocket` handles needed for broadcasting.
 
 Disconnection handling
 ----------------------
-When a player's WebSocket closes, their slot is *held* for
-:data:`RECONNECT_WINDOW_SECONDS`.  If they reconnect with the same name
-before the window expires, their existing slot is restored.  After the
-window closes the name is released and a new player can claim it.
+When a player's WebSocket closes, their slot is held indefinitely.  They
+may reconnect at any time using the same name and reclaim their seat.
 """
 
 from __future__ import annotations
@@ -22,9 +20,6 @@ import fastapi
 
 from ..engine import turn_manager
 from ..models import game_state as gs
-
-# Seconds a disconnected player slot is held open for reconnection.
-RECONNECT_WINDOW_SECONDS: int = 60
 
 # Player colours assigned in join order (index 0–3).
 _PLAYER_COLORS: list[str] = ['red', 'blue', 'white', 'orange']
@@ -55,15 +50,6 @@ class PlayerSlot:
     def is_connected(self) -> bool:
         """True if this player currently has an active WebSocket."""
         return self.websocket is not None
-
-    def is_reconnect_window_open(self) -> bool:
-        """True if the reconnection grace period has not yet elapsed."""
-        if self.disconnected_at is None:
-            return False
-        elapsed = (
-            datetime.datetime.now(datetime.UTC) - self.disconnected_at
-        ).total_seconds()
-        return elapsed < RECONNECT_WINDOW_SECONDS
 
 
 class GameRoom:
@@ -151,23 +137,26 @@ class RoomManager:
         Returns the :class:`PlayerSlot` on success, or ``None`` when:
 
         * the room does not exist,
-        * the game has already started and the name is not a known player,
-        * the room is full, or
-        * the name is taken by a player whose reconnect window has closed.
+        * the game has already started and the name is not a known player, or
+        * the room is full.
+
+        A player whose slot already exists may always reconnect, regardless of
+        how long they were disconnected.  The reconnect window only governs
+        whether a *new* player may claim a slot whose previous occupant has
+        been absent for more than a given period (i.e. the
+        slot is released for re-use by a different name).
         """
         room = self._rooms.get(room_code)
         if room is None:
             return None
 
-        # Reconnection path: same name, slot held within window.
         existing = room.get_player_by_name(player_name)
         if existing is not None:
-            if existing.is_reconnect_window_open():
-                existing.websocket = websocket
-                existing.disconnected_at = None
-                return existing
-            # Name is taken but reconnect window has closed.
-            return None
+            # Always let the original player back in, no matter how long they
+            # were gone — their slot is theirs until the game ends.
+            existing.websocket = websocket
+            existing.disconnected_at = None
+            return existing
 
         if not room.can_join():
             return None

@@ -13,7 +13,7 @@ Message flow
 * Invalid action → server sends :class:`~.ws_messages.ErrorMessage` to the
   acting player only.
 * Game ends → server broadcasts :class:`~.ws_messages.GameOver`.
-* Client disconnects → slot held for :data:`~.room_manager.RECONNECT_WINDOW_SECONDS`.
+* Client disconnects → slot held indefinitely; player may reconnect at any time.
 """
 
 from __future__ import annotations

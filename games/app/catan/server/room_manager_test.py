@@ -76,27 +76,6 @@ class TestPlayerSlot(unittest.TestCase):
         slot.websocket = None
         self.assertFalse(slot.is_connected)
 
-    def test_reconnect_window_open_within_60s(self) -> None:
-        """Reconnect window is open if less than 60 s have elapsed."""
-        slot = self._make_slot()
-        slot.websocket = None
-        slot.disconnected_at = datetime.datetime.now(datetime.UTC)
-        self.assertTrue(slot.is_reconnect_window_open())
-
-    def test_reconnect_window_closed_after_60s(self) -> None:
-        """Reconnect window is closed after 60 s have elapsed."""
-        slot = self._make_slot()
-        slot.websocket = None
-        slot.disconnected_at = datetime.datetime.now(datetime.UTC) - datetime.timedelta(
-            seconds=rm_module.RECONNECT_WINDOW_SECONDS + 1
-        )
-        self.assertFalse(slot.is_reconnect_window_open())
-
-    def test_reconnect_window_false_when_not_disconnected(self) -> None:
-        """Reconnect window is not open when slot has never disconnected."""
-        slot = self._make_slot()
-        self.assertFalse(slot.is_reconnect_window_open())
-
 
 class TestRoomManagerJoin(unittest.TestCase):
     """Tests for RoomManager.join_room."""
@@ -129,19 +108,22 @@ class TestRoomManagerJoin(unittest.TestCase):
         result = self.mgr.join_room(self.code, 'Extra', ws_extra)
         self.assertIsNone(result)
 
-    def test_duplicate_name_outside_window_returns_none(self) -> None:
-        """Joining with an existing name whose window is closed returns None."""
+    def test_reconnect_after_window_still_restores_slot(self) -> None:
+        """A player can always rejoin their own slot, even after the window expires."""
         slot = self.mgr.join_room(self.code, 'Alice', self.ws)
         assert slot is not None
         slot.websocket = None
         slot.disconnected_at = datetime.datetime.now(datetime.UTC) - datetime.timedelta(
-            seconds=rm_module.RECONNECT_WINDOW_SECONDS + 1
+            seconds=3600  # well beyond any former reconnect window
         )
         ws2 = unittest.mock.MagicMock(spec=fastapi.WebSocket)
-        self.assertIsNone(self.mgr.join_room(self.code, 'Alice', ws2))
+        reconnected = self.mgr.join_room(self.code, 'Alice', ws2)
+        self.assertIs(reconnected, slot)
+        self.assertIs(slot.websocket, ws2)
+        self.assertIsNone(slot.disconnected_at)
 
-    def test_reconnect_within_window_restores_slot(self) -> None:
-        """Rejoining within the reconnect window updates the websocket."""
+    def test_reconnect_always_restores_slot(self) -> None:
+        """Rejoining with the same name always restores the existing slot."""
         slot = self.mgr.join_room(self.code, 'Alice', self.ws)
         assert slot is not None
         slot.websocket = None
