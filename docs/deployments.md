@@ -23,8 +23,8 @@ runs.
          │                    │                       │
    CI integration       Production deploy       Staging deploy
    (docker-integration  (.github/workflows/     (.github/workflows/
-    .yml via             deploy.yml)             deploy-staging.yml)
-    start-service
+    .yml via             build-and-deploy.yml)   build-and-deploy.yml
+    start-service        environment=prod)        environment=staging)
     action)
 ```
 
@@ -66,20 +66,20 @@ and skips `cloudflare-ddns` since DNS propagation is not testable in CI.
 
 ## 2. Production Deployment
 
-**Workflow:** `.github/workflows/deploy.yml`  
+**Workflow:** `.github/workflows/build-and-deploy.yml` (calls `_deploy.yml`)  
 **Trigger:** Push to `main` (deploys all services) or `workflow_dispatch` (selective)  
 **Script called:** `scripts/start_service.sh <service>` (on the server over SSH)
 
 ### Purpose
 
 Deploy the current state of `main` to the production VPS. Images are pre-built by
-`build.yml` and pulled from GHCR; the archive provides config files and
+`_build.yml` and pulled from GHCR; the archive provides config files and
 `networking/.env`.
 
 ### How it works
 
 1. Connects to the server via Tailscale VPN.
-2. Writes `networking/.env` from the `NETWORKING_ENV` secret.
+2. Assembles `networking/.env` from individual GitHub secrets.
 3. Creates a `.tar.gz` archive of the repo (excluding `.git`, `node_modules`, etc.) and
    appends `networking/.env`.
 4. SCPs the archive to `/tmp/homelab-deploy.tar.gz` on the server.
@@ -96,21 +96,15 @@ services are deployed. On push to `main`, all services are deployed.
 
 ### Required secrets
 
-| Secret                      | Description                            |
-| --------------------------- | -------------------------------------- |
-| `TAILSCALE_OAUTH_CLIENT_ID` | Tailscale OAuth client ID              |
-| `TAILSCALE_OAUTH_SECRET`    | Tailscale OAuth secret                 |
-| `SSH_PRIVATE_KEY`           | Private key for SSH into the server    |
-| `SERVER_HOST`               | Tailscale hostname or IP of the server |
-| `SERVER_USER`               | SSH username on the server             |
-| `NETWORKING_ENV`            | Full contents of `networking/.env`     |
+See [`docs/secrets.md`](secrets.md) for the full list of repository secrets that must be
+configured before deployment.
 
 ---
 
 ## 3. Staging Deployment
 
-**Workflow:** `.github/workflows/deploy-staging.yml`  
-**Trigger:** `workflow_dispatch` only (always manual)  
+**Workflow:** `.github/workflows/build-and-deploy.yml` (calls `_deploy.yml`)  
+**Trigger:** `workflow_dispatch` only (select `staging` environment)  
 **Script called:** `scripts/start_service.sh <service> --staging` (on the server over SSH)  
 **Compose files used:** `docker-compose.yml` + `docker-compose.staging.yml` (per service, overlaid)
 
@@ -125,41 +119,37 @@ names, Traefik routers, and (for `travel`) a separate Docker volume. One-time se
 
 Identical to the production workflow except:
 
-- Uses `STAGING_NETWORKING_ENV` secret (which includes `GOOGLE_OAUTH2_STAGING_COOKIE_SECRET`).
+- The `environment` input is set to `staging` (auto-detected as `prod` on push to `main`).
 - Passes `STAGING_IMAGE_TAG` to `start_service.sh --staging`, which overlays
   `docker-compose.staging.yml` on top of `docker-compose.yml` under an isolated
   `staging-<service>` Docker Compose project so production containers are never affected.
-
 - Supports an optional `seed_from_prod` step that copies the production travel volume into
   the staging volume before deploying.
 
-### Workflow inputs Input | Default | Description |
+Staging and production share the same set of repository secrets. See
+[`docs/secrets.md`](secrets.md) for the full list.
 
+### Workflow inputs
+
+| Input | Default | Description |
 |-------|---------|-------------|
-| `image_tag` | `latest` | GHCR image tag to deploy (e.g. `sha-abc1234`) |
+| `environment` | — | Set to `staging` |
 | `seed_from_prod` | `false` | Copy production travel data to staging before deploying |
-| `networking` | `false` | Deploy staging oauth2-proxy |
+| `networking` | `true` | Deploy staging oauth2-proxy |
 | `shared-assets` | `true` | Deploy staging shared-assets |
 | `homepage` | `true` | Deploy staging homepage |
 | `blog` | `true` | Deploy staging blog |
 | `travel` | `true` | Deploy staging travel |
 | `games` | `true` | Deploy staging games |
+| `tools` | `true` | Deploy staging tools |
 
 ### Upgrade testing workflow
 
-1. Trigger `deploy-staging.yml` with `image_tag=sha-<old-tag>` and `seed_from_prod=true`.
+1. Trigger `build-and-deploy.yml` with `environment=staging`, `image_tag=sha-<old-tag>`, and `seed_from_prod=true`.
    Staging now mirrors the current production state.
-2. Trigger `deploy-staging.yml` again with `image_tag=sha-<new-tag>`.
+2. Trigger again with `image_tag=sha-<new-tag>`.
 3. Verify staging data survived the upgrade at `travel.staging.jamesmassucco.com`.
-4. If verified, trigger production `deploy.yml` to promote the same tag.
-
-### Required secrets
-
-Shares most secrets with production. One additional secret is required:
-
-| Secret                   | Description                                                                |
-| ------------------------ | -------------------------------------------------------------------------- |
-| `STAGING_NETWORKING_ENV` | `networking/.env` contents including `GOOGLE_OAUTH2_STAGING_COOKIE_SECRET` |
+4. If verified, trigger production deploy (push to `main` or `workflow_dispatch` with `environment=prod`).
 
 ---
 
@@ -191,12 +181,12 @@ Every service directory follows the same layout:
 
 ## Choosing the right deployment method
 
-| Situation                                                      | Use                                                         |
-| -------------------------------------------------------------- | ----------------------------------------------------------- |
-| Validating a PR builds and serves correctly                    | CI integration tests (automatic on PR)                      |
-| Checking a specific image tag against real data before merging | Staging deploy                                              |
-| Releasing to production after merge                            | Production deploy (automatic on push to `main`)             |
-| Rolling back production to a previous build                    | Production `deploy.yml` dispatch with `sha-<tag>` image tag |
+| Situation                                                      | Use                                                                              |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Validating a PR builds and serves correctly                    | CI integration tests (automatic on PR)                                           |
+| Checking a specific image tag against real data before merging | Staging deploy                                                                   |
+| Releasing to production after merge                            | Production deploy (automatic on push to `main`)                                  |
+| Rolling back production to a previous build                    | `build-and-deploy.yml` dispatch with `environment=prod`, uncheck rebuilt services |
 
 ## One-time staging setup
 
@@ -209,12 +199,8 @@ Before staging is usable for the first time, complete these manual steps:
    (added to its DOMAINS list in `networking/docker-compose.yml`).
 2. Add `https://oauth.staging.jamesmassucco.com/oauth2/callback` to the Google OAuth
    app's Authorized Redirect URIs.
-3. Generate a staging cookie secret and set the `STAGING_NETWORKING_ENV` GitHub secret
-   (see `docs/secrets.md` for the full list of fields it must contain):
-   ```bash
-   python3 -c "import secrets, base64; print(base64.b64encode(secrets.token_bytes(32)).decode())"
-   ```
+3. Ensure all repository secrets from [`docs/secrets.md`](secrets.md) are configured.
 4. Deploy staging networking once to start `oauth2-proxy-staging`:
    ```
-   deploy-staging.yml → networking=true, all others=false
+   build-and-deploy.yml → environment=staging, networking=true, all others=false
    ```

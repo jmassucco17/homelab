@@ -1,5 +1,6 @@
 """Unit tests for movie_picker router."""
 
+import os
 import unittest
 import unittest.mock
 
@@ -39,8 +40,6 @@ class TestMoviePickerRouter(unittest.TestCase):
 
     def test_search_returns_503_without_api_key(self) -> None:
         """Test search endpoint returns 503 when TMDB_API_KEY is not set."""
-        import os
-
         with unittest.mock.patch.dict(os.environ, {}, clear=True):
             # Ensure TMDB_API_KEY is not set
             os.environ.pop('TMDB_API_KEY', None)
@@ -50,8 +49,6 @@ class TestMoviePickerRouter(unittest.TestCase):
 
     def test_details_returns_503_without_api_key(self) -> None:
         """Test details endpoint returns 503 when TMDB_API_KEY is not set."""
-        import os
-
         with unittest.mock.patch.dict(os.environ, {}, clear=True):
             os.environ.pop('TMDB_API_KEY', None)
             response = self.client.get('/api/movies/12345')
@@ -60,8 +57,6 @@ class TestMoviePickerRouter(unittest.TestCase):
 
     def test_search_returns_results_with_api_key(self) -> None:
         """Test search returns movie results when API key is set."""
-        import os
-
         mock_response_data = {
             'results': [
                 {
@@ -103,8 +98,6 @@ class TestMoviePickerRouter(unittest.TestCase):
 
     def test_details_returns_movie_with_api_key(self) -> None:
         """Test details endpoint returns full movie info when API key is set."""
-        import os
-
         mock_details = {
             'id': 27205,
             'title': 'Inception',
@@ -157,8 +150,6 @@ class TestMoviePickerRouter(unittest.TestCase):
 
     def test_search_result_without_poster(self) -> None:
         """Test search handles movies with no poster_path gracefully."""
-        import os
-
         mock_response_data = {
             'results': [
                 {

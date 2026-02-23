@@ -1,20 +1,17 @@
-from datetime import UTC, datetime
+"""Business logic services for the travel maps feature."""
+
+import datetime
 
 import httpx
-from sqlmodel import Session, select
+import sqlmodel
 
-from .models import Map, MapLocation
+from . import models
 
 
 async def geocode_location(query: str) -> list[dict[str, str | float]]:
-    """
-    Search for locations using Nominatim geocoding API.
+    """Search for locations using Nominatim geocoding API.
 
-    Args:
-        query: Search query string
-
-    Returns:
-        List of location results with name, lat, lon
+    Returns a list of dicts with 'name', 'latitude', and 'longitude' keys.
     """
     async with httpx.AsyncClient() as client:
         response = await client.get(
@@ -35,19 +32,22 @@ async def geocode_location(query: str) -> list[dict[str, str | float]]:
         ]
 
 
-def get_all_maps(session: Session) -> list[Map]:
+def get_all_maps(session: sqlmodel.Session) -> list[models.Map]:
     """Get all maps."""
-    return list(session.exec(select(Map).order_by(Map.updated_at.desc())).all())  # type: ignore[attr-defined]
+    statement = sqlmodel.select(models.Map).order_by(models.Map.updated_at.desc())  # type: ignore[attr-defined]
+    return list(session.exec(statement).all())
 
 
-def get_map_by_id(session: Session, map_id: int) -> Map | None:
+def get_map_by_id(session: sqlmodel.Session, map_id: int) -> models.Map | None:
     """Get a map by ID."""
-    return session.get(Map, map_id)
+    return session.get(models.Map, map_id)
 
 
-def create_map(session: Session, name: str, description: str | None = None) -> Map:
+def create_map(
+    session: sqlmodel.Session, name: str, description: str | None = None
+) -> models.Map:
     """Create a new map."""
-    map_obj = Map(name=name, description=description)
+    map_obj = models.Map(name=name, description=description)
     session.add(map_obj)
     session.commit()
     session.refresh(map_obj)
@@ -55,25 +55,25 @@ def create_map(session: Session, name: str, description: str | None = None) -> M
 
 
 def update_map(
-    session: Session, map_id: int, name: str, description: str | None = None
-) -> Map | None:
+    session: sqlmodel.Session, map_id: int, name: str, description: str | None = None
+) -> models.Map | None:
     """Update an existing map."""
-    map_obj = session.get(Map, map_id)
+    map_obj = session.get(models.Map, map_id)
     if not map_obj:
         return None
 
     map_obj.name = name
     map_obj.description = description
-    map_obj.updated_at = datetime.now(UTC)
+    map_obj.updated_at = datetime.datetime.now(datetime.UTC)
     session.add(map_obj)
     session.commit()
     session.refresh(map_obj)
     return map_obj
 
 
-def delete_map(session: Session, map_id: int) -> bool:
+def delete_map(session: sqlmodel.Session, map_id: int) -> bool:
     """Delete a map and all its locations."""
-    map_obj = session.get(Map, map_id)
+    map_obj = session.get(models.Map, map_id)
     if not map_obj:
         return False
 
@@ -83,27 +83,27 @@ def delete_map(session: Session, map_id: int) -> bool:
 
 
 def add_location_to_map(
-    session: Session,
+    session: sqlmodel.Session,
     map_id: int,
     name: str,
     latitude: float,
     longitude: float,
     nickname: str | None = None,
     description: str | None = None,
-) -> MapLocation | None:
+) -> models.MapLocation | None:
     """Add a location to a map."""
-    map_obj = session.get(Map, map_id)
+    map_obj = session.get(models.Map, map_id)
     if not map_obj:
         return None
 
     max_order = session.exec(
-        select(MapLocation.order_index)
-        .where(MapLocation.map_id == map_id)
-        .order_by(MapLocation.order_index.desc())  # type: ignore[attr-defined]
+        sqlmodel.select(models.MapLocation.order_index)
+        .where(models.MapLocation.map_id == map_id)
+        .order_by(models.MapLocation.order_index.desc())  # type: ignore[attr-defined]
     ).first()
     order_index = (max_order + 1) if max_order is not None else 0
 
-    location = MapLocation(
+    location = models.MapLocation(
         map_id=map_id,
         name=name,
         latitude=latitude,
@@ -114,7 +114,7 @@ def add_location_to_map(
     )
     session.add(location)
 
-    map_obj.updated_at = datetime.now(UTC)
+    map_obj.updated_at = datetime.datetime.now(datetime.UTC)
     session.add(map_obj)
 
     session.commit()
@@ -123,13 +123,13 @@ def add_location_to_map(
 
 
 def update_location(
-    session: Session,
+    session: sqlmodel.Session,
     location_id: int,
     nickname: str | None = None,
     description: str | None = None,
-) -> MapLocation | None:
+) -> models.MapLocation | None:
     """Update a location's nickname and description."""
-    location = session.get(MapLocation, location_id)
+    location = session.get(models.MapLocation, location_id)
     if not location:
         return None
 
@@ -137,9 +137,9 @@ def update_location(
     location.description = description
     session.add(location)
 
-    map_obj = session.get(Map, location.map_id)
+    map_obj = session.get(models.Map, location.map_id)
     if map_obj:
-        map_obj.updated_at = datetime.now(UTC)
+        map_obj.updated_at = datetime.datetime.now(datetime.UTC)
         session.add(map_obj)
 
     session.commit()
@@ -147,36 +147,36 @@ def update_location(
     return location
 
 
-def delete_location(session: Session, location_id: int) -> bool:
+def delete_location(session: sqlmodel.Session, location_id: int) -> bool:
     """Delete a location from a map."""
-    location = session.get(MapLocation, location_id)
+    location = session.get(models.MapLocation, location_id)
     if not location:
         return False
 
     map_id = location.map_id
     session.delete(location)
 
-    map_obj = session.get(Map, map_id)
+    map_obj = session.get(models.Map, map_id)
     if map_obj:
-        map_obj.updated_at = datetime.now(UTC)
+        map_obj.updated_at = datetime.datetime.now(datetime.UTC)
         session.add(map_obj)
 
     session.commit()
     return True
 
 
-def reorder_locations(session: Session, location_ids: list[int]) -> bool:
+def reorder_locations(session: sqlmodel.Session, location_ids: list[int]) -> bool:
     """Reorder locations based on provided list of IDs."""
     for index, location_id in enumerate(location_ids):
-        location = session.get(MapLocation, location_id)
+        location = session.get(models.MapLocation, location_id)
         if location:
             location.order_index = index
             session.add(location)
 
             if index == 0:
-                map_obj = session.get(Map, location.map_id)
+                map_obj = session.get(models.Map, location.map_id)
                 if map_obj:
-                    map_obj.updated_at = datetime.now(UTC)
+                    map_obj.updated_at = datetime.datetime.now(datetime.UTC)
                     session.add(map_obj)
 
     session.commit()

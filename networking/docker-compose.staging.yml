@@ -3,7 +3,6 @@
 # labels so any staging service can reference it without touching prod networking.
 #
 # Usage: scripts/start_service.sh networking --staging
-# Prerequisites: networking/.env must contain GOOGLE_OAUTH2_STAGING_COOKIE_SECRET
 services:
   oauth2-proxy-staging:
     image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
@@ -15,7 +14,7 @@ services:
       OAUTH2_PROXY_EMAIL_DOMAINS: '*'
       OAUTH2_PROXY_AUTHENTICATED_EMAILS: ${OAUTH2_AUTHORIZED_EMAILS}
       OAUTH2_PROXY_REDIRECT_URL: https://oauth.staging.jamesmassucco.com/oauth2/callback
-      OAUTH2_PROXY_COOKIE_SECRET: ${GOOGLE_OAUTH2_STAGING_COOKIE_SECRET}
+      OAUTH2_PROXY_COOKIE_SECRET: ${GOOGLE_OAUTH2_COOKIE_SECRET}
       OAUTH2_PROXY_COOKIE_DOMAIN: .staging.jamesmassucco.com
       OAUTH2_PROXY_COOKIE_SECURE: true
       OAUTH2_PROXY_COOKIE_SAMESITE: lax

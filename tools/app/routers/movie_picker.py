@@ -1,5 +1,6 @@
 """Movie picker router with TMDB API integration."""
 
+import asyncio
 import os
 import pathlib
 
@@ -168,8 +169,6 @@ async def _fetch_movie_data(
     movie_id: int,
 ) -> tuple[httpx.Response, httpx.Response]:
     """Fetch movie details and watch providers concurrently."""
-    import asyncio
-
     details_task = client.get(
         f'{TMDB_BASE_URL}/movie/{movie_id}',
         headers=headers,

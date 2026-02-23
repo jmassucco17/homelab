@@ -208,7 +208,9 @@ async function initGame() {
     onGameOver: (msg) => {
       const iAmWinner = msg.winner_player_index === myPlayerIndex
       ui.showGameOver(msg.winner_name, iAmWinner)
-      ui.updateLog(`🏆 ${msg.winner_name} wins with ${msg.final_victory_points[msg.winner_player_index]} VPs!`)
+      ui.updateLog(
+        `🏆 ${msg.winner_name} wins with ${msg.final_victory_points[msg.winner_player_index]} VPs!`,
+      )
     },
 
     onConnectionChange: (status) => {
@@ -242,7 +244,11 @@ async function initGame() {
     // Setup phase: always place settlement
     if (phase === 'setup_forward' || phase === 'setup_backward') {
       if (pending === 'place_settlement') {
-        wsClient.sendAction({ action_type: 'place_settlement', player_index: myPlayerIndex, vertex_id: vertexId })
+        wsClient.sendAction({
+          action_type: 'place_settlement',
+          player_index: myPlayerIndex,
+          vertex_id: vertexId,
+        })
       }
       return
     }
@@ -252,9 +258,17 @@ async function initGame() {
       const vertex = gs.board.vertices.find((v) => v.vertex_id === vertexId)
       if (vertex && vertex.building && vertex.building.player_index === myPlayerIndex) {
         // Upgrade to city
-        wsClient.sendAction({ action_type: 'place_city', player_index: myPlayerIndex, vertex_id: vertexId })
+        wsClient.sendAction({
+          action_type: 'place_city',
+          player_index: myPlayerIndex,
+          vertex_id: vertexId,
+        })
       } else {
-        wsClient.sendAction({ action_type: 'place_settlement', player_index: myPlayerIndex, vertex_id: vertexId })
+        wsClient.sendAction({
+          action_type: 'place_settlement',
+          player_index: myPlayerIndex,
+          vertex_id: vertexId,
+        })
       }
     }
   }
@@ -265,13 +279,21 @@ async function initGame() {
     if (gs.turn_state.player_index !== myPlayerIndex) return
     const pending = gs.turn_state.pending_action
     if (pending === 'place_road' || pending === 'build_or_trade') {
-      wsClient.sendAction({ action_type: 'place_road', player_index: myPlayerIndex, edge_id: edgeId })
+      wsClient.sendAction({
+        action_type: 'place_road',
+        player_index: myPlayerIndex,
+        edge_id: edgeId,
+      })
     }
   }
 
   boardRenderer.onTileClick = (tileIndex) => {
     if (myPlayerIndex === null || !ui.gameState) return
-    wsClient.sendAction({ action_type: 'move_robber', player_index: myPlayerIndex, tile_index: tileIndex })
+    wsClient.sendAction({
+      action_type: 'move_robber',
+      player_index: myPlayerIndex,
+      tile_index: tileIndex,
+    })
   }
 
   // ---------------------------------------------------------------------------
