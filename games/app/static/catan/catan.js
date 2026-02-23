@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ---------------------------------------------------------------------------
 
 function initLobby() {
-  const createBtn = document.getElementById('create-room-btn')
+  const createBtn = document.getElementById('btn-create-room')
   const joinBtn = document.getElementById('join-room-btn')
   const joinCodeInput = document.getElementById('join-room-code')
   const nameInput = document.getElementById('player-name-input')
