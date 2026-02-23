@@ -8,10 +8,16 @@ on:
         required: false
         type: string
         default: 'prod'
+      rebuild_base:
+        description: 'Rebuild python-base image'
+        required: false
+        type: boolean
+        default: true
 
 jobs:
   build-base:
     name: build python-base
+    if: inputs.rebuild_base
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -33,6 +39,7 @@ jobs:
   build:
     name: build ${{ matrix.service }}
     needs: build-base
+    if: "!failure() && !cancelled()"
     runs-on: ubuntu-latest
     permissions:
       contents: read

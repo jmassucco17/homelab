@@ -142,18 +142,17 @@ jobs:
             /tmp/homelab-deploy.tar.gz \
             "${SERVER_USER}@${SERVER_HOST}:/tmp/homelab-deploy.tar.gz"
 
-      - name: Deploy networking
+      - name: Set up server
         env:
           SERVER_USER: ${{ vars.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
           STAGING_IMAGE_TAG: ${{ steps.image-tag.outputs.tag }}
           SEED_FROM_PROD: ${{ inputs.seed_from_prod }}
-          DEPLOY_NETWORKING: ${{ inputs.networking }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             "${SERVER_USER}@${SERVER_HOST}" \
-            "ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' SEED_FROM_PROD='${SEED_FROM_PROD}' DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' bash -s" << 'REMOTE'
+            "ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' SEED_FROM_PROD='${SEED_FROM_PROD}' bash -s" << 'REMOTE'
           set -euo pipefail
           mkdir -p /opt/homelab
           cd /opt/homelab
@@ -174,7 +173,21 @@ jobs:
               alpine \
               sh -c "cp -a /src/. /dst/ && echo 'Seed complete.'"
           fi
+          REMOTE
 
+      - name: Deploy networking
+        env:
+          SERVER_USER: ${{ vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          STAGING_IMAGE_TAG: ${{ steps.image-tag.outputs.tag }}
+          DEPLOY_NETWORKING: ${{ inputs.networking }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            "${SERVER_USER}@${SERVER_HOST}" \
+            "ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' bash -s" << 'REMOTE'
+          set -euo pipefail
+          cd /opt/homelab
           if [ "${DEPLOY_NETWORKING}" = "true" ]; then
             if [ "${ENVIRONMENT}" = "staging" ]; then
               echo "--- Starting staging networking ---"
@@ -189,11 +202,29 @@ jobs:
           fi
           REMOTE
 
-  deploy-services:
+  deploy-service:
+    name: deploy ${{ matrix.service }}
     needs: deploy-networking
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    strategy:
+      matrix:
+        include:
+          - service: shared-assets
+            enabled: ${{ inputs['shared-assets'] }}
+          - service: homepage
+            enabled: ${{ inputs.homepage }}
+          - service: blog
+            enabled: ${{ inputs.blog }}
+          - service: games
+            enabled: ${{ inputs.games }}
+          - service: tools
+            enabled: ${{ inputs.tools }}
+          - service: travel
+            enabled: ${{ inputs.travel }}
+          - service: monitoring
+            enabled: ${{ inputs.monitoring && inputs.environment == 'prod' }}
     steps:
       - uses: actions/checkout@v6
 
@@ -207,6 +238,7 @@ jobs:
           fi
 
       - name: Connect to Tailscale
+        if: matrix.enabled
         uses: tailscale/github-action@v4
         with:
           oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
@@ -214,6 +246,7 @@ jobs:
           tags: tag:github
 
       - name: Set up SSH key
+        if: matrix.enabled
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
@@ -223,67 +256,24 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
 
-      - name: Deploy services in parallel
+      - name: Deploy ${{ matrix.service }}
+        if: matrix.enabled
         env:
           SERVER_USER: ${{ vars.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
           STAGING_IMAGE_TAG: ${{ steps.image-tag.outputs.tag }}
-          DEPLOY_MONITORING: ${{ inputs.monitoring }}
-          DEPLOY_SHARED_ASSETS: ${{ inputs['shared-assets'] }}
-          DEPLOY_HOMEPAGE: ${{ inputs.homepage }}
-          DEPLOY_BLOG: ${{ inputs.blog }}
-          DEPLOY_TRAVEL: ${{ inputs.travel }}
-          DEPLOY_GAMES: ${{ inputs.games }}
-          DEPLOY_TOOLS: ${{ inputs.tools }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             "${SERVER_USER}@${SERVER_HOST}" \
-            "ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' DEPLOY_MONITORING='${DEPLOY_MONITORING}' DEPLOY_SHARED_ASSETS='${DEPLOY_SHARED_ASSETS}' DEPLOY_HOMEPAGE='${DEPLOY_HOMEPAGE}' DEPLOY_BLOG='${DEPLOY_BLOG}' DEPLOY_TRAVEL='${DEPLOY_TRAVEL}' DEPLOY_GAMES='${DEPLOY_GAMES}' DEPLOY_TOOLS='${DEPLOY_TOOLS}' bash -s" << 'REMOTE'
+            "ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' bash -s" << 'REMOTE'
           set -euo pipefail
-          cd /opt/homelab
-
-          deploy() {
-            local svc="$1"
-            if [ "${ENVIRONMENT}" = "staging" ]; then
-              echo "--- Starting staging $svc ---"
-              STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" \
-                /opt/homelab/scripts/start_service.sh "$svc" --staging
-            else
-              echo "--- Deploying $svc ---"
-              /opt/homelab/scripts/start_service.sh "$svc"
-            fi
-          }
-
-          # Deploy all remaining services in parallel
-          pids=()
-          # monitoring is prod-only (no staging counterpart)
-          if [ "${ENVIRONMENT}" = "prod" ] && [ "${DEPLOY_MONITORING}" = "true" ]; then
-            deploy monitoring & pids+=($!)
+          if [ "${ENVIRONMENT}" = "staging" ]; then
+            echo "--- Starting staging ${{ matrix.service }} ---"
+            STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" \
+              /opt/homelab/scripts/start_service.sh "${{ matrix.service }}" --staging
+          else
+            echo "--- Deploying ${{ matrix.service }} ---"
+            /opt/homelab/scripts/start_service.sh "${{ matrix.service }}"
           fi
-          if [ "${DEPLOY_SHARED_ASSETS}" = "true" ]; then
-            deploy shared-assets & pids+=($!)
-          fi
-          if [ "${DEPLOY_HOMEPAGE}" = "true" ]; then
-            deploy homepage & pids+=($!)
-          fi
-          if [ "${DEPLOY_BLOG}" = "true" ]; then
-            deploy blog & pids+=($!)
-          fi
-          if [ "${DEPLOY_GAMES}" = "true" ]; then
-            deploy games & pids+=($!)
-          fi
-          if [ "${DEPLOY_TOOLS}" = "true" ]; then
-            deploy tools & pids+=($!)
-          fi
-          if [ "${DEPLOY_TRAVEL}" = "true" ]; then
-            deploy travel & pids+=($!)
-          fi
-
-          exit_code=0
-          for pid in "${pids[@]}"; do
-            wait "$pid" || exit_code=$?
-          done
-          echo "Deployment complete."
-          exit "$exit_code"
           REMOTE

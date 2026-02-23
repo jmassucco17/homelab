@@ -50,6 +50,10 @@ on:
         description: 'Deploy monitoring'
         type: boolean
         default: true
+      rebuild_base:
+        description: 'Rebuild python-base image'
+        type: boolean
+        default: true
 
 jobs:
   # Determine environment based on trigger and inputs
@@ -77,6 +81,7 @@ jobs:
     uses: ./.github/workflows/_build.yml
     with:
       environment: ${{ needs.setup.outputs.environment }}
+      rebuild_base: ${{ inputs.rebuild_base }}
 
   deploy:
     needs: [setup, build]
