@@ -42,3 +42,4 @@ To access services by hostname instead (matching production URLs), add to `/etc/
 
 - Cloudflare provides domain registration and DNS, as well as proxying and DOS protection
 - UptimeRobot provides external monitoring of website availability
+- Grafana Cloud provides prometheus / loki metrics hosting and visualization
