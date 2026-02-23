@@ -256,7 +256,9 @@ class TestAddAIEndpoint(unittest.TestCase):
 
                 resp = self.client.post(f'/catan/rooms/{code}/add-ai?difficulty=easy')
                 self.assertEqual(resp.status_code, 400)
-                self.assertIn('Cannot add AI after game has started', resp.json()['detail'])
+                self.assertIn(
+                    'Cannot add AI after game has started', resp.json()['detail']
+                )
 
     def test_add_ai_broadcasts_player_joined(self) -> None:
         """Adding AI broadcasts PlayerJoined to connected clients."""
