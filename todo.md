@@ -2,8 +2,8 @@
 
 ## In progress
 
-- Add secrets management (including new `TMDB_API_KEY`) for the server
 - Finish package based deployment, remove plan doc, and test for both local and prod deployments
+- Move Traefik configuration from Docker labels to file-based config for better visibility
 
 ## New features/projects:
 
@@ -15,6 +15,7 @@
 
 ## Deployment improvements:
 
+- Update secrets to use Vault
 - Make better use of GHCR, or investigate alternative deployment management technologies (e.g. FluxCD)
 - Learn how to use worktrees, and teach Claude how to do it
 - Use narrower requirements at build time for modules, to speed up builds
@@ -23,6 +24,10 @@
     - enable backup / restore capability
     - Fix -> time="2026-02-20T16:21:51Z" level=warning msg="volume \"travel-site_data-volume\" already exists but was created for project \"travel-site\" (expected \"travel\"). Use `external: true` to use an existing volume"
 
+## Monitoring improvements
+
+- Add Google OAuth to Grafana
+- Create a custom dashboard for visualizing more specific metrics
 
 ## Organization
 
@@ -32,7 +37,6 @@
 ## Security
 
 - Update Python to 3.13
-- Don't use `root` for managing the VPS
 
 ## Bug fixes:
 
@@ -62,9 +66,7 @@
 ### Medium Priority (Architecture)
 - Refactor travel modules to share code or merge into single app with sub-routers
 - Add database migrations with Alembic
-- Add observability stack (Prometheus + Grafana for metrics, Loki for logs)
 - Implement automated backup strategy for SQLite databases (rsync/rclone to S3/Backblaze)
-- Move Traefik configuration from Docker labels to file-based config for better visibility
 - Add CI/CD deployment workflow (build/push images, deploy to production, smoke tests)
 - Implement proper secret management (Docker Secrets, Vault, or managed service)
 
