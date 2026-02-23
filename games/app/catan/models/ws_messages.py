@@ -30,6 +30,10 @@ class ServerMessageType(enum.StrEnum):
     PLAYER_JOINED = 'player_joined'
     GAME_STARTED = 'game_started'
     GAME_OVER = 'game_over'
+    TRADE_PROPOSED = 'trade_proposed'
+    TRADE_ACCEPTED = 'trade_accepted'
+    TRADE_REJECTED = 'trade_rejected'
+    TRADE_CANCELLED = 'trade_cancelled'
 
 
 # ---------------------------------------------------------------------------
@@ -117,3 +121,39 @@ class GameOver(pydantic.BaseModel):
     winner_player_index: int
     winner_name: str
     final_victory_points: list[int]  # one entry per player in player_index order
+
+
+class TradeProposed(pydantic.BaseModel):
+    """Broadcast when a player proposes a trade."""
+
+    message_type: ServerMessageType = ServerMessageType.TRADE_PROPOSED
+    trade_id: str
+    offering_player: int
+    offering: dict[str, int]
+    requesting: dict[str, int]
+    target_player: int | None  # None = broadcast to all
+
+
+class TradeAccepted(pydantic.BaseModel):
+    """Broadcast when a trade is accepted and resources are exchanged."""
+
+    message_type: ServerMessageType = ServerMessageType.TRADE_ACCEPTED
+    trade_id: str
+    offering_player: int
+    accepting_player: int
+
+
+class TradeRejected(pydantic.BaseModel):
+    """Sent when a specific player rejects a trade offer."""
+
+    message_type: ServerMessageType = ServerMessageType.TRADE_REJECTED
+    trade_id: str
+    rejecting_player: int
+
+
+class TradeCancelled(pydantic.BaseModel):
+    """Broadcast when the offering player cancels a trade."""
+
+    message_type: ServerMessageType = ServerMessageType.TRADE_CANCELLED
+    trade_id: str
+    offering_player: int
