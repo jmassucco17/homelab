@@ -127,6 +127,7 @@ jobs:
         uses: ./.github/actions/start-service
         with:
           service: shared-assets
+          build: 'true'
 
       - name: Test CSS file is served
         run: |
@@ -159,6 +160,7 @@ jobs:
         uses: ./.github/actions/start-service
         with:
           service: homepage
+          build: 'true'
 
       - name: Test index endpoint returns HTML
         run: |
@@ -182,6 +184,7 @@ jobs:
         uses: ./.github/actions/start-service
         with:
           service: blog
+          build: 'true'
 
       - name: Test health endpoint
         uses: ./.github/actions/test-health-endpoint
@@ -205,6 +208,7 @@ jobs:
         uses: ./.github/actions/start-service
         with:
           service: travel
+          build: 'true'
 
       - name: Test health endpoint
         uses: ./.github/actions/test-health-endpoint
@@ -224,14 +228,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Create docker web network
-        run: docker network create web 2>/dev/null || true
-
-      - name: Build games image from source
-        run: docker compose -f games/docker-compose.yml build
-
       - name: Start games service
-        run: docker compose -f games/docker-compose.yml up -d --wait
+        uses: ./.github/actions/start-service
+        with:
+          service: games
+          build: 'true'
 
       - name: Test health endpoint
         uses: ./.github/actions/test-health-endpoint
@@ -255,6 +256,7 @@ jobs:
         uses: ./.github/actions/start-service
         with:
           service: tools
+          build: 'true'
 
       - name: Test health endpoint
         uses: ./.github/actions/test-health-endpoint
