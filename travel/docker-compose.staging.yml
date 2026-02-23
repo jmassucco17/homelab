@@ -8,7 +8,7 @@
 services:
   travel:
     container_name: staging-travel
-    image: ghcr.io/jmassucco17/homelab/travel:${STAGING_IMAGE_TAG:-latest}
+    image: ghcr.io/jmassucco17/homelab/travel:${IMAGE_TAG:-latest}
     volumes:
       - staging-travel-data:/data
     labels:

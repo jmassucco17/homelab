@@ -1,7 +1,7 @@
 services:
   blog:
     container_name: blog
-    image: ghcr.io/jmassucco17/homelab/blog:latest
+    image: ghcr.io/jmassucco17/homelab/blog:${IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: blog/Dockerfile

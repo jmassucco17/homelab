@@ -1,7 +1,7 @@
 services:
   games:
     container_name: games
-    image: ghcr.io/jmassucco17/homelab/games:latest
+    image: ghcr.io/jmassucco17/homelab/games:${IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: games/Dockerfile

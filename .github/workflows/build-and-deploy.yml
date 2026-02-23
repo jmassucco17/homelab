@@ -82,6 +82,12 @@ jobs:
     with:
       environment: ${{ needs.setup.outputs.environment }}
       rebuild_base: ${{ inputs.rebuild_base }}
+      shared-assets: ${{ inputs['shared-assets'] || true }}
+      homepage: ${{ inputs.homepage || true }}
+      blog: ${{ inputs.blog || true }}
+      games: ${{ inputs.games || true }}
+      tools: ${{ inputs.tools || true }}
+      travel: ${{ inputs.travel || true }}
 
   deploy:
     needs: [setup, build]

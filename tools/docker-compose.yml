@@ -1,7 +1,7 @@
 services:
   tools:
     container_name: tools
-    image: ghcr.io/jmassucco17/homelab/tools:latest
+    image: ghcr.io/jmassucco17/homelab/tools:${IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: tools/Dockerfile

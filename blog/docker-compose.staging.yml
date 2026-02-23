@@ -1,10 +1,10 @@
 # Staging overlay: routes blog.staging.jamesmassucco.com to a staging container.
 # Merged with docker-compose.yml by scripts/start_service.sh --staging.
-# No bind-mounts: staging tests the baked image at the pinned STAGING_IMAGE_TAG.
+# No bind-mounts: staging tests the baked image at the pinned IMAGE_TAG.
 services:
   blog:
     container_name: staging-blog
-    image: ghcr.io/jmassucco17/homelab/blog:${STAGING_IMAGE_TAG:-latest}
+    image: ghcr.io/jmassucco17/homelab/blog:${IMAGE_TAG:-latest}
     labels:
       - 'traefik.http.routers.blog-staging.rule=Host(`blog.staging.jamesmassucco.com`)'
       - 'traefik.http.routers.blog-staging.entrypoints=websecure'

@@ -6,10 +6,12 @@
 #
 # Staging (--staging): merges docker-compose.yml with docker-compose.staging.yml
 # under a separate Docker Compose project (staging-<service>) so production
-# containers are never affected. The image tag is controlled by the
-# STAGING_IMAGE_TAG environment variable (default: latest).
+# containers are never affected.
 # Services without docker-compose.prod.yml (e.g. networking) use only their
 # docker-compose.staging.yml as a standalone file.
+#
+# The IMAGE_TAG environment variable controls which image tag to pull
+# (default: latest). This applies to both staging and production.
 #
 # Build from source (--build): builds the image locally instead of pulling
 # from the registry. Useful for CI integration tests that must validate the
@@ -20,7 +22,7 @@
 #   scripts/start_service.sh networking
 #   scripts/start_service.sh blog
 #   scripts/start_service.sh travel --staging
-#   STAGING_IMAGE_TAG=sha-abc1234 scripts/start_service.sh travel --staging
+#   IMAGE_TAG=sha-abc1234 scripts/start_service.sh travel --staging
 #   scripts/start_service.sh games --build
 set -euo pipefail
 
@@ -69,10 +71,10 @@ if [[ "$STAGING" == "true" ]]; then
     echo "Building staging containers from source..."
     docker compose "${COMPOSE[@]}" build
   else
-    echo "Pulling and starting staging containers (tag: ${STAGING_IMAGE_TAG:-latest})..."
-    STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG:-latest}" docker compose "${COMPOSE[@]}" pull
+    echo "Pulling and starting staging containers (tag: ${IMAGE_TAG:-latest})..."
+    IMAGE_TAG="${IMAGE_TAG:-latest}" docker compose "${COMPOSE[@]}" pull
   fi
-  STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG:-latest}" docker compose "${COMPOSE[@]}" up -d --wait
+  IMAGE_TAG="${IMAGE_TAG:-latest}" docker compose "${COMPOSE[@]}" up -d --wait
 else
   if [[ -f "docker-compose.prod.yml" ]]; then
     COMPOSE=(-f docker-compose.yml -f docker-compose.prod.yml)
@@ -87,9 +89,9 @@ else
     echo "Building images from source..."
     docker compose "${COMPOSE[@]}" build
   else
-    echo "Pulling latest images..."
-    docker compose "${COMPOSE[@]}" pull
+    echo "Pulling images (tag: ${IMAGE_TAG:-latest})..."
+    IMAGE_TAG="${IMAGE_TAG:-latest}" docker compose "${COMPOSE[@]}" pull
   fi
   echo "Starting containers..."
-  docker compose "${COMPOSE[@]}" up -d --wait
+  IMAGE_TAG="${IMAGE_TAG:-latest}" docker compose "${COMPOSE[@]}" up -d --wait
 fi

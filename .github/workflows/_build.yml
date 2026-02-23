@@ -13,6 +13,36 @@ on:
         required: false
         type: boolean
         default: true
+      shared-assets:
+        description: 'Build shared-assets'
+        required: false
+        type: boolean
+        default: true
+      homepage:
+        description: 'Build homepage'
+        required: false
+        type: boolean
+        default: true
+      blog:
+        description: 'Build blog'
+        required: false
+        type: boolean
+        default: true
+      games:
+        description: 'Build games'
+        required: false
+        type: boolean
+        default: true
+      tools:
+        description: 'Build tools'
+        required: false
+        type: boolean
+        default: true
+      travel:
+        description: 'Build travel'
+        required: false
+        type: boolean
+        default: true
 
 jobs:
   build-base:
@@ -51,34 +81,42 @@ jobs:
             image: ghcr.io/jmassucco17/homelab/shared-assets
             context: shared-assets
             file: shared-assets/Dockerfile
+            enabled: ${{ inputs['shared-assets'] }}
           - service: homepage
             image: ghcr.io/jmassucco17/homelab/homepage
             context: homepage
             file: homepage/Dockerfile
+            enabled: ${{ inputs.homepage }}
           - service: blog
             image: ghcr.io/jmassucco17/homelab/blog
             context: .
             file: blog/Dockerfile
+            enabled: ${{ inputs.blog }}
           - service: games
             image: ghcr.io/jmassucco17/homelab/games
             context: .
             file: games/Dockerfile
+            enabled: ${{ inputs.games }}
           - service: tools
             image: ghcr.io/jmassucco17/homelab/tools
             context: .
             file: tools/Dockerfile
+            enabled: ${{ inputs.tools }}
           - service: travel
             image: ghcr.io/jmassucco17/homelab/travel
             context: .
             file: travel/Dockerfile
+            enabled: ${{ inputs.travel }}
 
     steps:
       - uses: actions/checkout@v6
 
       - name: Setup Docker and login
+        if: matrix.enabled
         uses: ./.github/actions/docker-setup
 
       - name: Build and push ${{ matrix.service }}
+        if: matrix.enabled
         uses: ./.github/actions/docker-build-push
         with:
           image: ${{ matrix.image }}

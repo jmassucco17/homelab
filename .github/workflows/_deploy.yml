@@ -174,8 +174,6 @@ jobs:
       - name: Set image tag
         id: image-tag
         uses: ./.github/actions/set-image-tag
-        with:
-          environment: ${{ inputs.environment }}
 
       - uses: ./.github/actions/setup-deploy
         with:
@@ -189,20 +187,21 @@ jobs:
           SERVER_USER: ${{ vars.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
-          STAGING_IMAGE_TAG: ${{ steps.image-tag.outputs.tag }}
+          IMAGE_TAG: ${{ steps.image-tag.outputs.tag }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             "${SERVER_USER}@${SERVER_HOST}" \
-            "ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' bash -s" << 'REMOTE'
+            "ENVIRONMENT='${ENVIRONMENT}' IMAGE_TAG='${IMAGE_TAG}' bash -s" << 'REMOTE'
           set -euo pipefail
           cd /opt/homelab
           if [ "${ENVIRONMENT}" = "staging" ]; then
             echo "--- Starting staging networking ---"
-            STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" \
+            IMAGE_TAG="${IMAGE_TAG}" \
               /opt/homelab/scripts/start_service.sh networking --staging
           else
             echo "--- Deploying networking ---"
-            /opt/homelab/scripts/start_service.sh networking
+            IMAGE_TAG="${IMAGE_TAG}" \
+              /opt/homelab/scripts/start_service.sh networking
           fi
           REMOTE
 
@@ -239,8 +238,6 @@ jobs:
         id: image-tag
         if: matrix.enabled
         uses: ./.github/actions/set-image-tag
-        with:
-          environment: ${{ inputs.environment }}
 
       - uses: ./.github/actions/setup-deploy
         if: matrix.enabled
@@ -256,18 +253,19 @@ jobs:
           SERVER_USER: ${{ vars.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
-          STAGING_IMAGE_TAG: ${{ steps.image-tag.outputs.tag }}
+          IMAGE_TAG: ${{ steps.image-tag.outputs.tag }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             "${SERVER_USER}@${SERVER_HOST}" \
-            "ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' bash -s" << 'REMOTE'
+            "ENVIRONMENT='${ENVIRONMENT}' IMAGE_TAG='${IMAGE_TAG}' bash -s" << 'REMOTE'
           set -euo pipefail
           if [ "${ENVIRONMENT}" = "staging" ]; then
             echo "--- Starting staging ${{ matrix.service }} ---"
-            STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" \
+            IMAGE_TAG="${IMAGE_TAG}" \
               /opt/homelab/scripts/start_service.sh "${{ matrix.service }}" --staging
           else
             echo "--- Deploying ${{ matrix.service }} ---"
-            /opt/homelab/scripts/start_service.sh "${{ matrix.service }}"
+            IMAGE_TAG="${IMAGE_TAG}" \
+              /opt/homelab/scripts/start_service.sh "${{ matrix.service }}"
           fi
           REMOTE
