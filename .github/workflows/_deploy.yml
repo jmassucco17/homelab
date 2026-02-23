@@ -45,7 +45,7 @@ on:
         default: true
 
 jobs:
-  deploy-networking:
+  setup-server:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -147,12 +147,10 @@ jobs:
           SERVER_USER: ${{ vars.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
-          STAGING_IMAGE_TAG: ${{ steps.image-tag.outputs.tag }}
-          SEED_FROM_PROD: ${{ inputs.seed_from_prod }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             "${SERVER_USER}@${SERVER_HOST}" \
-            "ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' SEED_FROM_PROD='${SEED_FROM_PROD}' bash -s" << 'REMOTE'
+            "ENVIRONMENT='${ENVIRONMENT}' bash -s" << 'REMOTE'
           set -euo pipefail
           mkdir -p /opt/homelab
           cd /opt/homelab
@@ -163,17 +161,59 @@ jobs:
           chmod 600 networking/acme.json
           docker network create web 2>/dev/null || true
           docker network create internal_metrics 2>/dev/null || true
-
-          # Optionally seed staging travel data from production before deploying
-          if [ "${ENVIRONMENT}" = "staging" ] && [ "${SEED_FROM_PROD}" = "true" ]; then
-            echo "--- Seeding staging travel data from production ---"
-            docker run --rm \
-              -v travel-site_data-volume:/src:ro \
-              -v staging-travel-data:/dst \
-              alpine \
-              sh -c "cp -a /src/. /dst/ && echo 'Seed complete.'"
-          fi
           REMOTE
+
+      - name: Seed staging data from production
+        if: inputs.seed_from_prod && inputs.environment == 'staging'
+        env:
+          SERVER_USER: ${{ vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            "${SERVER_USER}@${SERVER_HOST}" \
+            "bash -s" << 'REMOTE'
+          set -euo pipefail
+          echo "--- Seeding staging travel data from production ---"
+          docker run --rm \
+            -v travel-site_data-volume:/src:ro \
+            -v staging-travel-data:/dst \
+            alpine \
+            sh -c "cp -a /src/. /dst/ && echo 'Seed complete.'"
+          REMOTE
+
+  deploy-networking:
+    needs: setup-server
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set image tag
+        id: image-tag
+        run: |
+          if [ "${{ inputs.environment }}" = "staging" ]; then
+            echo "tag=sha-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          tags: tag:github
+
+      - name: Set up SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
 
       - name: Deploy networking
         env:
