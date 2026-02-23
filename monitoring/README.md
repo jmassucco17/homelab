@@ -25,11 +25,13 @@ VPS
 
 Alloy reads its config from `alloy-config.alloy` (River syntax). It scrapes three targets:
 
-| Target | Address | Metrics |
-|--------|---------|---------|
-| node-exporter | `node-exporter:9100` | Host system (CPU, RAM, disk, network) |
-| cAdvisor | `cadvisor:8080` | Docker container resource usage |
-| Traefik | `traefik:8082` | Request counts, latencies, TLS cert expiry |
+| Target | Address | Job Label | Metrics |
+|--------|---------|-----------|---------|
+| node-exporter | `node-exporter:9100` | `node` | Host system (CPU, RAM, disk, network) |
+| cAdvisor | `cadvisor:8080` | `cadvisor` | Docker container resource usage |
+| Traefik | `traefik:8082` | `traefik` | Request counts, latencies, TLS cert expiry |
+
+All targets use `instance="homelab-vps"` for consistent identification across dashboards.
 
 Log collection uses `loki.source.docker` to tail all container logs via the Docker socket.
 
