@@ -43,7 +43,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
     permissions:
       contents: read
     steps:
@@ -73,7 +72,6 @@ jobs:
           GOOGLE_OAUTH2_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH2_CLIENT_ID }}
           GOOGLE_OAUTH2_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH2_CLIENT_SECRET }}
           GOOGLE_OAUTH2_COOKIE_SECRET: ${{ secrets.GOOGLE_OAUTH2_COOKIE_SECRET }}
-          GOOGLE_OAUTH2_STAGING_COOKIE_SECRET: ${{ secrets.GOOGLE_OAUTH2_STAGING_COOKIE_SECRET }}
           OAUTH2_AUTHORIZED_EMAILS: ${{ secrets.OAUTH2_AUTHORIZED_EMAILS }}
         run: |
           {
@@ -83,9 +81,6 @@ jobs:
             printf 'GOOGLE_OAUTH2_CLIENT_ID=%s\n' "$GOOGLE_OAUTH2_CLIENT_ID"
             printf 'GOOGLE_OAUTH2_CLIENT_SECRET=%s\n' "$GOOGLE_OAUTH2_CLIENT_SECRET"
             printf 'GOOGLE_OAUTH2_COOKIE_SECRET=%s\n' "$GOOGLE_OAUTH2_COOKIE_SECRET"
-            if [ "${{ inputs.environment }}" = "staging" ]; then
-              printf 'GOOGLE_OAUTH2_STAGING_COOKIE_SECRET=%s\n' "$GOOGLE_OAUTH2_STAGING_COOKIE_SECRET"
-            fi
             printf 'OAUTH2_AUTHORIZED_EMAILS=%s\n' "$OAUTH2_AUTHORIZED_EMAILS"
           } > networking/.env
 

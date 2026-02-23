@@ -5,29 +5,10 @@ and how to generate or obtain it.
 
 ---
 
-## GitHub Environments
+## GitHub Repository Secrets
 
-Secrets are split across two [GitHub Environments](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment)
-(`prod` and `staging`) plus a set of shared repository-level secrets.  Configure them
-under **Settings → Environments** and **Settings → Secrets and variables → Actions**.
-
-The deploy job declares `environment: ${{ inputs.environment }}`, so GitHub automatically
-supplies the right environment-scoped secrets for whichever environment is being deployed.
-
-### Why environments?
-
-- Each environment can have its own **required reviewers** protection rule. Enable this for
-  `prod` to require a human to approve every production deployment before it runs.
-- Secrets in `prod` cannot be read by a `staging` run and vice-versa.
-- Rotating a single credential (e.g. the Cloudflare API token) only requires updating the
-  one relevant secret, not re-uploading an opaque blob.
-
----
-
-## Shared repository secrets
-
-These secrets are shared between both environments and live at the repo level
-(Settings → Secrets and variables → Actions → Repository secrets).
+All secrets live at the repo level (Settings → Secrets and variables → Actions →
+Repository secrets) and are shared between production and staging deployments.
 
 | Secret | Description |
 |--------|-------------|
@@ -38,38 +19,12 @@ These secrets are shared between both environments and live at the repo level
 | `SERVER_HOST` | Tailscale hostname or IP address of the server. |
 | `SERVER_USER` | SSH username — should be `deploy`, not `root`. See [Dedicated deploy user](#dedicated-deploy-user). |
 | `TMDB_API_KEY` | API key for [The Movie Database (TMDB)](https://developer.themoviedb.org/). Used by the movie picker feature. Register at [themoviedb.org](https://www.themoviedb.org/settings/api). |
-
----
-
-## Environment-scoped secrets — `prod`
-
-Set these under **Settings → Environments → prod → Environment secrets**.
-
-| Secret | Description | How to obtain |
-|--------|-------------|---------------|
-| `CLOUDFLARE_API_EMAIL` | Email address of the Cloudflare account | Cloudflare dashboard → Profile |
-| `CLOUDFLARE_API_TOKEN` | Cloudflare API token with **Zone:DNS:Edit** permission for `jamesmassucco.com` | Cloudflare dashboard → My Profile → API Tokens |
-| `GOOGLE_OAUTH2_CLIENT_ID` | Google OAuth 2.0 client ID | Google Cloud Console → APIs & Services → Credentials |
-| `GOOGLE_OAUTH2_CLIENT_SECRET` | Google OAuth 2.0 client secret | Google Cloud Console → APIs & Services → Credentials |
-| `GOOGLE_OAUTH2_COOKIE_SECRET` | 32-byte random secret for signing production OAuth session cookies | `python3 -c "import secrets, base64; print(base64.b64encode(secrets.token_bytes(32)).decode())"` |
-| `OAUTH2_AUTHORIZED_EMAILS` | Comma-separated Google email addresses allowed to log in | Set to your own Google account(s) |
-
----
-
-## Environment-scoped secrets — `staging`
-
-Set these under **Settings → Environments → staging → Environment secrets**.
-
-All `prod` secrets listed above are also required here (with staging-appropriate values),
-plus the following addition:
-
-| Secret | Description | How to obtain |
-|--------|-------------|---------------|
-| `GOOGLE_OAUTH2_STAGING_COOKIE_SECRET` | 32-byte random secret for signing **staging** OAuth session cookies — **must differ from the prod secret** | `python3 -c "import secrets, base64; print(base64.b64encode(secrets.token_bytes(32)).decode())"` |
-
-The staging OAuth proxy also needs `https://oauth.staging.jamesmassucco.com/oauth2/callback`
-added to the Google OAuth app's **Authorized Redirect URIs** (Google Cloud Console →
-Credentials → the OAuth 2.0 Client ID → Edit).
+| `CLOUDFLARE_API_EMAIL` | Email address of the Cloudflare account. Cloudflare dashboard → Profile. |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare API token with **Zone:DNS:Edit** permission for `jamesmassucco.com`. Cloudflare dashboard → My Profile → API Tokens. |
+| `GOOGLE_OAUTH2_CLIENT_ID` | Google OAuth 2.0 client ID. Google Cloud Console → APIs & Services → Credentials. |
+| `GOOGLE_OAUTH2_CLIENT_SECRET` | Google OAuth 2.0 client secret. Google Cloud Console → APIs & Services → Credentials. |
+| `GOOGLE_OAUTH2_COOKIE_SECRET` | 32-byte random secret for signing OAuth session cookies (used by both prod and staging). Generate with: `python3 -c "import secrets, base64; print(base64.b64encode(secrets.token_bytes(32)).decode())"` |
+| `OAUTH2_AUTHORIZED_EMAILS` | Comma-separated Google email addresses allowed to log in. Set to your own Google account(s). |
 
 ---
 
@@ -83,6 +38,14 @@ plain [Actions variable](https://docs.github.com/en/actions/writing-workflows/ch
 | Variable | Description | How to obtain |
 |----------|-------------|---------------|
 | `CLOUDFLARE_TRUSTED_IPS` | Comma-separated list of Cloudflare CDN IPv4 ranges | [Cloudflare IP ranges](https://www.cloudflare.com/ips/) — use the IPv4 list |
+
+---
+
+## Staging OAuth redirect URI
+
+The staging OAuth proxy needs `https://oauth.staging.jamesmassucco.com/oauth2/callback`
+added to the Google OAuth app's **Authorized Redirect URIs** (Google Cloud Console →
+Credentials → the OAuth 2.0 Client ID → Edit).
 
 ---
 
