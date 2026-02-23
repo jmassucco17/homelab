@@ -1,0 +1,37 @@
+name: Connect to Tailscale and set up SSH key
+description: Connects to the Tailscale VPN and configures the SSH deploy key
+
+inputs:
+  tailscale-client-id:
+    description: 'Tailscale OAuth client ID'
+    required: true
+  tailscale-secret:
+    description: 'Tailscale OAuth secret'
+    required: true
+  ssh-private-key:
+    description: 'SSH private key for server access'
+    required: true
+  server-ssh-host-key:
+    description: 'SSH host key for the deployment server'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Connect to Tailscale
+      uses: tailscale/github-action@v4
+      with:
+        oauth-client-id: ${{ inputs.tailscale-client-id }}
+        oauth-secret: ${{ inputs.tailscale-secret }}
+        tags: tag:github
+
+    - name: Set up SSH key
+      shell: bash
+      env:
+        SSH_PRIVATE_KEY: ${{ inputs.ssh-private-key }}
+        SERVER_SSH_HOST_KEY: ${{ inputs.server-ssh-host-key }}
+      run: |
+        mkdir -p ~/.ssh
+        printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+        chmod 600 ~/.ssh/deploy_key
+        printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts

@@ -52,22 +52,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set image tag
-        id: image-tag
-        run: |
-          if [ "${{ inputs.environment }}" = "staging" ]; then
-            echo "tag=sha-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
-          else
-            echo "tag=latest" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v4
-        with:
-          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
-          tags: tag:github
-
       - name: Write networking/.env
         env:
           CLOUDFLARE_API_EMAIL: ${{ secrets.CLOUDFLARE_API_EMAIL }}
@@ -111,16 +95,6 @@ jobs:
             printf 'GRAFANA_CLOUD_API_KEY=%s\n' "$GRAFANA_CLOUD_API_KEY"
           } > monitoring/.env
 
-      - name: Set up SSH key
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
-
       - name: Create deployment archive
         run: |
           grep -v '^#' .gitignore | grep -v '^$' > /tmp/exclude_list
@@ -132,6 +106,13 @@ jobs:
             tar --append -f /tmp/homelab-deploy.tar networking/.env tools/.env monitoring/.env
           fi
           gzip /tmp/homelab-deploy.tar
+
+      - uses: ./.github/actions/setup-deploy
+        with:
+          tailscale-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          tailscale-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          server-ssh-host-key: ${{ secrets.SERVER_SSH_HOST_KEY }}
 
       - name: Upload archive to server
         env:
@@ -183,6 +164,7 @@ jobs:
 
   deploy-networking:
     needs: setup-server
+    if: inputs.networking
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -191,29 +173,16 @@ jobs:
 
       - name: Set image tag
         id: image-tag
-        run: |
-          if [ "${{ inputs.environment }}" = "staging" ]; then
-            echo "tag=sha-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
-          else
-            echo "tag=latest" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v4
+        uses: ./.github/actions/set-image-tag
         with:
-          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
-          tags: tag:github
+          environment: ${{ inputs.environment }}
 
-      - name: Set up SSH key
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
+      - uses: ./.github/actions/setup-deploy
+        with:
+          tailscale-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          tailscale-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          server-ssh-host-key: ${{ secrets.SERVER_SSH_HOST_KEY }}
 
       - name: Deploy networking
         env:
@@ -221,30 +190,28 @@ jobs:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
           STAGING_IMAGE_TAG: ${{ steps.image-tag.outputs.tag }}
-          DEPLOY_NETWORKING: ${{ inputs.networking }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             "${SERVER_USER}@${SERVER_HOST}" \
-            "ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' bash -s" << 'REMOTE'
+            "ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' bash -s" << 'REMOTE'
           set -euo pipefail
           cd /opt/homelab
-          if [ "${DEPLOY_NETWORKING}" = "true" ]; then
-            if [ "${ENVIRONMENT}" = "staging" ]; then
-              echo "--- Starting staging networking ---"
-              STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" \
-                /opt/homelab/scripts/start_service.sh networking --staging
-            else
-              echo "--- Deploying networking ---"
-              /opt/homelab/scripts/start_service.sh networking
-            fi
+          if [ "${ENVIRONMENT}" = "staging" ]; then
+            echo "--- Starting staging networking ---"
+            STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" \
+              /opt/homelab/scripts/start_service.sh networking --staging
           else
-            echo "--- Skipping networking ---"
+            echo "--- Deploying networking ---"
+            /opt/homelab/scripts/start_service.sh networking
           fi
           REMOTE
 
   deploy-service:
     name: deploy ${{ matrix.service }}
     needs: deploy-networking
+    # !failure() && !cancelled() allows this job to run even when deploy-networking
+    # was skipped (i.e. inputs.networking == false)
+    if: matrix.enabled && !failure() && !cancelled()
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -270,34 +237,18 @@ jobs:
 
       - name: Set image tag
         id: image-tag
-        run: |
-          if [ "${{ inputs.environment }}" = "staging" ]; then
-            echo "tag=sha-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
-          else
-            echo "tag=latest" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Connect to Tailscale
-        if: matrix.enabled
-        uses: tailscale/github-action@v4
+        uses: ./.github/actions/set-image-tag
         with:
-          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
-          tags: tag:github
+          environment: ${{ inputs.environment }}
 
-      - name: Set up SSH key
-        if: matrix.enabled
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
+      - uses: ./.github/actions/setup-deploy
+        with:
+          tailscale-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          tailscale-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          server-ssh-host-key: ${{ secrets.SERVER_SSH_HOST_KEY }}
 
       - name: Deploy ${{ matrix.service }}
-        if: matrix.enabled
         env:
           SERVER_USER: ${{ vars.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST }}

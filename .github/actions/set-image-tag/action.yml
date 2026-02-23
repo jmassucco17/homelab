@@ -1,0 +1,27 @@
+name: Set image tag
+description: >
+  Computes the Docker image tag based on the environment.
+  Requires the repository to be checked out before calling this action.
+
+inputs:
+  environment:
+    description: 'Deployment environment (`prod` or `staging`)'
+    required: true
+
+outputs:
+  tag:
+    description: 'Docker image tag to use'
+    value: ${{ steps.compute.outputs.tag }}
+
+runs:
+  using: composite
+  steps:
+    - name: Compute tag
+      id: compute
+      shell: bash
+      run: |
+        if [ "${{ inputs.environment }}" = "staging" ]; then
+          echo "tag=sha-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+        else
+          echo "tag=latest" >> "$GITHUB_OUTPUT"
+        fi
