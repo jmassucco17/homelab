@@ -319,23 +319,44 @@ async function initGame() {
   }
 
   const addAiBtn = document.getElementById('add-ai-btn')
-  if (addAiBtn) {
-    addAiBtn.addEventListener('click', async () => {
-      addAiBtn.disabled = true
-      try {
-        const resp = await fetch(`/catan/rooms/${roomCode}/add-ai?difficulty=easy`, {
-          method: 'POST',
-        })
-        if (!resp.ok) {
-          const data = await resp.json()
-          ui.showToast(data.detail || 'Failed to add AI', 'error')
-        }
-      } catch (err) {
-        ui.showToast('Failed to add AI', 'error')
-      } finally {
-        addAiBtn.disabled = false
-      }
+  const aiModal = document.getElementById('ai-difficulty-modal')
+  const aiModalCancel = document.getElementById('ai-modal-cancel')
+
+  if (addAiBtn && aiModal) {
+    // Show modal when Add AI button is clicked
+    addAiBtn.addEventListener('click', () => {
+      aiModal.style.display = 'flex'
     })
+
+    // Handle difficulty button clicks
+    aiModal.querySelectorAll('[data-difficulty]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const difficulty = btn.dataset.difficulty
+        addAiBtn.disabled = true
+        aiModal.style.display = 'none'
+
+        try {
+          const resp = await fetch(`/catan/rooms/${roomCode}/add-ai?difficulty=${difficulty}`, {
+            method: 'POST',
+          })
+          if (!resp.ok) {
+            const data = await resp.json()
+            ui.showToast(data.detail || 'Failed to add AI', 'error')
+          }
+        } catch (err) {
+          ui.showToast('Failed to add AI', 'error')
+        } finally {
+          addAiBtn.disabled = false
+        }
+      })
+    })
+
+    // Handle cancel button
+    if (aiModalCancel) {
+      aiModalCancel.addEventListener('click', () => {
+        aiModal.style.display = 'none'
+      })
+    }
   }
 
   // ---------------------------------------------------------------------------

@@ -5,7 +5,7 @@ from __future__ import annotations
 import unittest
 
 from games.app.catan.engine.processor import apply_action
-from games.app.catan.engine.turn_manager import create_initial_game_state
+from games.app.catan.engine.turn_manager import advance_turn, create_initial_game_state
 from games.app.catan.models.actions import (
     DiscardResources,
     EndTurn,
@@ -13,7 +13,7 @@ from games.app.catan.models.actions import (
     PlaceSettlement,
     RollDice,
 )
-from games.app.catan.models.board import Building, BuildingType, Road
+from games.app.catan.models.board import Building, BuildingType, Road, TileType
 from games.app.catan.models.game_state import (
     GamePhase,
     GameState,
@@ -86,6 +86,91 @@ class TestActionProcessor(unittest.TestCase):
             state2, PlaceSettlement(player_index=0, vertex_id=adjacent_vertex)
         )
         self.assertFalse(result2.success)
+
+    def test_place_settlement_setup_forward_no_resources(self) -> None:
+        """During SETUP_FORWARD, placing settlement does not award resources."""
+        state = _make_2p_state()
+        self.assertEqual(state.phase, GamePhase.SETUP_FORWARD)
+        # Record initial resource count
+        initial_resources = state.players[0].resources.total()
+        # Place settlement
+        result = apply_action(state, PlaceSettlement(player_index=0, vertex_id=5))
+        self.assertTrue(result.success)
+        assert result.updated_state is not None
+        # Resources should not change
+        final_resources = result.updated_state.players[0].resources.total()
+        self.assertEqual(initial_resources, final_resources)
+
+    def test_place_settlement_setup_backward_awards_resources(self) -> None:
+        """During SETUP_BACKWARD, placing settlement awards initial resources."""
+        state = _make_2p_state()
+        # Advance through SETUP_FORWARD to reach SETUP_BACKWARD
+        # Player 0 places first settlement and road
+        state = _place_setup_settlement(state, 0)
+        road_edge = state.board.vertices[0].adjacent_edge_ids[0]
+        result = apply_action(state, PlaceRoad(player_index=0, edge_id=road_edge))
+        assert result.success and result.updated_state is not None
+        state = result.updated_state
+
+        # Player 1 places first settlement and road
+        state = _place_setup_settlement(state, 10)
+        road_edge = state.board.vertices[10].adjacent_edge_ids[0]
+        result = apply_action(state, PlaceRoad(player_index=1, edge_id=road_edge))
+        assert result.success and result.updated_state is not None
+        state = result.updated_state
+
+        # Now we should be in SETUP_BACKWARD with player 1
+        self.assertEqual(state.phase, GamePhase.SETUP_BACKWARD)
+        self.assertEqual(state.turn_state.player_index, 1)
+
+        # Record initial resource count for player 1
+        initial_resources = state.players[1].resources.total()
+
+        # Place second settlement for player 1
+        result = apply_action(state, PlaceSettlement(player_index=1, vertex_id=15))
+        self.assertTrue(result.success)
+        assert result.updated_state is not None
+
+        # Resources should have increased
+        final_resources = result.updated_state.players[1].resources.total()
+        self.assertGreater(final_resources, initial_resources)
+
+    def test_place_settlement_setup_backward_correct_resource_types(self) -> None:
+        """Resources awarded match adjacent tiles (excluding desert)."""
+        state = _make_2p_state()
+        # Advance through SETUP_FORWARD to SETUP_BACKWARD
+        # Player 0 places
+        state = _place_setup_settlement(state, 0)
+        road_edge = state.board.vertices[0].adjacent_edge_ids[0]
+        result = apply_action(state, PlaceRoad(player_index=0, edge_id=road_edge))
+        assert result.success and result.updated_state is not None
+        state = result.updated_state
+
+        # Player 1 places
+        state = _place_setup_settlement(state, 10)
+        road_edge = state.board.vertices[10].adjacent_edge_ids[0]
+        result = apply_action(state, PlaceRoad(player_index=1, edge_id=road_edge))
+        assert result.success and result.updated_state is not None
+        state = result.updated_state
+
+        # Now in SETUP_BACKWARD - place second settlement
+        vertex_id = 15
+        vertex = state.board.vertices[vertex_id]
+
+        # Count non-desert tiles adjacent to this vertex
+        non_desert_tiles = 0
+        for tile_idx in vertex.adjacent_tile_indices:
+            tile = state.board.tiles[tile_idx]
+            if tile.tile_type != TileType.DESERT:
+                non_desert_tiles += 1
+
+        initial_resources = state.players[1].resources.total()
+        result = apply_action(state, PlaceSettlement(player_index=1, vertex_id=vertex_id))
+        assert result.success and result.updated_state is not None
+        final_resources = result.updated_state.players[1].resources.total()
+
+        # Should receive exactly one resource per non-desert tile
+        self.assertEqual(final_resources - initial_resources, non_desert_tiles)
 
     def test_place_road_setup_advances_turn(self) -> None:
         """After placing a road in setup, turn advances to next player."""

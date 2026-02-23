@@ -122,6 +122,10 @@ def _apply_place_settlement(
     if state.phase in _SETUP_PHASES:
         state.turn_state.pending_action = game_state.PendingActionType.PLACE_ROAD
 
+        # During SETUP_BACKWARD (second settlement placement), award initial resources
+        if state.phase == game_state.GamePhase.SETUP_BACKWARD:
+            _award_resources_for_vertex(state, action.vertex_id, action.player_index)
+
 
 def _apply_place_road(state: game_state.GameState, action: actions.PlaceRoad) -> None:
     edge = state.board.edges[action.edge_id]
@@ -223,6 +227,38 @@ def _apply_roll_dice(state: game_state.GameState, action: actions.RollDice) -> N
     else:
         _distribute_resources(state, roll)
         state.turn_state.pending_action = game_state.PendingActionType.BUILD_OR_TRADE
+
+
+def _award_resources_for_vertex(
+    state: game_state.GameState, vertex_id: int, player_index: int
+) -> None:
+    """Award resources to a player for tiles adjacent to a specific vertex.
+
+    Used during initial placement in SETUP_BACKWARD phase to give starting resources.
+
+    Args:
+        state: The current game state.
+        vertex_id: The vertex ID where the settlement is placed.
+        player_index: The player receiving the resources.
+    """
+    vertex = state.board.vertices[vertex_id]
+    p = state.players[player_index]
+
+    for tile_idx in vertex.adjacent_tile_indices:
+        tile = state.board.tiles[tile_idx]
+
+        # Skip desert tiles
+        if tile.tile_type == board.TileType.DESERT:
+            continue
+
+        # Get the resource type for this tile
+        resource = board.TILE_RESOURCE.get(tile.tile_type)
+        if resource is None:
+            continue
+
+        # Award 1 resource of this type
+        current = p.resources.get(resource)
+        p.resources = p.resources.with_resource(resource, current + 1)
 
 
 def _distribute_resources(state: game_state.GameState, roll: int) -> None:
