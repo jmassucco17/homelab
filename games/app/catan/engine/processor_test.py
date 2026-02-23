@@ -403,6 +403,75 @@ class TestActionProcessor(unittest.TestCase):
         self.assertEqual(result.updated_state.players[0].dev_cards.knight, 1)
         self.assertEqual(result.updated_state.players[0].new_dev_cards.knight, 0)
 
+    def test_setup_second_road_must_connect_to_second_settlement(self) -> None:
+        """During setup, second road must connect to second settlement."""
+        state = _make_2p_state()
+
+        # Player 0: Place first settlement and road
+        state = _place_setup_settlement(state, 0)
+        first_settlement_vertex = 0
+        vertex = state.board.vertices[first_settlement_vertex]
+        first_road_edge = vertex.adjacent_edge_ids[0]
+        result = apply_action(state, PlaceRoad(player_index=0, edge_id=first_road_edge))
+        self.assertTrue(result.success)
+        assert result.updated_state is not None
+        state = result.updated_state
+
+        # Player 1: Place first settlement and road
+        state = _place_setup_settlement(state, 10)
+        player1_road_edge = state.board.vertices[10].adjacent_edge_ids[0]
+        result = apply_action(
+            state, PlaceRoad(player_index=1, edge_id=player1_road_edge)
+        )
+        self.assertTrue(result.success)
+        assert result.updated_state is not None
+        state = result.updated_state
+
+        # Now in SETUP_BACKWARD, player 1 places second settlement
+        state = _place_setup_settlement(state, 20)
+        second_settlement_vertex = 20
+        v = state.board.vertices[second_settlement_vertex]
+        player1_second_road = v.adjacent_edge_ids[0]
+        result = apply_action(
+            state, PlaceRoad(player_index=1, edge_id=player1_second_road)
+        )
+        self.assertTrue(result.success)
+        assert result.updated_state is not None
+        state = result.updated_state
+
+        # Player 0: Place second settlement at a different location
+        state = _place_setup_settlement(state, 30)
+        second_settlement_vertex = 30
+
+        # Get edges adjacent to both settlements
+        v1 = state.board.vertices[first_settlement_vertex]
+        first_settlement_edges = set(v1.adjacent_edge_ids)
+        v2 = state.board.vertices[second_settlement_vertex]
+        second_settlement_edges = set(v2.adjacent_edge_ids)
+
+        # Find edge only adjacent to first settlement (not second)
+        first_only_edges = first_settlement_edges - second_settlement_edges
+        if first_only_edges:
+            invalid_edge = next(iter(first_only_edges))
+            # Make sure this edge doesn't already have a road
+            if state.board.edges[invalid_edge].road is None:
+                result = apply_action(
+                    state, PlaceRoad(player_index=0, edge_id=invalid_edge)
+                )
+                self.assertFalse(result.success)
+                assert result.error_message is not None
+                self.assertIn('most recently placed settlement', result.error_message)
+
+        # Place road adjacent to second settlement - should succeed
+        valid_edge = None
+        for edge_id in second_settlement_edges:
+            if state.board.edges[edge_id].road is None:
+                valid_edge = edge_id
+                break
+        assert valid_edge is not None
+        result = apply_action(state, PlaceRoad(player_index=0, edge_id=valid_edge))
+        self.assertTrue(result.success)
+
 
 if __name__ == '__main__':
     unittest.main()
