@@ -84,6 +84,9 @@ jobs:
       - name: Create docker web network
         run: docker network create web 2>/dev/null || true
 
+      - name: Create docker internal_metrics network
+        run: docker network create internal_metrics 2>/dev/null || true
+
       - name: Pull cloudflare-ddns image (validates tag exists)
         run: |
           cd networking
