@@ -224,10 +224,14 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Create docker web network
+        run: docker network create web 2>/dev/null || true
+
+      - name: Build games image from source
+        run: docker compose -f games/docker-compose.yml build
+
       - name: Start games service
-        uses: ./.github/actions/start-service
-        with:
-          service: games
+        run: docker compose -f games/docker-compose.yml up -d --wait
 
       - name: Test health endpoint
         uses: ./.github/actions/test-health-endpoint
