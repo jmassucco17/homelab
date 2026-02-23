@@ -15,4 +15,4 @@ router = fastapi.APIRouter()
 @router.get('/snake', response_class=fastapi.responses.HTMLResponse)
 async def snake(request: fastapi.Request) -> fastapi.responses.HTMLResponse:
     """Render the Snake game page."""
-    return templates.TemplateResponse(request=request, name='snake.html')
+    return templates.TemplateResponse(request=request, name='snake.html.jinja2')
