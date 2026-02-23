@@ -1,0 +1,32 @@
+# Traefik routing for travel (prod).
+# Two routers: admin (OAuth-protected) at higher priority, public at lower.
+http:
+  routers:
+    travel-admin:
+      rule: "Host(`travel.jamesmassucco.com`) && PathPrefix(`/photos/admin`)"
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: cloudflare
+      middlewares:
+        - oauth-auth
+        - ratelimit
+      priority: 100
+      service: travel
+
+    travel-public:
+      rule: "Host(`travel.jamesmassucco.com`)"
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: cloudflare
+      middlewares:
+        - ratelimit
+      priority: 50
+      service: travel
+
+  services:
+    travel:
+      loadBalancer:
+        servers:
+          - url: "http://travel:8000"

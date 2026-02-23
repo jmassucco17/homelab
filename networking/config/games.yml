@@ -1,0 +1,18 @@
+# Traefik routing for games (prod).
+http:
+  routers:
+    games:
+      rule: "Host(`games.jamesmassucco.com`)"
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: cloudflare
+      middlewares:
+        - ratelimit
+      service: games
+
+  services:
+    games:
+      loadBalancer:
+        servers:
+          - url: "http://games:8000"

@@ -1,0 +1,18 @@
+# Traefik routing for blog (prod).
+http:
+  routers:
+    blog:
+      rule: "Host(`blog.jamesmassucco.com`)"
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: cloudflare
+      middlewares:
+        - ratelimit
+      service: blog
+
+  services:
+    blog:
+      loadBalancer:
+        servers:
+          - url: "http://blog:8000"

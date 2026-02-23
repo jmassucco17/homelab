@@ -69,10 +69,6 @@ services:
       - web
     labels:
       - traefik.enable=true
-      - traefik.http.routers.oauth.rule=Host(`oauth.jamesmassucco.com`)
-      - traefik.http.routers.oauth.entrypoints=websecure
-      - traefik.http.routers.oauth.tls.certresolver=cloudflare
-      - traefik.http.services.oauth.loadbalancer.server.port=4180
     restart: unless-stopped
 
   # Basic whoami service, useful for debugging network configuration
@@ -82,13 +78,7 @@ services:
     networks:
       - web
     labels:
-      # Use traefik to provide HTTPS endpoint
       - traefik.enable=true
-      - traefik.http.routers.whoami.rule=Host(`whoami.jamesmassucco.com`)
-      - traefik.http.routers.whoami.entrypoints=websecure
-      - traefik.http.routers.whoami.tls.certresolver=cloudflare
-      # Use rate-limiting and OAuth
-      - traefik.http.routers.whoami.middlewares=oauth-auth,ratelimit
     restart: unless-stopped
 
   # Automatically updates public IP DNS in Cloudflare

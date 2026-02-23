@@ -1,11 +1,4 @@
-# Production overrides: Traefik routing labels.
-# Merged with docker-compose.yml by scripts/start_service.sh (prod) and CI.
+# Production overrides for shared-assets.
+# Traefik routing is defined in networking/config/shared-assets.yml (file provider).
 services:
-  shared-assets:
-    labels:
-      - 'traefik.http.routers.shared-assets.rule=Host(`assets.jamesmassucco.com`)'
-      - 'traefik.http.routers.shared-assets.entrypoints=websecure'
-      - 'traefik.http.routers.shared-assets.tls=true'
-      - 'traefik.http.routers.shared-assets.tls.certresolver=cloudflare'
-      - 'traefik.http.routers.shared-assets.middlewares=ratelimit'
-      - 'traefik.http.services.shared-assets.loadbalancer.server.port=80'
+  shared-assets: {}

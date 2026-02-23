@@ -1,0 +1,16 @@
+# Traefik routing for oauth2-proxy (prod).
+http:
+  routers:
+    oauth:
+      rule: "Host(`oauth.jamesmassucco.com`)"
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: cloudflare
+      service: oauth
+
+  services:
+    oauth:
+      loadBalancer:
+        servers:
+          - url: "http://oauth2-proxy:4180"

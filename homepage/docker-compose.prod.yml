@@ -1,10 +1,4 @@
-# Production overrides: Traefik routing labels.
-# Merged with docker-compose.yml by scripts/start_service.sh (prod) and CI.
+# Production overrides for homepage.
+# Traefik routing is defined in networking/config/homepage.yml (file provider).
 services:
-  homepage:
-    labels:
-      - 'traefik.http.routers.homepage.rule=Host(`jamesmassucco.com`)'
-      - 'traefik.http.routers.homepage.entrypoints=websecure'
-      - 'traefik.http.routers.homepage.tls=true'
-      - 'traefik.http.routers.homepage.tls.certresolver=cloudflare'
-      - 'traefik.http.services.homepage.loadbalancer.server.port=80'
+  homepage: {}

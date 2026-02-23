@@ -1,0 +1,18 @@
+# Traefik routing for tools (prod).
+http:
+  routers:
+    tools:
+      rule: "Host(`tools.jamesmassucco.com`)"
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: cloudflare
+      middlewares:
+        - ratelimit
+      service: tools
+
+  services:
+    tools:
+      loadBalancer:
+        servers:
+          - url: "http://tools:8000"

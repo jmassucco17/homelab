@@ -173,9 +173,11 @@ Every service directory follows the same layout:
 | File                                    | Used by                 | Purpose                                                                             |
 | --------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------- |
 | `<service>/docker-compose.yml`          | Production, staging, CI | Base service definition (image, build, healthcheck, restart, `traefik.enable=true`) |
-| `<service>/docker-compose.prod.yml`     | Production, CI          | Production Traefik routing labels; named data volume for `travel`                   |
-| `<service>/docker-compose.staging.yml`  | Staging                 | Staging routing labels; separate volume for `travel`                                |
+| `<service>/docker-compose.prod.yml`     | Production, CI          | Production-only overrides (named data volume for `travel`); also acts as sentinel for `start_service.sh` staging overlay logic |
+| `<service>/docker-compose.staging.yml`  | Staging                 | Staging routing labels (Docker provider); separate volume for `travel`              |
 | `networking/docker-compose.staging.yml` | Staging                 | Staging OAuth2-proxy (standalone)                                                   |
+| `networking/config/dynamic.yml`         | Production              | Traefik middlewares (`ratelimit`, `oauth-auth`) and dashboard router                |
+| `networking/config/<service>.yml`       | Production              | Per-service Traefik routers and backend definitions (file provider)                 |
 
 ---
 

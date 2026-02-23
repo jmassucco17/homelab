@@ -1,0 +1,18 @@
+# Traefik routing for shared-assets (prod).
+http:
+  routers:
+    shared-assets:
+      rule: "Host(`assets.jamesmassucco.com`)"
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: cloudflare
+      middlewares:
+        - ratelimit
+      service: shared-assets
+
+  services:
+    shared-assets:
+      loadBalancer:
+        servers:
+          - url: "http://shared-assets:80"

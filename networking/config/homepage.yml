@@ -1,0 +1,18 @@
+# Traefik routing for homepage (prod).
+http:
+  routers:
+    homepage:
+      rule: "Host(`jamesmassucco.com`)"
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: cloudflare
+      middlewares:
+        - ratelimit
+      service: homepage
+
+  services:
+    homepage:
+      loadBalancer:
+        servers:
+          - url: "http://homepage:80"

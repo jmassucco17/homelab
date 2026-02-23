@@ -1,0 +1,19 @@
+# Traefik routing for whoami (prod).
+http:
+  routers:
+    whoami:
+      rule: "Host(`whoami.jamesmassucco.com`)"
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: cloudflare
+      middlewares:
+        - oauth-auth
+        - ratelimit
+      service: whoami
+
+  services:
+    whoami:
+      loadBalancer:
+        servers:
+          - url: "http://whoami:80"

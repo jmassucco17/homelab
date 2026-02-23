@@ -1,4 +1,5 @@
-# Production overrides: Traefik routing labels and named data volume.
+# Production overrides: named data volume and port binding.
+# Traefik routing is defined in networking/config/travel.yml (file provider).
 # Merged with docker-compose.yml by scripts/start_service.sh (prod) and CI.
 services:
   travel:
@@ -6,22 +7,6 @@ services:
       - '8000:8000'
     volumes:
       - data-volume:/data
-    labels:
-      # Admin routes - require OAuth
-      - traefik.http.routers.travel-admin.rule=Host(`travel.jamesmassucco.com`) && PathPrefix(`/photos/admin`)
-      - traefik.http.routers.travel-admin.entrypoints=websecure
-      - traefik.http.routers.travel-admin.tls.certresolver=cloudflare
-      - traefik.http.routers.travel-admin.middlewares=oauth-auth,ratelimit
-      - traefik.http.routers.travel-admin.priority=100
-
-      # Public routes - no authentication required
-      - traefik.http.routers.travel-public.rule=Host(`travel.jamesmassucco.com`)
-      - traefik.http.routers.travel-public.entrypoints=websecure
-      - traefik.http.routers.travel-public.tls.certresolver=cloudflare
-      - traefik.http.routers.travel-public.middlewares=ratelimit
-      - traefik.http.routers.travel-public.priority=50
-
-      - traefik.http.services.travel.loadbalancer.server.port=8000
 
 volumes:
   data-volume:
