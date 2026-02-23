@@ -46,7 +46,7 @@ function escapeHtml(text) {
 
 function costStr(cost) {
   return Object.entries(cost)
-    .map(([r, n]) => `${RESOURCE_EMOJIS[r] || r}×${n}`)
+    .flatMap(([r, n]) => Array(n).fill(RESOURCE_EMOJIS[r] || r))
     .join(' ')
 }
 
