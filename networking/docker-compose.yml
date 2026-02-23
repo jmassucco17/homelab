@@ -18,10 +18,10 @@ services:
       - '--api.dashboard=true'
       - '--api.insecure=false'
       - '--api.debug=true'
-      # Expose metrics to Prometheus
-      # - '--metrics.prometheus=true'
-      # - '--metrics.prometheus.entrypoint=metrics'
-      # - '--entrypoints.metrics.address=:8082'
+      # Expose metrics to Prometheus (scraped by Alloy on internal_metrics network)
+      - '--metrics.prometheus=true'
+      - '--metrics.prometheus.entrypoint=metrics'
+      - '--entrypoints.metrics.address=:8082'
       # Enable ping endpoint for healthcheck
       - '--ping=true'
       # HTTPS only
@@ -40,14 +40,13 @@ services:
       - '--entrypoints.websecure.forwardedHeaders.insecure=true'
     ports:
       - '443:443'
-      # Expose metrics
-      # - '8082:8082'
     volumes:
       - '/var/run/docker.sock:/var/run/docker.sock:ro'
       # Ensure this file has 600 permissions
       - './acme.json:/letsencrypt/acme.json'
     networks:
       - web
+      - internal_metrics
     env_file:
       - .env
     environment:
@@ -163,4 +162,6 @@ services:
 
 networks:
   web:
+    external: true
+  internal_metrics:
     external: true

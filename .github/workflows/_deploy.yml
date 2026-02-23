@@ -39,6 +39,10 @@ on:
         description: 'Deploy tools'
         type: boolean
         default: true
+      monitoring:
+        description: 'Deploy monitoring'
+        type: boolean
+        default: true
 
 jobs:
   deploy:
@@ -90,6 +94,23 @@ jobs:
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
         run: printf 'TMDB_API_KEY=%s\n' "$TMDB_API_KEY" > tools/.env
 
+      - name: Write monitoring/.env
+        if: inputs.environment == 'prod'
+        env:
+          GRAFANA_CLOUD_PROM_URL: ${{ secrets.GRAFANA_CLOUD_PROM_URL }}
+          GRAFANA_CLOUD_PROM_USER: ${{ secrets.GRAFANA_CLOUD_PROM_USER }}
+          GRAFANA_CLOUD_LOKI_URL: ${{ secrets.GRAFANA_CLOUD_LOKI_URL }}
+          GRAFANA_CLOUD_LOKI_USER: ${{ secrets.GRAFANA_CLOUD_LOKI_USER }}
+          GRAFANA_CLOUD_API_KEY: ${{ secrets.GRAFANA_CLOUD_API_KEY }}
+        run: |
+          {
+            printf 'GRAFANA_CLOUD_PROM_URL=%s\n' "$GRAFANA_CLOUD_PROM_URL"
+            printf 'GRAFANA_CLOUD_PROM_USER=%s\n' "$GRAFANA_CLOUD_PROM_USER"
+            printf 'GRAFANA_CLOUD_LOKI_URL=%s\n' "$GRAFANA_CLOUD_LOKI_URL"
+            printf 'GRAFANA_CLOUD_LOKI_USER=%s\n' "$GRAFANA_CLOUD_LOKI_USER"
+            printf 'GRAFANA_CLOUD_API_KEY=%s\n' "$GRAFANA_CLOUD_API_KEY"
+          } > monitoring/.env
+
       - name: Set up SSH key
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -108,7 +129,7 @@ jobs:
           if [ "${{ inputs.environment }}" = "staging" ]; then
             tar --append -f /tmp/homelab-deploy.tar networking/.env
           else
-            tar --append -f /tmp/homelab-deploy.tar networking/.env tools/.env
+            tar --append -f /tmp/homelab-deploy.tar networking/.env tools/.env monitoring/.env
           fi
           gzip /tmp/homelab-deploy.tar
 
@@ -129,6 +150,7 @@ jobs:
           STAGING_IMAGE_TAG: ${{ steps.image-tag.outputs.tag }}
           SEED_FROM_PROD: ${{ inputs.seed_from_prod }}
           DEPLOY_NETWORKING: ${{ inputs.networking }}
+          DEPLOY_MONITORING: ${{ inputs.monitoring }}
           DEPLOY_SHARED_ASSETS: ${{ inputs['shared-assets'] }}
           DEPLOY_HOMEPAGE: ${{ inputs.homepage }}
           DEPLOY_BLOG: ${{ inputs.blog }}
@@ -138,7 +160,7 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key \
             "${SERVER_USER}@${SERVER_HOST}" \
-            "ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' SEED_FROM_PROD='${SEED_FROM_PROD}' DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' DEPLOY_SHARED_ASSETS='${DEPLOY_SHARED_ASSETS}' DEPLOY_HOMEPAGE='${DEPLOY_HOMEPAGE}' DEPLOY_BLOG='${DEPLOY_BLOG}' DEPLOY_TRAVEL='${DEPLOY_TRAVEL}' DEPLOY_GAMES='${DEPLOY_GAMES}' DEPLOY_TOOLS='${DEPLOY_TOOLS}' bash -s" << 'REMOTE'
+            "ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' SEED_FROM_PROD='${SEED_FROM_PROD}' DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' DEPLOY_MONITORING='${DEPLOY_MONITORING}' DEPLOY_SHARED_ASSETS='${DEPLOY_SHARED_ASSETS}' DEPLOY_HOMEPAGE='${DEPLOY_HOMEPAGE}' DEPLOY_BLOG='${DEPLOY_BLOG}' DEPLOY_TRAVEL='${DEPLOY_TRAVEL}' DEPLOY_GAMES='${DEPLOY_GAMES}' DEPLOY_TOOLS='${DEPLOY_TOOLS}' bash -s" << 'REMOTE'
           set -euo pipefail
           mkdir -p /opt/homelab
           cd /opt/homelab
@@ -147,6 +169,7 @@ jobs:
           touch networking/acme.json
           chmod 600 networking/acme.json
           docker network create web 2>/dev/null || true
+          docker network create internal_metrics 2>/dev/null || true
 
           # Optionally seed staging travel data from production before deploying
           if [ "${ENVIRONMENT}" = "staging" ] && [ "${SEED_FROM_PROD}" = "true" ]; then
@@ -178,6 +201,10 @@ jobs:
 
           # Deploy services in dependency order
           deploy_if_enabled networking      "$DEPLOY_NETWORKING"
+          # monitoring is prod-only (no staging counterpart)
+          if [ "${ENVIRONMENT}" = "prod" ]; then
+            deploy_if_enabled monitoring    "$DEPLOY_MONITORING"
+          fi
           deploy_if_enabled shared-assets   "$DEPLOY_SHARED_ASSETS"
           deploy_if_enabled homepage        "$DEPLOY_HOMEPAGE"
           deploy_if_enabled blog            "$DEPLOY_BLOG"

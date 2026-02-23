@@ -24,6 +24,11 @@ Repository secrets) and are shared between production and staging deployments.
 | `GOOGLE_OAUTH2_CLIENT_SECRET` | Google OAuth 2.0 client secret. Google Cloud Console → APIs & Services → Credentials. |
 | `GOOGLE_OAUTH2_COOKIE_SECRET` | 32-byte random secret for signing OAuth session cookies (used by both prod and staging). Generate with: `python3 -c "import secrets, base64; print(base64.b64encode(secrets.token_bytes(32)).decode())"` |
 | `OAUTH2_AUTHORIZED_EMAILS` | Comma-separated Google email addresses allowed to log in. Set to your own Google account(s). |
+| `GRAFANA_CLOUD_PROM_URL` | Prometheus remote_write endpoint for Grafana Cloud Mimir. Grafana Cloud → Connections → Data sources → Prometheus → Connection details. |
+| `GRAFANA_CLOUD_PROM_USER` | Prometheus username / Instance ID (numeric). Same page, field "Username / Instance ID". |
+| `GRAFANA_CLOUD_LOKI_URL` | Loki push endpoint for Grafana Cloud Loki. Grafana Cloud → Connections → Data sources → Loki → Connection details. |
+| `GRAFANA_CLOUD_LOKI_USER` | Loki username / Instance ID (numeric). Same page, field "Username / Instance ID". |
+| `GRAFANA_CLOUD_API_KEY` | API token used as the password for both Prometheus and Loki endpoints. Grafana Cloud → My Account → Access Policies → create a policy with `metrics:write` and `logs:write` scopes, then generate a token. |
 
 ---
 
