@@ -44,7 +44,6 @@ class PlayerSlot:
         self.name = name
         self.color = color
         self.websocket: fastapi.WebSocket | None = websocket
-        self.disconnected_at: datetime.datetime | None = None
 
     @property
     def is_connected(self) -> bool:
@@ -132,19 +131,10 @@ class RoomManager:
         player_name: str,
         websocket: fastapi.WebSocket,
     ) -> PlayerSlot | None:
-        """Add a player to a room or reconnect a disconnected player.
+        """Add a player to a room, or reattach a returning player's WebSocket.
 
-        Returns the :class:`PlayerSlot` on success, or ``None`` when:
-
-        * the room does not exist,
-        * the game has already started and the name is not a known player, or
-        * the room is full.
-
-        A player whose slot already exists may always reconnect, regardless of
-        how long they were disconnected.  The reconnect window only governs
-        whether a *new* player may claim a slot whose previous occupant has
-        been absent for more than a given period (i.e. the
-        slot is released for re-use by a different name).
+        Returns the :class:`PlayerSlot` on success, or ``None`` when the room
+        does not exist or is full and the name is not already registered.
         """
         room = self._rooms.get(room_code)
         if room is None:
@@ -152,10 +142,8 @@ class RoomManager:
 
         existing = room.get_player_by_name(player_name)
         if existing is not None:
-            # Always let the original player back in, no matter how long they
-            # were gone — their slot is theirs until the game ends.
+            # Player already has a seat — update their WebSocket connection.
             existing.websocket = websocket
-            existing.disconnected_at = None
             return existing
 
         if not room.can_join():
@@ -172,14 +160,13 @@ class RoomManager:
         return slot
 
     def disconnect_player(self, room_code: str, player_name: str) -> None:
-        """Mark *player_name* as disconnected and start the reconnect window."""
+        """Clear the WebSocket for *player_name* when they disconnect."""
         room = self._rooms.get(room_code)
         if room is None:
             return
         slot = room.get_player_by_name(player_name)
         if slot is not None:
             slot.websocket = None
-            slot.disconnected_at = datetime.datetime.now(datetime.UTC)
 
     # ------------------------------------------------------------------
     # Messaging helpers

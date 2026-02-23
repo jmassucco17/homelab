@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import datetime
 import unittest
 import unittest.mock
 
@@ -108,31 +107,24 @@ class TestRoomManagerJoin(unittest.TestCase):
         result = self.mgr.join_room(self.code, 'Extra', ws_extra)
         self.assertIsNone(result)
 
-    def test_reconnect_after_window_still_restores_slot(self) -> None:
-        """A player can always rejoin their own slot, even after the window expires."""
+    def test_reconnect_restores_slot(self) -> None:
+        """Rejoining with the same name restores the existing slot."""
         slot = self.mgr.join_room(self.code, 'Alice', self.ws)
         assert slot is not None
         slot.websocket = None
-        slot.disconnected_at = datetime.datetime.now(datetime.UTC) - datetime.timedelta(
-            seconds=3600  # well beyond any former reconnect window
-        )
         ws2 = unittest.mock.MagicMock(spec=fastapi.WebSocket)
         reconnected = self.mgr.join_room(self.code, 'Alice', ws2)
         self.assertIs(reconnected, slot)
         self.assertIs(slot.websocket, ws2)
-        self.assertIsNone(slot.disconnected_at)
 
-    def test_reconnect_always_restores_slot(self) -> None:
-        """Rejoining with the same name always restores the existing slot."""
+    def test_reconnect_works_even_when_currently_connected(self) -> None:
+        """A player may call join_room again (e.g. page reload) and reclaim the slot."""
         slot = self.mgr.join_room(self.code, 'Alice', self.ws)
         assert slot is not None
-        slot.websocket = None
-        slot.disconnected_at = datetime.datetime.now(datetime.UTC)
         ws2 = unittest.mock.MagicMock(spec=fastapi.WebSocket)
         reconnected = self.mgr.join_room(self.code, 'Alice', ws2)
         self.assertIs(reconnected, slot)
         self.assertIs(slot.websocket, ws2)
-        self.assertIsNone(slot.disconnected_at)
 
 
 class TestRoomManagerDisconnect(unittest.TestCase):
@@ -152,17 +144,6 @@ class TestRoomManagerDisconnect(unittest.TestCase):
         slot = room.get_player_by_name('Alice')
         assert slot is not None
         self.assertIsNone(slot.websocket)
-
-    def test_disconnect_sets_timestamp(self) -> None:
-        """disconnect_player records a UTC disconnection timestamp."""
-        self.mgr.disconnect_player(self.code, 'Alice')
-        room = self.mgr.get_room(self.code)
-        assert room is not None
-        slot = room.get_player_by_name('Alice')
-        assert slot is not None
-        self.assertIsNotNone(slot.disconnected_at)
-        assert slot.disconnected_at is not None
-        self.assertIsNotNone(slot.disconnected_at.tzinfo)
 
     def test_disconnect_unknown_room_noop(self) -> None:
         """disconnect_player on unknown room does nothing."""

@@ -7,8 +7,7 @@ GameState.  The ActionResult carries the outcome back to the caller.
 from __future__ import annotations
 
 import enum
-import typing
-from typing import Literal
+from typing import Annotated, Any, Literal
 
 import pydantic
 
@@ -186,7 +185,7 @@ class CancelTrade(BaseAction):
 
 
 # Discriminated union of all action types for deserialization.
-Action = typing.Annotated[
+Action = Annotated[
     PlaceSettlement
     | PlaceRoad
     | PlaceCity
@@ -221,4 +220,4 @@ class ActionResult(pydantic.BaseModel):
     success: bool
     error_message: str | None = None
     # Updated game state after the action (None on failure).
-    updated_state: typing.Any | None = None
+    updated_state: Any | None = None

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import datetime
 import unittest
 import unittest.mock
 
@@ -99,7 +98,6 @@ class TestCatanRouter(unittest.TestCase):
                 player_index=i, name=name, color=color, websocket=ws_mock
             )
             slot.websocket = None
-            slot.disconnected_at = datetime.datetime.now(datetime.UTC)
             room.players.append(slot)
         self.mgr.start_game(room)
         resp = self.client.post(f'/catan/rooms/{code}/start')

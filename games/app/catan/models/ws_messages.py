@@ -7,8 +7,7 @@ FastAPI WebSocket server, in both directions.
 from __future__ import annotations
 
 import enum
-import typing
-from typing import Literal
+from typing import Annotated, Any, Literal
 
 import pydantic
 
@@ -64,7 +63,7 @@ class RequestUndo(pydantic.BaseModel):
 
 
 # Discriminated union of all client message types.
-ClientMessage = typing.Annotated[
+ClientMessage = Annotated[
     JoinGame | SubmitAction | RequestUndo,
     pydantic.Field(discriminator='message_type'),
 ]
@@ -84,7 +83,7 @@ class GameStateUpdate(pydantic.BaseModel):
     """
 
     message_type: ServerMessageType = ServerMessageType.GAME_STATE_UPDATE
-    game_state: typing.Any  # serialized GameState dict
+    game_state: Any  # serialized GameState dict
 
 
 class ErrorMessage(pydantic.BaseModel):
