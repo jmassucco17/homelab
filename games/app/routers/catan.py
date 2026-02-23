@@ -148,7 +148,9 @@ async def add_ai_player(
 
 
 @router.post('/catan/rooms/{room_code}/start')
-async def start_game(room_code: str) -> dict[str, str]:
+async def start_game(
+    room_code: str, background_tasks: fastapi.BackgroundTasks
+) -> dict[str, str]:
     """Start the game for a room.
 
     Requires at least 2 players.  Broadcasts :class:`GameStarted` followed
@@ -179,7 +181,7 @@ async def start_game(room_code: str) -> dict[str, str]:
     )
     await room_manager.room_manager.broadcast(room, state_update.model_dump_json())
 
-    # Execute AI turns if the first player is an AI
-    await ws_handler.execute_ai_turns_if_needed(room)
+    # Execute AI turns in the background to avoid blocking the HTTP response
+    background_tasks.add_task(ws_handler.execute_ai_turns_if_needed, room)
 
     return {'status': 'started'}
