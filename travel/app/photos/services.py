@@ -3,16 +3,16 @@
 import datetime
 import io
 import os
+import typing
 import uuid
-from typing import Any, BinaryIO
 
 import exifread
 import fastapi
+import PIL.Image
 import pillow_heif  # pyright: ignore[reportMissingTypeStubs]
+import sqlalchemy.orm
 import sqlmodel
 from geopy import geocoders  # pyright: ignore[reportMissingTypeStubs]
-from PIL import Image
-from sqlalchemy.orm import selectinload
 
 from . import models
 
@@ -23,7 +23,7 @@ pillow_heif.register_heif_opener()  # type: ignore
 class PictureService:
     """Service for handling picture upload and metadata extraction."""
 
-    def __init__(self, upload_dir: str | None = None):
+    def __init__(self, upload_dir: str | None = None) -> None:
         """Initialize the service with upload directory."""
         if upload_dir is None:
             data_dir = os.environ.get('DATA_DIR', 'data')
@@ -33,10 +33,10 @@ class PictureService:
 
     def extract_metadata(
         self,
-        file: BinaryIO,
-    ) -> dict[str, Any]:
+        file: typing.BinaryIO,
+    ) -> dict[str, typing.Any]:
         """Extract EXIF metadata from an image file."""
-        metadata: dict[str, Any] = {}
+        metadata: dict[str, typing.Any] = {}
 
         try:
             tags = exifread.process_file(file)
@@ -75,7 +75,7 @@ class PictureService:
 
         return metadata
 
-    def _convert_to_degrees(self, value: Any) -> float:
+    def _convert_to_degrees(self, value: typing.Any) -> float:
         """Convert GPS coordinates from DMS to decimal degrees."""
         degrees = float(value.values[0].num) / float(value.values[0].den)
         minutes = float(value.values[1].num) / float(value.values[1].den)
@@ -100,7 +100,7 @@ class PictureService:
 
         if file_extension in ['.heic', '.heif']:
             # Convert HEIC to JPEG
-            img = Image.open(io.BytesIO(content))
+            img = PIL.Image.open(io.BytesIO(content))
 
             # Convert to RGB if necessary (HEIC can be in different color modes)
             if img.mode not in ('RGB', 'RGBA'):
@@ -158,7 +158,7 @@ class PictureService:
         """Get all pictures ordered by date taken (newest first)."""
         statement = (
             sqlmodel.select(models.Picture)
-            .options(selectinload(models.Picture.location))  # type: ignore
+            .options(sqlalchemy.orm.selectinload(models.Picture.location))  # type: ignore
             .order_by(
                 models.Picture.date_taken.desc().nulls_last(),  # type: ignore
                 models.Picture.upload_date.desc(),  # type: ignore
@@ -174,7 +174,7 @@ class PictureService:
         """Get a specific picture by ID."""
         statement = (
             sqlmodel.select(models.Picture)
-            .options(selectinload(models.Picture.location))  # type: ignore
+            .options(sqlalchemy.orm.selectinload(models.Picture.location))  # type: ignore
             .where(models.Picture.id == picture_id)
         )
         return session.exec(statement).first()
@@ -209,7 +209,7 @@ class PictureService:
         """Update a picture's description."""
         statement = (
             sqlmodel.select(models.Picture)
-            .options(selectinload(models.Picture.location))  # type: ignore
+            .options(sqlalchemy.orm.selectinload(models.Picture.location))  # type: ignore
             .where(models.Picture.id == picture_id)
         )
         picture = session.exec(statement).first()

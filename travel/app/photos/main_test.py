@@ -1,6 +1,7 @@
 """Unit tests for the combined travel FastAPI application."""
 
 import unittest
+from collections.abc import Generator
 
 import fastapi.testclient
 import sqlalchemy
@@ -30,7 +31,8 @@ class TestApp(unittest.TestCase):
         """Set up test client with in-memory databases."""
         self.engine = make_in_memory_engine()
 
-        def override_get_session():
+        def override_get_session() -> Generator[sqlmodel.Session, None, None]:
+            """Yield an in-memory database session for testing."""
             with sqlmodel.Session(self.engine) as session:
                 yield session
 

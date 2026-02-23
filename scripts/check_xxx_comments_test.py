@@ -5,12 +5,12 @@ import sys
 import tempfile
 import unittest
 
-from click.testing import CliRunner
+import click.testing
 
 # scripts/ is not a package, so add its directory to sys.path
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
-from check_xxx_comments import check_file_for_xxx, main  # noqa: E402
+import check_xxx_comments  # noqa: E402
 
 # Construct the marker string dynamically to avoid triggering the XXX comment checker
 # on this file itself.
@@ -32,7 +32,7 @@ class TestCheckFileForXxx(unittest.TestCase):
         """Test that a file without the marker returns an empty list."""
         path = self._write_temp_file('# A normal comment\nprint("hello")\n')
         try:
-            result = check_file_for_xxx(path)
+            result = check_xxx_comments.check_file_for_xxx(path)
             self.assertEqual(result, [])
         finally:
             path.unlink()
@@ -41,7 +41,7 @@ class TestCheckFileForXxx(unittest.TestCase):
         """Test that a marker comment in a file is detected."""
         path = self._write_temp_file(f'# {_XXX}: fix this later\nprint("hello")\n')
         try:
-            result = check_file_for_xxx(path)
+            result = check_xxx_comments.check_file_for_xxx(path)
             self.assertEqual(len(result), 1)
             self.assertEqual(result[0][0], 1)
             self.assertIn(_XXX, result[0][1])
@@ -52,7 +52,7 @@ class TestCheckFileForXxx(unittest.TestCase):
         """Test that the '# MARKER ' pattern is detected."""
         path = self._write_temp_file(f'# {_XXX} fix this\nprint("hello")\n')
         try:
-            result = check_file_for_xxx(path)
+            result = check_xxx_comments.check_file_for_xxx(path)
             self.assertEqual(len(result), 1)
         finally:
             path.unlink()
@@ -62,7 +62,7 @@ class TestCheckFileForXxx(unittest.TestCase):
         content = f'# {_XXX}: first issue\nok = True\n# {_XXX}: second issue\n'
         path = self._write_temp_file(content)
         try:
-            result = check_file_for_xxx(path)
+            result = check_xxx_comments.check_file_for_xxx(path)
             self.assertEqual(len(result), 2)
             self.assertEqual(result[0][0], 1)
             self.assertEqual(result[1][0], 3)
@@ -73,7 +73,7 @@ class TestCheckFileForXxx(unittest.TestCase):
         """Test that an empty file returns an empty list."""
         path = self._write_temp_file('')
         try:
-            result = check_file_for_xxx(path)
+            result = check_xxx_comments.check_file_for_xxx(path)
             self.assertEqual(result, [])
         finally:
             path.unlink()
@@ -82,7 +82,7 @@ class TestCheckFileForXxx(unittest.TestCase):
         """Test that XXX as part of a word is not detected."""
         path = self._write_temp_file('# HEXXXXX is not a match\n')
         try:
-            result = check_file_for_xxx(path)
+            result = check_xxx_comments.check_file_for_xxx(path)
             self.assertEqual(result, [])
         finally:
             path.unlink()
@@ -92,7 +92,7 @@ class TestCheckFileForXxx(unittest.TestCase):
         content = f'line1\nline2\n# {_XXX}: issue here\nline4\n'
         path = self._write_temp_file(content)
         try:
-            result = check_file_for_xxx(path)
+            result = check_xxx_comments.check_file_for_xxx(path)
             self.assertEqual(len(result), 1)
             self.assertEqual(result[0][0], 3)
         finally:
@@ -104,7 +104,7 @@ class TestMainCommand(unittest.TestCase):
 
     def setUp(self) -> None:
         """Set up Click test runner."""
-        self.runner = CliRunner()
+        self.runner = click.testing.CliRunner()
 
     def _write_temp_file(self, content: str, suffix: str = '.py') -> pathlib.Path:
         """Write content to a temporary file and return its path."""
@@ -116,14 +116,14 @@ class TestMainCommand(unittest.TestCase):
 
     def test_no_files_exits_zero(self) -> None:
         """Test that providing no files exits with code 0."""
-        result = self.runner.invoke(main, [])
+        result = self.runner.invoke(check_xxx_comments.main, [])
         self.assertEqual(result.exit_code, 0)
 
     def test_clean_file_exits_zero(self) -> None:
         """Test that a file without XXX exits with code 0."""
         path = self._write_temp_file('# clean code\n')
         try:
-            result = self.runner.invoke(main, [str(path)])
+            result = self.runner.invoke(check_xxx_comments.main, [str(path)])
             self.assertEqual(result.exit_code, 0)
         finally:
             path.unlink()
@@ -132,7 +132,7 @@ class TestMainCommand(unittest.TestCase):
         """Test that a file with the marker exits with code 1."""
         path = self._write_temp_file(f'# {_XXX}: fix me\n')
         try:
-            result = self.runner.invoke(main, [str(path)])
+            result = self.runner.invoke(check_xxx_comments.main, [str(path)])
             self.assertEqual(result.exit_code, 1)
             self.assertIn('XXX comments found', result.output)
         finally:
@@ -142,7 +142,9 @@ class TestMainCommand(unittest.TestCase):
         """Test that --warn-only exits with code 0 even when the marker is found."""
         path = self._write_temp_file(f'# {_XXX}: fix me\n')
         try:
-            result = self.runner.invoke(main, ['--warn-only', str(path)])
+            result = self.runner.invoke(
+                check_xxx_comments.main, ['--warn-only', str(path)]
+            )
             self.assertEqual(result.exit_code, 0)
             self.assertIn('XXX comments found', result.output)
         finally:
@@ -150,7 +152,7 @@ class TestMainCommand(unittest.TestCase):
 
     def test_nonexistent_file_is_skipped(self) -> None:
         """Test that a non-existent file path is silently skipped."""
-        result = self.runner.invoke(main, ['/nonexistent/file.py'])
+        result = self.runner.invoke(check_xxx_comments.main, ['/nonexistent/file.py'])
         self.assertEqual(result.exit_code, 0)
 
 
