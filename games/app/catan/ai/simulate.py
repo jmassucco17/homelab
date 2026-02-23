@@ -8,7 +8,7 @@ Run full Catan games between AI agents and report:
 
 Usage::
 
-    python -m games.tests.catan.simulate
+    python -m games.app.catan.ai.simulate
 
 By default runs 50 games with 2 players using Easy AI for speed.  Set
 ``NUM_GAMES``, ``NUM_PLAYERS``, or supply ``--hard`` / ``--medium`` via CLI
@@ -43,7 +43,7 @@ _PLAYER_COLORS = ['red', 'blue', 'green', 'orange']
 # ---------------------------------------------------------------------------
 
 
-def _make_ais(
+def make_ais(
     ai_type: str,
     num_players: int,
     seed_offset: int = 0,
@@ -159,7 +159,7 @@ def run_simulation(
     - ``timeouts``: number of games that hit the action cap.
     - ``elapsed``: total wall-clock time in seconds.
     """
-    ais = _make_ais(ai_type, num_players, seed_offset=start_seed)
+    ais = make_ais(ai_type, num_players, seed_offset=start_seed)
     wins: list[int] = [0] * num_players
     action_counts: list[int] = []
     timeouts = 0

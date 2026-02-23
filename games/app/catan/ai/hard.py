@@ -536,7 +536,12 @@ class HardAI(base.CatanAI):
         if pending == game_state.PendingActionType.DISCARD_RESOURCES:
             return _build_discard(state, player_index)
 
-        # --- Roll dice ---
+        # --- Roll dice (possibly play knight first) ---
+        # Play a Knight before rolling if the robber is blocking an own tile.
+        if robber_on_own_tile(state, player_index):
+            for action in legal_actions:
+                if isinstance(action, actions.PlayKnight):
+                    return action
         for action in legal_actions:
             if isinstance(action, actions.RollDice):
                 return action

@@ -152,6 +152,30 @@ class TestHardAI(unittest.TestCase):
         chosen = self.ai.choose_action(state, 0, legal)
         self.assertIsInstance(chosen, actions.PlayKnight)
 
+    def test_plays_knight_before_roll_when_robber_on_own_tile(self) -> None:
+        """HardAI plays a Knight before rolling dice if robber blocks own tile."""
+        state = _complete_setup(self.state)
+        state.phase = game_state.GamePhase.MAIN
+        state.turn_state = game_state.TurnState(
+            player_index=0,
+            pending_action=game_state.PendingActionType.ROLL_DICE,
+        )
+        state.players[0].dev_cards = state.players[0].dev_cards.add(
+            player.DevCardType.KNIGHT
+        )
+        # Move robber to a tile where player 0 has a building.
+        for vertex in state.board.vertices:
+            if vertex.building and vertex.building.player_index == 0:
+                state.board.robber_tile_index = vertex.adjacent_tile_indices[0]
+                break
+        self.assertTrue(hard.robber_on_own_tile(state, 0))
+        legal = rules.get_legal_actions(state, 0)
+        # PlayKnight should now be legal before rolling.
+        knight_actions = [a for a in legal if isinstance(a, actions.PlayKnight)]
+        self.assertTrue(knight_actions, 'PlayKnight should be legal before rolling')
+        chosen = self.ai.choose_action(state, 0, legal)
+        self.assertIsInstance(chosen, actions.PlayKnight)
+
     def test_complete_game_terminates(self) -> None:
         """HardAI can drive a 2-player game to completion."""
         state = _make_state(seed=11)

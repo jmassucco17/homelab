@@ -111,7 +111,7 @@ class TestRulesEngine(unittest.TestCase):
         self.assertEqual(actual_edges, expected_edges)
 
     def test_roll_dice_is_only_action_on_main_turn(self) -> None:
-        """During ROLL_DICE pending, only RollDice is returned for active player."""
+        """During ROLL_DICE pending, only RollDice is returned when no knight held."""
         state = _make_2p_state()
         state.phase = GamePhase.MAIN
         state.turn_state = TurnState(
@@ -120,6 +120,22 @@ class TestRulesEngine(unittest.TestCase):
         actions = get_legal_actions(state, 0)
         self.assertEqual(len(actions), 1)
         self.assertIsInstance(actions[0], RollDice)
+
+    def test_roll_dice_includes_knight_when_held(self) -> None:
+        """During ROLL_DICE pending, PlayKnight is included if player holds a knight."""
+        from games.app.catan.models.actions import PlayKnight
+        from games.app.catan.models.player import DevCardHand
+
+        state = _make_2p_state()
+        state.phase = GamePhase.MAIN
+        state.turn_state = TurnState(
+            player_index=0, pending_action=PendingActionType.ROLL_DICE
+        )
+        state.players[0].dev_cards = DevCardHand(knight=1)
+        actions = get_legal_actions(state, 0)
+        types = {type(a) for a in actions}
+        self.assertIn(RollDice, types)
+        self.assertIn(PlayKnight, types)
 
     def test_roll_dice_no_actions_for_non_active(self) -> None:
         """Non-active player gets no actions during ROLL_DICE."""
