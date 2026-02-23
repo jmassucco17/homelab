@@ -21,9 +21,11 @@ def _make_state(seed: int = 42) -> game_state.GameState:
 class TestRunAiTurn(unittest.TestCase):
     """Tests for run_ai_turn."""
 
-    def _run(self, coro: object) -> object:
-        """Run an async coroutine in the test context."""
-        return asyncio.run(coro)  # type: ignore[arg-type]
+    def _run(self, coro: object) -> game_state.GameState:
+        """Run an async coroutine that returns a GameState."""
+        result = asyncio.run(coro)  # type: ignore[arg-type]
+        assert isinstance(result, game_state.GameState)
+        return result
 
     def test_returns_game_state(self) -> None:
         """run_ai_turn returns a GameState instance."""

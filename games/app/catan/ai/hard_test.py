@@ -98,7 +98,9 @@ class TestHardAI(unittest.TestCase):
             pending_action=game_state.PendingActionType.STEAL_RESOURCE,
         )
         state.players[1].resources = player.Resources(wood=1)
-        legal = [actions.StealResource(player_index=0, target_player_index=1)]
+        legal: list[actions.Action] = [
+            actions.StealResource(player_index=0, target_player_index=1)
+        ]
         chosen = self.ai.choose_action(state, 0, legal)
         assert isinstance(chosen, actions.StealResource)
         self.assertEqual(chosen.target_player_index, 1)
@@ -142,7 +144,7 @@ class TestHardAI(unittest.TestCase):
                 tile_idx = vertex.adjacent_tile_indices[0]
                 state.board.robber_tile_index = tile_idx
                 break
-        self.assertTrue(hard._robber_on_own_tile(state, 0))
+        self.assertTrue(hard.robber_on_own_tile(state, 0))
         legal = rules.get_legal_actions(state, 0)
         knight_actions = [a for a in legal if isinstance(a, actions.PlayKnight)]
         if not knight_actions:
@@ -179,7 +181,7 @@ class TestHardHelpers(unittest.TestCase):
         """_vertex_pip_score returns non-negative values."""
         state = _make_state()
         for vertex in state.board.vertices[:5]:
-            score = hard._vertex_pip_score(state, vertex)
+            score = hard.vertex_pip_score(state, vertex)
             self.assertGreaterEqual(score, 0)
 
     def test_player_total_vp(self) -> None:
@@ -187,7 +189,7 @@ class TestHardHelpers(unittest.TestCase):
         state = _make_state()
         state.players[0].victory_points = 3
         state.longest_road_owner = 0
-        vp = hard._player_total_vp(state, 0)
+        vp = hard.player_total_vp(state, 0)
         self.assertEqual(vp, 5)
 
     def test_robber_on_own_tile(self) -> None:
@@ -197,7 +199,7 @@ class TestHardHelpers(unittest.TestCase):
         for vertex in state.board.vertices:
             if vertex.building and vertex.building.player_index == 0:
                 state.board.robber_tile_index = vertex.adjacent_tile_indices[0]
-                self.assertTrue(hard._robber_on_own_tile(state, 0))
+                self.assertTrue(hard.robber_on_own_tile(state, 0))
                 return
         self.skipTest('No player-0 buildings to test with')
 
@@ -213,7 +215,7 @@ class TestHardHelpers(unittest.TestCase):
             giving=board.ResourceType.WHEAT,
             receiving=board.ResourceType.ORE,
         )
-        result = hard._trade_unlocks_build(state, 0, trade)
+        result = hard.trade_unlocks_build(state, 0, trade)
         self.assertTrue(result)
 
 

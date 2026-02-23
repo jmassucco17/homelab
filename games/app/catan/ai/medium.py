@@ -32,6 +32,9 @@ _PIP_COUNT: dict[int, int] = {
     12: 1,
 }
 
+# Standard bank trade ratio (4 of one resource for 1 of another).
+_BANK_TRADE_RATIO = 4
+
 # Build action priority order (lower index = higher priority).
 _BUILD_PRIORITY: list[type] = [
     actions.PlaceSettlement,
@@ -41,7 +44,7 @@ _BUILD_PRIORITY: list[type] = [
 ]
 
 
-def _vertex_pip_score(state: game_state.GameState, vertex: board.Vertex) -> int:
+def vertex_pip_score(state: game_state.GameState, vertex: board.Vertex) -> int:
     """Return the total pip score for a board vertex.
 
     Sums the pip counts of all adjacent non-desert tiles.
@@ -54,7 +57,7 @@ def _vertex_pip_score(state: game_state.GameState, vertex: board.Vertex) -> int:
     return score
 
 
-def _vertex_resource_diversity(
+def vertex_resource_diversity(
     state: game_state.GameState,
     player_index: int,
     vertex: board.Vertex,
@@ -89,8 +92,8 @@ def _score_setup_vertex(
 ) -> tuple[int, int]:
     """Return (pip_score, diversity_score) for ranking setup placements."""
     return (
-        _vertex_pip_score(state, vertex),
-        _vertex_resource_diversity(state, player_index, vertex),
+        vertex_pip_score(state, vertex),
+        vertex_resource_diversity(state, player_index, vertex),
     )
 
 
@@ -130,7 +133,7 @@ def _best_setup_road(
         for vid in edge.vertex_ids:
             vertex = state.board.vertices[vid]
             if vertex.building is None:
-                pip = _vertex_pip_score(state, vertex)
+                pip = vertex_pip_score(state, vertex)
                 score = max(score, pip)
         if score > best_score:
             best_score = score
@@ -248,7 +251,7 @@ def _choose_main_action(
     # Accept a trade that gets a needed resource (unlocks a build).
     for action in legal:
         if isinstance(action, (actions.TradeWithBank, actions.TradeWithPort)):
-            if _trade_unlocks_build(state, player_index, action):
+            if trade_unlocks_build(state, player_index, action):
                 return action
 
     # Fall back to EndTurn.
@@ -259,7 +262,7 @@ def _choose_main_action(
     return legal[0]
 
 
-def _trade_unlocks_build(
+def trade_unlocks_build(
     state: game_state.GameState,
     player_index: int,
     trade: actions.TradeWithBank | actions.TradeWithPort,
@@ -269,7 +272,11 @@ def _trade_unlocks_build(
     Simulates a post-trade resource set and checks if any build cost is met.
     """
     res = state.players[player_index].resources
-    giving_count = trade.giving_count if isinstance(trade, actions.TradeWithPort) else 4
+    giving_count = (
+        trade.giving_count
+        if isinstance(trade, actions.TradeWithPort)
+        else _BANK_TRADE_RATIO
+    )
     # Simulate the trade.
     new_giving = res.get(trade.giving) - giving_count
     if new_giving < 0:

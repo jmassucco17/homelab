@@ -33,13 +33,19 @@ _PIP_COUNT: dict[int, int] = {
     12: 1,
 }
 
+# Standard bank trade ratio (4 of one resource for 1 of another).
+_BANK_TRADE_RATIO = 4
+
+# Minimum knights played to claim the Largest Army bonus.
+_MIN_KNIGHTS_FOR_LARGEST_ARMY = 3
+
 
 # ---------------------------------------------------------------------------
 # Shared scoring helpers
 # ---------------------------------------------------------------------------
 
 
-def _vertex_pip_score(state: game_state.GameState, vertex: board.Vertex) -> int:
+def vertex_pip_score(state: game_state.GameState, vertex: board.Vertex) -> int:
     """Return the sum of pip counts for tiles adjacent to vertex."""
     score = 0
     for tile_idx in vertex.adjacent_tile_indices:
@@ -72,7 +78,7 @@ def _player_resource_set(
     return resources
 
 
-def _player_total_vp(state: game_state.GameState, player_index: int) -> int:
+def player_total_vp(state: game_state.GameState, player_index: int) -> int:
     """Return a player's estimated total VP including bonuses and VP cards."""
     p = state.players[player_index]
     vp = p.victory_points
@@ -84,7 +90,7 @@ def _player_total_vp(state: game_state.GameState, player_index: int) -> int:
     return vp
 
 
-def _robber_on_own_tile(state: game_state.GameState, player_index: int) -> bool:
+def robber_on_own_tile(state: game_state.GameState, player_index: int) -> bool:
     """Return True if the robber is currently on a tile where player has a building."""
     robber_idx = state.board.robber_tile_index
     for vertex in state.board.vertices:
@@ -111,7 +117,7 @@ def _score_setup_vertex(
     - diversity_bonus: new resource types added.
     - port_bonus: 1 if vertex has a port, else 0.
     """
-    pip = _vertex_pip_score(state, vertex)
+    pip = vertex_pip_score(state, vertex)
     owned = _player_resource_set(state, player_index)
     new_res = _vertex_resource_set(state, vertex) - owned
     diversity = len(new_res)
@@ -177,7 +183,7 @@ def _best_move_robber(
     for p in state.players:
         if p.player_index == player_index:
             continue
-        vp = _player_total_vp(state, p.player_index)
+        vp = player_total_vp(state, p.player_index)
         if vp > leader_vp:
             leader_vp = vp
             leader_idx = p.player_index
@@ -219,7 +225,7 @@ def _best_steal(
         if not isinstance(action, actions.StealResource):
             continue
         target = action.target_player_index
-        vp = _player_total_vp(state, target)
+        vp = player_total_vp(state, target)
         res = state.players[target].resources.total()
         score = (vp, res)
         if score > best_score:
@@ -283,13 +289,13 @@ def _should_play_knight(state: game_state.GameState, player_index: int) -> bool:
     - Robber is on own tile (defensive move), OR
     - Playing would give/retain Largest Army bonus.
     """
-    if _robber_on_own_tile(state, player_index):
+    if robber_on_own_tile(state, player_index):
         return True
     my_knights = state.players[player_index].knights_played + 1  # after playing
     current_holder = state.largest_army_owner
     if current_holder is None:
         # Claim it if we'd reach threshold (≥3).
-        return my_knights >= 3
+        return my_knights >= _MIN_KNIGHTS_FOR_LARGEST_ARMY
     if current_holder == player_index:
         return True
     # Steal it.
@@ -309,7 +315,7 @@ def _road_score(state: game_state.GameState, player_index: int, edge_id: int) ->
     for vid in edge.vertex_ids:
         vertex = state.board.vertices[vid]
         if vertex.building is None:
-            pip = _vertex_pip_score(state, vertex)
+            pip = vertex_pip_score(state, vertex)
             score = max(score, pip)
     return score
 
@@ -331,7 +337,7 @@ def _best_settlement(
         if not isinstance(action, actions.PlaceSettlement):
             continue
         vertex = state.board.vertices[action.vertex_id]
-        pip = _vertex_pip_score(state, vertex)
+        pip = vertex_pip_score(state, vertex)
         owned = _player_resource_set(state, player_index)
         new_res = len(_vertex_resource_set(state, vertex) - owned)
         score = (pip, new_res)
@@ -359,14 +365,18 @@ def _best_road(
     return best
 
 
-def _trade_unlocks_build(
+def trade_unlocks_build(
     state: game_state.GameState,
     player_index: int,
     trade: actions.TradeWithBank | actions.TradeWithPort,
 ) -> bool:
     """Return True if this trade enables a build action post-trade."""
     res = state.players[player_index].resources
-    giving_count = trade.giving_count if isinstance(trade, actions.TradeWithPort) else 4
+    giving_count = (
+        trade.giving_count
+        if isinstance(trade, actions.TradeWithPort)
+        else _BANK_TRADE_RATIO
+    )
     simulated: dict[str, int] = {
         'wood': res.wood,
         'brick': res.brick,
@@ -412,9 +422,9 @@ def _choose_main_action(
     9. EndTurn
     """
     my_p = state.players[player_index]
-    my_vp = _player_total_vp(state, player_index)
+    my_vp = player_total_vp(state, player_index)
     max_opp_vp = max(
-        _player_total_vp(state, p.player_index)
+        player_total_vp(state, p.player_index)
         for p in state.players
         if p.player_index != player_index
     )
@@ -436,7 +446,8 @@ def _choose_main_action(
             return action
 
     # 4. Dev card when chasing Largest Army.
-    if my_p.dev_cards.knight + my_p.new_dev_cards.knight < 3:
+    knights_held = my_p.dev_cards.knight + my_p.new_dev_cards.knight
+    if knights_held < _MIN_KNIGHTS_FOR_LARGEST_ARMY:
         for action in legal:
             if isinstance(action, actions.BuildDevCard):
                 return action
@@ -456,7 +467,7 @@ def _choose_main_action(
     # 6. Beneficial trades.
     for action in legal:
         if isinstance(action, (actions.TradeWithBank, actions.TradeWithPort)):
-            if _trade_unlocks_build(state, player_index, action):
+            if trade_unlocks_build(state, player_index, action):
                 return action
 
     # 7. Year of Plenty: grab ore+wheat for a city.

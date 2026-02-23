@@ -101,7 +101,9 @@ class TestMediumAI(unittest.TestCase):
             player_index=0,
             pending_action=game_state.PendingActionType.STEAL_RESOURCE,
         )
-        legal = [actions.StealResource(player_index=0, target_player_index=1)]
+        legal: list[actions.Action] = [
+            actions.StealResource(player_index=0, target_player_index=1)
+        ]
         chosen = self.ai.choose_action(state, 0, legal)
         self.assertIsInstance(chosen, actions.StealResource)
         assert isinstance(chosen, actions.StealResource)
@@ -193,14 +195,14 @@ class TestMediumHelpers(unittest.TestCase):
         """_vertex_pip_score returns non-negative integer."""
         state = _make_state()
         for vertex in state.board.vertices[:5]:
-            score = medium._vertex_pip_score(state, vertex)
+            score = medium.vertex_pip_score(state, vertex)
             self.assertGreaterEqual(score, 0)
 
     def test_vertex_resource_diversity(self) -> None:
         """_vertex_resource_diversity returns 0 to 3."""
         state = _make_state()
         for vertex in state.board.vertices[:5]:
-            div = medium._vertex_resource_diversity(state, 0, vertex)
+            div = medium.vertex_resource_diversity(state, 0, vertex)
             self.assertGreaterEqual(div, 0)
             self.assertLessEqual(div, 3)
 
@@ -218,7 +220,7 @@ class TestMediumHelpers(unittest.TestCase):
             giving=board.ResourceType.WOOD,
             receiving=board.ResourceType.BRICK,
         )
-        result = medium._trade_unlocks_build(state, 0, trade)
+        result = medium.trade_unlocks_build(state, 0, trade)
         self.assertTrue(result)
 
 
