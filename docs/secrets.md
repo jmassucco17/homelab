@@ -29,14 +29,15 @@ supplies the right environment-scoped secrets for whichever environment is being
 These secrets are shared between both environments and live at the repo level
 (Settings → Secrets and variables → Actions → Repository secrets).
 
-| Secret | Used by | Description |
-|--------|---------|-------------|
-| `TAILSCALE_OAUTH_CLIENT_ID` | `_deploy.yml` | Tailscale OAuth client ID for the GitHub Actions tag. Create under **Settings → OAuth clients** in the Tailscale admin console. |
-| `TAILSCALE_OAUTH_SECRET` | `_deploy.yml` | Tailscale OAuth secret paired with the client ID above. |
-| `SSH_PRIVATE_KEY` | `_deploy.yml` | Private key for SSH access to the server. The corresponding public key must be in `~/.ssh/authorized_keys` on the `deploy` user account. See [Dedicated deploy user](#dedicated-deploy-user). |
-| `SERVER_SSH_HOST_KEY` | `_deploy.yml` | The server's SSH host key line as returned by `ssh-keyscan`. Used to pre-populate `known_hosts` so strict host-key checking is enforced. See [Obtaining the host key](#obtaining-the-host-key). |
-| `SERVER_HOST` | `_deploy.yml` | Tailscale hostname or IP address of the server. |
-| `SERVER_USER` | `_deploy.yml` | SSH username — should be `deploy`, not `root`. See [Dedicated deploy user](#dedicated-deploy-user). |
+| Secret | Description |
+|--------|-------------|
+| `TAILSCALE_OAUTH_CLIENT_ID` | Tailscale OAuth client ID for the GitHub Actions tag. Create under **Settings → OAuth clients** in the Tailscale admin console. |
+| `TAILSCALE_OAUTH_SECRET` | Tailscale OAuth secret paired with the client ID above. |
+| `SSH_PRIVATE_KEY` | Private key for SSH access to the server. The corresponding public key must be in `~/.ssh/authorized_keys` on the `deploy` user account. See [Dedicated deploy user](#dedicated-deploy-user). |
+| `SERVER_SSH_HOST_KEY` | The server's SSH host key line as returned by `ssh-keyscan`. Used to pre-populate `known_hosts` so strict host-key checking is enforced. See [Obtaining the host key](#obtaining-the-host-key). |
+| `SERVER_HOST` | Tailscale hostname or IP address of the server. |
+| `SERVER_USER` | SSH username — should be `deploy`, not `root`. See [Dedicated deploy user](#dedicated-deploy-user). |
+| `TMDB_API_KEY` | API key for [The Movie Database (TMDB)](https://developer.themoviedb.org/). Used by the movie picker feature. Register at [themoviedb.org](https://www.themoviedb.org/settings/api). |
 
 ---
 
@@ -52,7 +53,6 @@ Set these under **Settings → Environments → prod → Environment secrets**.
 | `GOOGLE_OAUTH2_CLIENT_SECRET` | Google OAuth 2.0 client secret | Google Cloud Console → APIs & Services → Credentials |
 | `GOOGLE_OAUTH2_COOKIE_SECRET` | 32-byte random secret for signing production OAuth session cookies | `python3 -c "import secrets, base64; print(base64.b64encode(secrets.token_bytes(32)).decode())"` |
 | `OAUTH2_AUTHORIZED_EMAILS` | Comma-separated Google email addresses allowed to log in | Set to your own Google account(s) |
-| `TMDB_API_KEY` | API key for [The Movie Database (TMDB)](https://developer.themoviedb.org/) | Register at [themoviedb.org](https://www.themoviedb.org/settings/api) |
 
 ---
 
