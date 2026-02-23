@@ -1,0 +1,46 @@
+# Traefik static configuration
+# log:
+#   level: DEBUG
+
+accessLog:
+  fields:
+    names:
+      ClientHost: keep
+      Authorization: drop
+      User-Agent: keep
+      RequestHost: keep
+      ClientUsername: keep
+      Headers.X-Auth-Request-Email: keep
+
+api:
+  dashboard: true
+  insecure: false
+  debug: true
+
+# metrics:
+#   prometheus:
+#     entryPoint: metrics
+
+ping: {}
+
+entryPoints:
+  websecure:
+    address: ":443"
+  # metrics:
+  #   address: ":8082"
+
+providers:
+  docker:
+    exposedByDefault: false
+    network: web
+  file:
+    directory: /etc/traefik/config
+    watch: true
+
+certificatesResolvers:
+  cloudflare:
+    acme:
+      email: "${CLOUDFLARE_API_EMAIL}"
+      storage: /letsencrypt/acme.json
+      dnsChallenge:
+        provider: cloudflare

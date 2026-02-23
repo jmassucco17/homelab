@@ -1,0 +1,28 @@
+# Dynamic Traefik configuration: middlewares and internal service routers.
+# This file is loaded by the file provider (watch: true) and hot-reloads on change.
+http:
+  routers:
+    traefik:
+      rule: "Host(`traefik.jamesmassucco.com`)"
+      entryPoints:
+        - websecure
+      service: api@internal
+      tls:
+        certResolver: cloudflare
+      middlewares:
+        - oauth-auth
+        - ratelimit
+
+  middlewares:
+    ratelimit:
+      rateLimit:
+        average: 50
+        burst: 100
+
+    oauth-auth:
+      forwardAuth:
+        address: "https://oauth.jamesmassucco.com/"
+        trustForwardHeader: true
+        authResponseHeaders:
+          - "X-Auth-Request-User"
+          - "X-Auth-Request-Email"

@@ -3,41 +3,6 @@ services:
   traefik:
     image: traefik:v3.6
     container_name: traefik
-    command:
-      # Debug logging
-      # - '--log.level=DEBUG'
-      # Keep track of users accessing the application
-      - '--accesslog=true'
-      - '--accesslog.fields.names.ClientHost=keep'
-      - '--accesslog.fields.names.Authorization=drop'
-      - '--accesslog.fields.names.User-Agent=keep'
-      - '--accesslog.fields.names.RequestHost=keep'
-      - '--accesslog.fields.names.ClientUsername=keep'
-      - '--accesslog.fields.names.Headers.X-Auth-Request-Email=keep'
-      # Enable dashboard
-      - '--api.dashboard=true'
-      - '--api.insecure=false'
-      - '--api.debug=true'
-      # Expose metrics to Prometheus
-      # - '--metrics.prometheus=true'
-      # - '--metrics.prometheus.entrypoint=metrics'
-      # - '--entrypoints.metrics.address=:8082'
-      # Enable ping endpoint for healthcheck
-      - '--ping=true'
-      # HTTPS only
-      - '--entrypoints.websecure.address=:443'
-      # Enable for docker but only if they have the right labels
-      - '--providers.docker=true'
-      - '--providers.docker.exposedbydefault=false'
-      - '--providers.docker.network=web'
-      # Cloudflare DNS settings
-      - '--certificatesresolvers.cloudflare.acme.dnschallenge=true'
-      - '--certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare'
-      - '--certificatesresolvers.cloudflare.acme.email=${CLOUDFLARE_API_EMAIL}'
-      - '--certificatesresolvers.cloudflare.acme.storage=/letsencrypt/acme.json'
-      # Only allow Cloudflare IPs (requires Cloudflare proxying)
-      - '--entrypoints.websecure.forwardedHeaders.trustedIPs=${CLOUDFLARE_TRUSTED_IPS}'
-      - '--entrypoints.websecure.forwardedHeaders.insecure=true'
     ports:
       - '443:443'
       # Expose metrics
@@ -46,28 +11,19 @@ services:
       - '/var/run/docker.sock:/var/run/docker.sock:ro'
       # Ensure this file has 600 permissions
       - './acme.json:/letsencrypt/acme.json'
+      - './traefik.yml:/etc/traefik/traefik.yml:ro'
+      - './config:/etc/traefik/config:ro'
     networks:
       - web
     env_file:
       - .env
     environment:
       - CF_DNS_API_TOKEN=${CLOUDFLARE_API_TOKEN}
-    labels:
-      # Use traefik to provide HTTPS endpoint for dashboard
-      - traefik.enable=true
-      - traefik.http.routers.traefik.rule=Host(`traefik.jamesmassucco.com`)
-      - traefik.http.routers.traefik.entrypoints=websecure
-      - traefik.http.routers.traefik.service=api@internal
-      - traefik.http.routers.traefik.tls.certresolver=cloudflare
-      # Setup middlewares
-      - traefik.http.routers.traefik.middlewares=oauth-auth,ratelimit
-      # Rate limit settings
-      - traefik.http.middlewares.ratelimit.ratelimit.average=50
-      - traefik.http.middlewares.ratelimit.ratelimit.burst=100
-      # Configure provider for OAuth
-      - traefik.http.middlewares.oauth-auth.forwardauth.address=https://oauth.jamesmassucco.com/
-      - traefik.http.middlewares.oauth-auth.forwardauth.trustForwardHeader=true
-      - traefik.http.middlewares.oauth-auth.forwardauth.authResponseHeaders=X-Auth-Request-User,X-Auth-Request-Email
+      # Traefik env-var override: trustedIPs is a list type and cannot be expanded
+      # from a comma-separated env var inside traefik.yml, so we use the TRAEFIK_
+      # env var naming convention instead (comma-separated values are accepted).
+      - TRAEFIK_ENTRYPOINTS_WEBSECURE_FORWARDEDHEADERS_TRUSTEDIPS=${CLOUDFLARE_TRUSTED_IPS}
+      - TRAEFIK_ENTRYPOINTS_WEBSECURE_FORWARDEDHEADERS_INSECURE=true
     healthcheck:
       test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:8080/ping']
       interval: 5s
