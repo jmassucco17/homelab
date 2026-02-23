@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base.html.jinja2" %}
 
 {% block title %}Catan Lobby{% endblock %}
 
@@ -6,7 +6,20 @@
   <h1>🏝️ Settlers of Catan</h1>
   <p>Create a new game room or join an existing one with a room code.</p>
 
-  <section class="catan-lobby">
+  <section id="catan-lobby" class="catan-lobby">
+    <!-- Shared player-name field (required for both Create and Join) -->
+    <div class="catan-form-group">
+      <label for="player-name-input">Your name</label>
+      <input
+        type="text"
+        id="player-name-input"
+        placeholder="Your name"
+        maxlength="20"
+        autocomplete="off"
+        autocapitalize="words"
+      />
+    </div>
+
     <div class="grid">
       <!-- Create a new room -->
       <div class="card">
@@ -25,15 +38,15 @@
         <div class="catan-form-group">
           <input
             type="text"
-            id="input-room-code"
+            id="join-room-code"
             placeholder="Room code (e.g. AB12)"
             maxlength="4"
-            style="text-transform: uppercase"
+            autocomplete="off"
+            autocapitalize="characters"
           />
-          <input type="text" id="input-player-name" placeholder="Your name" maxlength="20" />
-          <button id="btn-join-room" class="btn-primary">Join Room</button>
+          <button id="join-room-btn" class="btn-primary">Join Room</button>
         </div>
-        <p id="join-room-error" class="catan-error" style="display: none"></p>
+        <p id="lobby-error" class="catan-error" style="display: none"></p>
       </div>
     </div>
 
@@ -49,5 +62,5 @@
 {% endblock %}
 
 {% block extra_scripts %}
-  <script src="/static/catan/catan.js" defer></script>
+  <script type="module" src="/static/catan/catan.js"></script>
 {% endblock %}

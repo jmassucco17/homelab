@@ -46,6 +46,54 @@ class TestCatanRouter(unittest.TestCase):
         resp = self.client.get('/catan')
         self.assertIn('catan.js', resp.text)
 
+    def test_catan_lobby_has_catan_lobby_id(self) -> None:
+        """Lobby page has id='catan-lobby' so catan.js can detect the page."""
+        resp = self.client.get('/catan')
+        self.assertIn('id="catan-lobby"', resp.text)
+
+    def test_catan_lobby_has_player_name_input(self) -> None:
+        """Lobby page has the shared player-name input field."""
+        resp = self.client.get('/catan')
+        self.assertIn('player-name-input', resp.text)
+
+    def test_catan_lobby_has_join_room_inputs(self) -> None:
+        """Lobby page has the join-room code input and button."""
+        resp = self.client.get('/catan')
+        self.assertIn('join-room-code', resp.text)
+        self.assertIn('join-room-btn', resp.text)
+
+    def test_catan_lobby_script_is_module(self) -> None:
+        """Lobby page loads catan.js as a module so ES imports work."""
+        resp = self.client.get('/catan')
+        self.assertIn('type="module"', resp.text)
+
+    def test_catan_game_returns_html(self) -> None:
+        """GET /catan/game renders an HTML page."""
+        resp = self.client.get('/catan/game')
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('text/html', resp.headers['content-type'])
+        self.assertIn('<html', resp.text.lower())
+
+    def test_catan_game_has_board_canvas(self) -> None:
+        """Game page contains the board canvas element."""
+        resp = self.client.get('/catan/game')
+        self.assertIn('catan-board-canvas', resp.text)
+
+    def test_catan_game_has_waiting_room(self) -> None:
+        """Game page contains the waiting-room section."""
+        resp = self.client.get('/catan/game')
+        self.assertIn('waiting-room', resp.text)
+
+    def test_catan_game_has_side_panel(self) -> None:
+        """Game page contains the UI side panel."""
+        resp = self.client.get('/catan/game')
+        self.assertIn('catan-ui-container', resp.text)
+
+    def test_catan_game_loads_catan_script(self) -> None:
+        """Game page references catan.js."""
+        resp = self.client.get('/catan/game')
+        self.assertIn('catan.js', resp.text)
+
     def test_create_room_returns_code(self) -> None:
         """POST /catan/rooms returns a 4-character room code."""
         resp = self.client.post('/catan/rooms')

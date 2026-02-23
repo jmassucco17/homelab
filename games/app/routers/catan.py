@@ -65,6 +65,12 @@ async def catan_lobby(request: fastapi.Request) -> fastapi.responses.HTMLRespons
     return templates.TemplateResponse(request=request, name='catan_lobby.html.jinja2')
 
 
+@router.get('/catan/game', response_class=fastapi.responses.HTMLResponse)
+async def catan_game(request: fastapi.Request) -> fastapi.responses.HTMLResponse:
+    """Render the Catan in-game page (waiting room + board)."""
+    return templates.TemplateResponse(request=request, name='catan_game.html.jinja2')
+
+
 @router.post('/catan/rooms', response_model=RoomCreatedResponse)
 async def create_room() -> RoomCreatedResponse:
     """Create a new game room and return its 4-character code."""

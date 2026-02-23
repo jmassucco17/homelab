@@ -29,7 +29,7 @@ app.include_router(catan.router)
 @app.get('/', response_class=fastapi.responses.HTMLResponse)
 async def index(request: fastapi.Request) -> fastapi.responses.HTMLResponse:
     """Render the games landing page."""
-    return templates.TemplateResponse(request=request, name='index.html')
+    return templates.TemplateResponse(request=request, name='index.html.jinja2')
 
 
 @app.api_route('/health', methods=['GET', 'HEAD'])
