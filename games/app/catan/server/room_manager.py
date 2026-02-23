@@ -142,7 +142,9 @@ class RoomManager:
 
         existing = room.get_player_by_name(player_name)
         if existing is not None:
-            # Player already has a seat — update their WebSocket connection.
+            if existing.is_connected:
+                return None
+            # Player already has a seat — reattach their WebSocket.
             existing.websocket = websocket
             return existing
 

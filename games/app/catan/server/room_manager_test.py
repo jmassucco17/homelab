@@ -117,14 +117,16 @@ class TestRoomManagerJoin(unittest.TestCase):
         self.assertIs(reconnected, slot)
         self.assertIs(slot.websocket, ws2)
 
-    def test_reconnect_works_even_when_currently_connected(self) -> None:
-        """A player may call join_room again (e.g. page reload) and reclaim the slot."""
+    def test_reconnect_blocked_when_still_connected(self) -> None:
+        """join_room returns None if the player's slot is still connected."""
         slot = self.mgr.join_room(self.code, 'Alice', self.ws)
         assert slot is not None
         ws2 = unittest.mock.MagicMock(spec=fastapi.WebSocket)
-        reconnected = self.mgr.join_room(self.code, 'Alice', ws2)
-        self.assertIs(reconnected, slot)
-        self.assertIs(slot.websocket, ws2)
+        # Alice is still connected (websocket is not None) — should be rejected.
+        result = self.mgr.join_room(self.code, 'Alice', ws2)
+        self.assertIsNone(result)
+        # Original websocket must be unchanged.
+        self.assertIs(slot.websocket, self.ws)
 
 
 class TestRoomManagerDisconnect(unittest.TestCase):

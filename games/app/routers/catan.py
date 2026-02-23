@@ -62,7 +62,7 @@ class RoomStatusResponse(pydantic.BaseModel):
 @router.get('/catan', response_class=fastapi.responses.HTMLResponse)
 async def catan_lobby(request: fastapi.Request) -> fastapi.responses.HTMLResponse:
     """Render the Catan lobby/landing page."""
-    return templates.TemplateResponse(request=request, name='catan_lobby.html')
+    return templates.TemplateResponse(request=request, name='catan_lobby.html.jinja2')
 
 
 @router.post('/catan/rooms', response_model=RoomCreatedResponse)

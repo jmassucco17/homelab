@@ -2,7 +2,7 @@
 
 Registers the ``/catan/ws/{room_code}/{player_name}`` WebSocket endpoint.
 Each connecting client is either added to an existing room as a new player
-or reconnected to their existing seat (within the reconnect window).
+or reconnected to their existing seat.
 
 Message flow
 ------------
@@ -13,7 +13,7 @@ Message flow
 * Invalid action → server sends :class:`~.ws_messages.ErrorMessage` to the
   acting player only.
 * Game ends → server broadcasts :class:`~.ws_messages.GameOver`.
-* Client disconnects → slot held indefinitely; player may reconnect at any time.
+* Client disconnects → slot is held; player may reconnect at any time.
 """
 
 from __future__ import annotations
@@ -46,7 +46,7 @@ async def catan_ws(
     The room must already exist (created via ``POST /catan/rooms``).  Players
     identify themselves by name in the URL; the first four distinct names
     get seats 0–3.  Subsequent connections with the same name reconnect to
-    the existing seat within the reconnect window.
+    the existing seat if it is currently vacant.
     """
     # Always accept before sending any message (WebSocket protocol requires it).
     await websocket.accept()
