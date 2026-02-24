@@ -11,8 +11,8 @@ import uuid
 
 import pydantic
 
-from games.app.catan.models import actions, board, game_state
-from games.app.catan.models import player as player_module
+from ..models import actions, board, game_state
+from ..models import player as player_module
 
 
 class TradeStatus(enum.StrEnum):

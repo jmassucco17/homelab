@@ -9,6 +9,7 @@ import fastapi
 
 from games.app.catan.models import game_state as gs_module
 from games.app.catan.server import room_manager as rm_module
+from games.app.catan.server.room_manager import generate_ai_name
 
 
 class TestRoomManager(unittest.TestCase):
@@ -182,6 +183,34 @@ class TestRoomManagerDisconnect(unittest.TestCase):
         self.mgr.disconnect_player(self.code, 'NoSuchPlayer')  # should not raise
 
 
+class TestAINameGeneration(unittest.TestCase):
+    """Tests for generate_ai_name function."""
+
+    def test_generate_ai_name_returns_string(self) -> None:
+        """generate_ai_name returns a non-empty string."""
+        name = generate_ai_name()
+        self.assertIsInstance(name, str)
+        self.assertGreater(len(name), 0)
+
+    def test_generate_ai_name_uses_valid_elements(self) -> None:
+        """Generated names only contain valid name elements."""
+        valid_elements = {'Joe', 'John', 'Jicky'}
+        for _ in range(20):  # Test multiple times due to randomness
+            name = generate_ai_name()
+            words = name.split()
+            self.assertGreaterEqual(len(words), 1)
+            self.assertLessEqual(len(words), 2)
+            for word in words:
+                self.assertIn(word, valid_elements)
+
+    def test_generate_ai_name_no_duplicates(self) -> None:
+        """Generated names don't contain duplicate elements."""
+        for _ in range(20):  # Test multiple times due to randomness
+            name = generate_ai_name()
+            words = name.split()
+            self.assertEqual(len(words), len(set(words)))
+
+
 class TestRoomManagerAddAI(unittest.TestCase):
     """Tests for RoomManager.add_ai_player."""
 
@@ -251,6 +280,29 @@ class TestRoomManagerAddAI(unittest.TestCase):
         room = self.mgr.get_room(self.code)
         assert room is not None
         self.assertEqual(room.player_count, 3)
+
+    def test_add_ai_player_name_format(self) -> None:
+        """AI player name follows the format '<name> (AI, <difficulty>)'."""
+        slot = self.mgr.add_ai_player(self.code, 'hard')
+        assert slot is not None
+        # Name should end with (AI, hard)
+        self.assertTrue(slot.name.endswith('(AI, hard)'))
+        # Name should start with valid elements
+        name_part = slot.name.replace(' (AI, hard)', '')
+        words = name_part.split()
+        valid_elements = {'Joe', 'John', 'Jicky'}
+        for word in words:
+            self.assertIn(word, valid_elements)
+
+    def test_add_multiple_ai_players_different_names(self) -> None:
+        """Multiple AI players can have different generated names."""
+        # Note: Due to randomness, names *could* be the same, but statistically unlikely
+        # with multiple attempts. We'll just verify format is correct for each.
+        slots = [self.mgr.add_ai_player(self.code, 'easy') for _ in range(3)]
+        for slot in slots:
+            assert slot is not None
+            self.assertTrue(slot.name.endswith('(AI, easy)'))
+            self.assertIsInstance(slot.name, str)
 
 
 class TestRoomManagerStartGame(unittest.TestCase):

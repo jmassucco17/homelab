@@ -56,6 +56,8 @@ class TurnState(pydantic.BaseModel):
     discard_player_indices: list[int] = pydantic.Field(default_factory=lambda: [])
     # Active trade offer ID, if any.
     active_trade_id: str | None = None
+    # Vertex ID of most recent settlement during setup (for roads).
+    setup_settlement_vertex: int | None = None
 
 
 class GameState(pydantic.BaseModel):

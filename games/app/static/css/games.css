@@ -544,6 +544,38 @@
   background: var(--color-section-bg);
   border: 1px solid var(--color-card-border);
   border-radius: var(--radius-sm);
+  transition: transform 0.1s ease, border-color 0.1s ease;
+}
+
+.resource-card.resource-change {
+  animation: resource-bounce 0.5s ease;
+}
+
+@keyframes resource-bounce {
+  0% {
+    transform: scale(1);
+    border-color: var(--color-card-border);
+  }
+
+  25% {
+    transform: scale(1.15);
+    border-color: var(--color-accent);
+  }
+
+  50% {
+    transform: scale(0.95);
+    border-color: var(--color-accent);
+  }
+
+  75% {
+    transform: scale(1.05);
+    border-color: var(--color-accent);
+  }
+
+  100% {
+    transform: scale(1);
+    border-color: var(--color-card-border);
+  }
 }
 
 .res-emoji {
@@ -716,6 +748,75 @@
   color: var(--color-text);
 }
 
+/* Trade notifications */
+.catan-trade-notifications {
+  margin: 0.5rem 0;
+}
+
+.trade-notification {
+  background: var(--color-card-bg);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem;
+}
+
+.trade-notification.mine {
+  border-color: #3498db;
+}
+
+.trade-notification.incoming {
+  border-color: #e67e22;
+}
+
+.trade-notification h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: var(--color-title-text);
+}
+
+.trade-notification p {
+  margin: 0.25rem 0;
+  font-size: 0.8rem;
+  color: var(--color-text);
+}
+
+.trade-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.trade-action-btn {
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  border-radius: var(--radius-sm);
+  transition: opacity 0.12s ease;
+}
+
+.trade-action-btn.accept-btn {
+  background: #27ae60;
+  color: #fff;
+}
+
+.trade-action-btn.reject-btn {
+  background: #e74c3c;
+  color: #fff;
+}
+
+.trade-action-btn.cancel-btn {
+  background: #95a5a6;
+  color: #fff;
+}
+
+.trade-action-btn:hover {
+  opacity: 0.85;
+}
+
 /* Toasts */
 .toast-container {
   position: fixed;
@@ -790,6 +891,48 @@
   font-size: 1.4rem;
   font-weight: 700;
   color: var(--color-title-text);
+}
+
+/* Modal overlay (reusable for AI difficulty selection) */
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 65%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+}
+
+.modal-card {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-lg);
+  padding: 2rem 2.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 300px;
+}
+
+.modal-card h3 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--color-title-text);
+  margin: 0;
+}
+
+.modal-card p {
+  margin: 0;
+  color: var(--color-body-text);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 /* Utility */

@@ -23,6 +23,10 @@ export class CatanWSClient {
    * @param {(msg: object) => void}        options.onGameStarted
    * @param {(msg: object) => void}        options.onGameOver
    * @param {(status: string) => void}     options.onConnectionChange
+   * @param {(msg: object) => void}        options.onTradeProposed
+   * @param {(msg: object) => void}        options.onTradeAccepted
+   * @param {(msg: object) => void}        options.onTradeRejected
+   * @param {(msg: object) => void}        options.onTradeCancelled
    */
   constructor(roomCode, playerName, options = {}) {
     this.roomCode = roomCode
@@ -41,6 +45,10 @@ export class CatanWSClient {
     this.onGameStarted = options.onGameStarted || (() => {})
     this.onGameOver = options.onGameOver || (() => {})
     this.onConnectionChange = options.onConnectionChange || (() => {})
+    this.onTradeProposed = options.onTradeProposed || (() => {})
+    this.onTradeAccepted = options.onTradeAccepted || (() => {})
+    this.onTradeRejected = options.onTradeRejected || (() => {})
+    this.onTradeCancelled = options.onTradeCancelled || (() => {})
   }
 
   // -------------------------------------------------------------------------
@@ -130,6 +138,18 @@ export class CatanWSClient {
         break
       case 'game_over':
         this.onGameOver(msg)
+        break
+      case 'trade_proposed':
+        this.onTradeProposed(msg)
+        break
+      case 'trade_accepted':
+        this.onTradeAccepted(msg)
+        break
+      case 'trade_rejected':
+        this.onTradeRejected(msg)
+        break
+      case 'trade_cancelled':
+        this.onTradeCancelled(msg)
         break
       default:
         console.warn('[CatanWS] Unknown message type:', msg.message_type)

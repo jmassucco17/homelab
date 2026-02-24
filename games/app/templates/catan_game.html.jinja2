@@ -63,6 +63,9 @@
         <!-- Roll dice / end turn / bank trade buttons -->
         <div id="catan-action-buttons" class="catan-action-buttons"></div>
 
+        <!-- Trade notifications (shows active trade offers) -->
+        <div id="catan-trade-notifications" class="catan-trade-notifications" style="display: none"></div>
+
         <!-- Contextual build hint (shown briefly when player clicks a build button) -->
         <div id="catan-build-hint" class="catan-build-hint" style="display: none"></div>
 
@@ -83,6 +86,22 @@
       <div class="game-over-card">
         <div id="game-over-message" class="game-over-message"></div>
         <a href="/catan" class="lobby-btn primary">Back to Lobby</a>
+      </div>
+    </div>
+
+    <!-- ------------------------------------------------------------------ -->
+    <!-- AI Difficulty Selection Modal                                       -->
+    <!-- ------------------------------------------------------------------ -->
+    <div id="ai-difficulty-modal" class="modal-overlay" style="display: none">
+      <div class="modal-card">
+        <h3>Select AI Difficulty</h3>
+        <p>Choose the difficulty level for the AI player:</p>
+        <div class="modal-actions">
+          <button class="lobby-btn" data-difficulty="easy">Easy</button>
+          <button class="lobby-btn" data-difficulty="medium">Medium</button>
+          <button class="lobby-btn" data-difficulty="hard">Hard</button>
+        </div>
+        <button id="ai-modal-cancel" class="lobby-btn secondary" style="margin-top: 10px">Cancel</button>
       </div>
     </div>
   </div>
