@@ -68,6 +68,19 @@ jobs:
       - name: Run stylelint
         run: npm run lint:css
 
+  lint-ts:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Run TypeScript type-check
+        run: npm run lint:ts
+
   prettier:
     runs-on: ubuntu-latest
     permissions:

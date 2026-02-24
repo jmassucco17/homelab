@@ -300,7 +300,8 @@ export class CatanBoardRenderer {
   // -------------------------------------------------------------------------
 
   _computeGeometry(): void {
-    const positions = this.board!.tiles.map((t): [number, number, number] => [
+    if (!this.board) return
+    const positions = this.board.tiles.map((t): [number, number, number] => [
       t.coord.q,
       t.coord.r,
       t.coord.s,
@@ -345,7 +346,7 @@ export class CatanBoardRenderer {
 
     // ---- Edge pixel positions (midpoint of two endpoint vertices) ----
     this.edgePixels = {}
-    for (const edge of this.board!.edges) {
+    for (const edge of this.board.edges) {
       const p0 = this.vertexPixels[edge.vertex_ids[0]]
       const p1 = this.vertexPixels[edge.vertex_ids[1]]
       if (p0 && p1) {
@@ -407,7 +408,8 @@ export class CatanBoardRenderer {
   }
 
   _drawTile(tileIndex: number): void {
-    const board = this.board!
+    if (!this.board) return
+    const board = this.board
     const tile = board.tiles[tileIndex]
     const center = this.tileCenters[tileIndex]
     const { ctx, hexSize } = this
@@ -541,8 +543,9 @@ export class CatanBoardRenderer {
   }
 
   _drawPorts(): void {
+    if (!this.board) return
     const { ctx, hexSize } = this
-    const board = this.board!
+    const board = this.board
     if (!board.ports) return
 
     for (const port of board.ports) {

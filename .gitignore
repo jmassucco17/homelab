@@ -191,3 +191,6 @@ acme.json
 # Databases
 *.db
 *.db.backup
+
+# Compiled TypeScript output (games frontend)
+games/app/static/**/*.js

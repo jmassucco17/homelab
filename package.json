@@ -24,11 +24,14 @@
     "prettier-plugin-jinja-template": "^2.1.0",
     "pyright": "^1.1.408",
     "stylelint": "^17.3.0",
-    "stylelint-config-standard": "^40.0.0"
+    "stylelint-config-standard": "^40.0.0",
+    "typescript": "^5.9.3"
   },
   "scripts": {
     "build:css": "postcss shared-assets/assets/styles/main.src.css -o shared-assets/assets/styles/main.css",
+    "build:ts": "tsc -p games/app/static/tsconfig.json",
     "lint:css": "stylelint '**/*.css' --ignore-pattern 'node_modules/**'",
+    "lint:ts": "tsc -p games/app/static/tsconfig.json --noEmit",
     "lint:types": "pyright"
   }
 }

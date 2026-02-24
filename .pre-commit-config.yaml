@@ -15,6 +15,12 @@ repos:
         entry: npx prettier --write
         language: system
         files: \.(html|htm)$
+      - id: tsc
+        name: TypeScript type-check (games frontend)
+        entry: npx tsc -p games/app/static/tsconfig.json --noEmit
+        language: system
+        files: games/app/static/.*\.ts$
+        pass_filenames: false
       - id: stylelint
         name: stylelint
         entry: npx stylelint --fix

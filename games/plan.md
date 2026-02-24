@@ -17,7 +17,7 @@ The plan is structured so that most phases can be executed in **parallel by inde
 |---|---|---|
 | Backend | Python 3.12, FastAPI, uvicorn | Consistent with existing services (blog, travel-site) |
 | Real-time comms | FastAPI WebSockets | Built-in to FastAPI, no extra dependencies |
-| Frontend | Vanilla HTML5 + CSS + JavaScript (Canvas API for game rendering) | No build toolchain needed; consistent with existing static-site approach |
+| Frontend | TypeScript (ES2020 modules, Canvas API for game rendering) | Type safety consistent with backend strict Pyright; compiled to JS by Docker build; no runtime overhead |
 | Templating | Jinja2 | Already in `requirements.txt` |
 | Container | Docker + docker-compose | Consistent with all other services |
 | Routing | Traefik (existing) | Add `games.jamesmassucco.com` label |
@@ -121,7 +121,7 @@ Implemented all shared data models and API contracts: `Board` with cube-coordina
 
 **Agent: catan-frontend-agent** — depends on Phase 3 WS message schemas; runs in parallel with Phases 4, 5, 7, 8
 
-- [ ] **Board renderer** (`games/app/static/catan/board.js`)
+- [ ] **Board renderer** (`games/app/static/catan/board.ts`)
   - SVG or Canvas rendering of hexagonal board
   - Draw tiles with terrain icons/colors, number tokens
   - Highlight valid placement vertices/edges (fed from server's legal actions)
@@ -130,20 +130,20 @@ Implemented all shared data models and API contracts: `Board` with cube-coordina
   - Responsive sizing; scale canvas by `window.devicePixelRatio` for sharp Retina rendering on iPhone
   - Touch event handling for tile/vertex/edge selection (`touchstart` / `touchend`); tap targets sized ≥44×44 px per Apple HIG
   - Pinch-to-zoom and pan on mobile for the full board view
-- [ ] **UI components** (`games/app/static/catan/ui.js`)
+- [ ] **UI components** (`games/app/static/catan/ui.ts`)
   - Player hand panel (resource counts, dev cards)
   - Build menu (road, settlement, city, dev card) with cost display; grayed out when insufficient resources
   - Trade panel (bank trade, port trade, player-to-player offer)
   - Dice roll animation
   - Victory point tracker for all players
   - End-turn button; dev card play buttons
-- [ ] **WebSocket client** (`games/app/static/catan/ws_client.js`)
+- [ ] **WebSocket client** (`games/app/static/catan/ws_client.ts`)
   - Connect to `/catan/ws/{room_code}/{player_name}`
   - Send `SubmitAction` on player interaction
   - Receive `GameStateUpdate` → reconcile local state → re-render
   - Display `ErrorMessage` as toast notification
   - Handle `GameStarted` / `GameOver` screens
-- [ ] **Lobby UI** (`games/app/templates/catan_lobby.html` + `catan.js`)
+- [ ] **Lobby UI** (`games/app/templates/catan_lobby.html` + `catan.ts`)
   - Create room / join by room code form
   - Waiting room showing joined players; "Start Game" button for room creator (≥2 players)
   - Add AI player button (triggers Phase 8 AI slot)
@@ -266,15 +266,16 @@ games/
     │   ├── catan_lobby.html
     │   └── catan_game.html
     ├── static/
+    │   ├── tsconfig.json                # TypeScript compiler config
     │   ├── snake/
-    │   │   └── snake.js
+    │   │   └── snake.ts                 # compiled to snake.js at build time
     │   ├── pong/
-    │   │   └── pong.js
+    │   │   └── pong.ts                  # compiled to pong.js at build time
     │   └── catan/
-    │       ├── board.js
-    │       ├── ui.js
-    │       ├── ws_client.js
-    │       └── catan.js
+    │       ├── board.ts                 # compiled to board.js at build time
+    │       ├── ui.ts                    # compiled to ui.js at build time
+    │       ├── ws_client.ts             # compiled to ws_client.js at build time
+    │       └── catan.ts                 # compiled to catan.js at build time
     ├── catan/
     │   ├── models/
     │   │   ├── board.py
