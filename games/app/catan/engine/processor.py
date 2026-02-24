@@ -17,6 +17,21 @@ _SETUP_PHASES = (
     game_state.GamePhase.SETUP_BACKWARD,
 )
 
+# Emoji labels for each resource type used in event messages.
+_RESOURCE_EMOJI: dict[str, str] = {
+    'wood': '🌲',
+    'brick': '🧱',
+    'wheat': '🌾',
+    'sheep': '🐑',
+    'ore': '⛰️',
+}
+
+
+def _res_emoji(resource: board.ResourceType) -> str:
+    """Return the emoji for *resource*, falling back to its string value."""
+    return _RESOURCE_EMOJI.get(resource.value, resource.value)
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -31,11 +46,30 @@ def apply_action(
     On failure an :class:`ActionResult` with ``success=False`` is returned.
     """
     state = state.model_copy(deep=True)
+    state.recent_events = []
+
+    # Snapshot award holders before the action to detect changes afterwards.
+    prev_longest_road = state.longest_road_owner
+    prev_largest_army = state.largest_army_owner
 
     try:
         _dispatch(state, action)
     except ValueError as exc:
         return actions.ActionResult(success=False, error_message=str(exc))
+
+    # Emit events when special awards change hands.
+    if (
+        state.longest_road_owner != prev_longest_road
+        and state.longest_road_owner is not None
+    ):
+        name = state.players[state.longest_road_owner].name
+        state.recent_events.append(f'🛣️ {name} takes the Longest Road!')
+    if (
+        state.largest_army_owner != prev_largest_army
+        and state.largest_army_owner is not None
+    ):
+        name = state.players[state.largest_army_owner].name
+        state.recent_events.append(f'⚔️ {name} takes the Largest Army!')
 
     # Check for a winner after every action.
     if state.phase != game_state.GamePhase.ENDED:
@@ -118,6 +152,8 @@ def _apply_place_settlement(
         if action.vertex_id in port.vertex_ids and port.port_type not in p.ports_owned:
             p.ports_owned.append(port.port_type)
 
+    state.recent_events.append(f'🏠 {p.name} placed a settlement')
+
     # During setup, next action is to place a road.
     if state.phase in _SETUP_PHASES:
         state.turn_state.pending_action = game_state.PendingActionType.PLACE_ROAD
@@ -125,7 +161,11 @@ def _apply_place_settlement(
 
         # During SETUP_BACKWARD (second settlement placement), award initial resources
         if state.phase == game_state.GamePhase.SETUP_BACKWARD:
+            resources_before = p.resources.model_copy()
             _award_resources_for_vertex(state, action.vertex_id, action.player_index)
+            gained = _format_resource_gains(p.resources, resources_before)
+            if gained:
+                state.recent_events.append(f'  → {p.name} received {gained}')
 
 
 def _apply_place_road(state: game_state.GameState, action: actions.PlaceRoad) -> None:
@@ -156,6 +196,8 @@ def _apply_place_road(state: game_state.GameState, action: actions.PlaceRoad) ->
 
     edge.road = board.Road(player_index=action.player_index)
     p.build_inventory.roads_remaining -= 1
+
+    state.recent_events.append(f'🛤️ {p.name} built a road')
 
     # Recalculate longest road.
     new_length = rules.calculate_longest_road(state.board, action.player_index)
@@ -209,6 +251,8 @@ def _apply_place_city(state: game_state.GameState, action: actions.PlaceCity) ->
     p.build_inventory.settlements_remaining += 1
     p.victory_points += 1  # was 1 for settlement, now 2 total
 
+    state.recent_events.append(f'🏙️ {p.name} upgraded a settlement to a city')
+
 
 def _apply_roll_dice(state: game_state.GameState, action: actions.RollDice) -> None:
     roll = random.randint(1, 6) + random.randint(1, 6)
@@ -216,7 +260,11 @@ def _apply_roll_dice(state: game_state.GameState, action: actions.RollDice) -> N
     state.turn_state.roll_value = roll
     state.turn_state.has_rolled = True
 
+    p_name = state.players[action.player_index].name
+    state.recent_events.append(f'🎲 {p_name} rolled a {roll}!')
+
     if roll == 7:
+        state.recent_events.append('💀 The robber activates!')
         # Find players who must discard.
         must_discard = [
             p.player_index for p in state.players if p.resources.total() > 7
@@ -229,7 +277,17 @@ def _apply_roll_dice(state: game_state.GameState, action: actions.RollDice) -> N
         else:
             state.turn_state.pending_action = game_state.PendingActionType.MOVE_ROBBER
     else:
+        # Snapshot resources before distribution to report gains per player.
+        resources_before = {
+            p.player_index: p.resources.model_copy() for p in state.players
+        }
         _distribute_resources(state, roll)
+        for p in state.players:
+            gained = _format_resource_gains(
+                p.resources, resources_before[p.player_index]
+            )
+            if gained:
+                state.recent_events.append(f'  → {p.name} received {gained}')
         state.turn_state.pending_action = game_state.PendingActionType.BUILD_OR_TRADE
 
 
@@ -305,6 +363,8 @@ def _apply_build_dev_card(
     card_type = player.DevCardType(state.dev_card_deck.pop())
     p.new_dev_cards = p.new_dev_cards.add(card_type)
 
+    state.recent_events.append(f'🃏 {p.name} bought a development card')
+
 
 def _apply_play_knight(state: game_state.GameState, action: actions.PlayKnight) -> None:
     p = state.players[action.player_index]
@@ -317,6 +377,8 @@ def _apply_play_knight(state: game_state.GameState, action: actions.PlayKnight) 
     # Check if largest army changes.
     new_holder = rules.get_largest_army_holder(state.players)
     _update_largest_army(state, new_holder)
+
+    state.recent_events.append(f'⚔️ {p.name} played a Knight card')
 
     state.turn_state.pending_action = game_state.PendingActionType.MOVE_ROBBER
 
@@ -332,6 +394,8 @@ def _apply_play_road_building(
     free = min(2, p.build_inventory.roads_remaining)
     state.turn_state.free_roads_remaining = free
 
+    state.recent_events.append(f'🛤️ {p.name} played Road Building')
+
 
 def _apply_play_year_of_plenty(
     state: game_state.GameState, action: actions.PlayYearOfPlenty
@@ -345,6 +409,12 @@ def _apply_play_year_of_plenty(
     gained = gained.with_resource(action.resource1, gained.get(action.resource1) + 1)
     gained = gained.with_resource(action.resource2, gained.get(action.resource2) + 1)
     p.resources = p.resources.add(gained)
+
+    r1 = _res_emoji(action.resource1)
+    r2 = _res_emoji(action.resource2)
+    state.recent_events.append(
+        f'🌟 {p.name} played Year of Plenty and took {r1} and {r2}'
+    )
 
 
 def _apply_play_monopoly(
@@ -366,6 +436,11 @@ def _apply_play_monopoly(
     current = p.resources.get(action.resource)
     p.resources = p.resources.with_resource(action.resource, current + total_stolen)
 
+    res_emoji = _res_emoji(action.resource)
+    state.recent_events.append(
+        f'💰 {p.name} played Monopoly on {res_emoji} and stole {total_stolen} card(s)!'
+    )
+
 
 def _apply_trade_with_bank(
     state: game_state.GameState, action: actions.TradeWithBank
@@ -378,6 +453,12 @@ def _apply_trade_with_bank(
     p.resources = p.resources.subtract(give_dict)
     current = p.resources.get(action.receiving)
     p.resources = p.resources.with_resource(action.receiving, current + 1)
+
+    give_emoji = _res_emoji(action.giving)
+    recv_emoji = _res_emoji(action.receiving)
+    state.recent_events.append(
+        f'🏦 {p.name} traded 4{give_emoji} → 1{recv_emoji} with the bank'
+    )
 
 
 def _apply_trade_with_port(
@@ -394,6 +475,12 @@ def _apply_trade_with_port(
     current = p.resources.get(action.receiving)
     p.resources = p.resources.with_resource(action.receiving, current + 1)
 
+    give_emoji = _res_emoji(action.giving)
+    recv_emoji = _res_emoji(action.receiving)
+    state.recent_events.append(
+        f'⚓ {p.name} traded {action.giving_count}{give_emoji} → 1{recv_emoji} at port'
+    )
+
 
 def _apply_end_turn(state: game_state.GameState, action: actions.EndTurn) -> None:
     # Move newly purchased dev cards to the playable hand.
@@ -406,12 +493,18 @@ def _apply_end_turn(state: game_state.GameState, action: actions.EndTurn) -> Non
 
     turn_manager.advance_turn(state)
 
+    next_player = state.players[state.turn_state.player_index]
+    state.recent_events.append(f"--- {next_player.name}'s turn ---")
+
 
 def _apply_move_robber(state: game_state.GameState, action: actions.MoveRobber) -> None:
     if action.tile_index == state.board.robber_tile_index:
         raise ValueError('Robber must move to a different tile.')
 
     state.board.robber_tile_index = action.tile_index
+
+    p_name = state.players[action.player_index].name
+    state.recent_events.append(f'🦹 {p_name} moved the robber')
 
     # Find adjacent players who have resources (excluding the acting player).
     candidates: set[int] = set()
@@ -451,6 +544,8 @@ def _apply_steal_resource(
     actor = state.players[action.player_index]
     actor.resources = actor.resources.add(player.Resources(**{chosen: 1}))
 
+    state.recent_events.append(f'🦹 {actor.name} stole a card from {target.name}')
+
     state.turn_state.pending_action = game_state.PendingActionType.BUILD_OR_TRADE
 
 
@@ -466,7 +561,10 @@ def _apply_discard_resources(
         if getattr(p.resources, res_name, 0) < amount:
             raise ValueError(f'Player does not have {amount} {res_name} to discard.')
 
+    total_discarded = sum(action.resources.values())
     p.resources = p.resources.subtract(action.resources)
+
+    state.recent_events.append(f'🗑️ {p.name} discarded {total_discarded} card(s)')
 
     state.turn_state.discard_player_indices.remove(action.player_index)
 
@@ -477,6 +575,19 @@ def _apply_discard_resources(
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
+
+def _format_resource_gains(current: player.Resources, before: player.Resources) -> str:
+    """Return a human-readable string describing resource gains, e.g. '2🌲 1🧱'.
+
+    Returns an empty string if nothing was gained.
+    """
+    parts: list[str] = []
+    for res_name, emoji in _RESOURCE_EMOJI.items():
+        delta = getattr(current, res_name, 0) - getattr(before, res_name, 0)
+        if delta > 0:
+            parts.append(f'{delta}{emoji}')
+    return ' '.join(parts)
 
 
 def _update_longest_road(state: game_state.GameState) -> None:

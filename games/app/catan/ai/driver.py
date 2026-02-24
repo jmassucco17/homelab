@@ -32,9 +32,12 @@ async def run_ai_turn(
     simulate thinking time.  The loop exits immediately after an
     :class:`~games.app.catan.models.actions.EndTurn` action is applied.
 
-    Returns the updated game state after all actions are applied.
+    Returns the updated game state after all actions are applied.  Events from
+    all individual actions are accumulated in ``state.recent_events`` so the
+    broadcast includes the full turn narrative.
     """
     await asyncio.sleep(AI_DELAY_SECONDS)
+    accumulated_events: list[str] = []
     while state.phase != game_state.GamePhase.ENDED:
         legal = rules.get_legal_actions(state, player_index)
         if not legal:
@@ -45,6 +48,11 @@ async def run_ai_turn(
             break
         assert result.updated_state is not None
         state = result.updated_state
+        accumulated_events.extend(state.recent_events)
         if isinstance(action, actions.EndTurn):
             break
+    # Attach all accumulated events so the single broadcast contains the full
+    # turn narrative.
+    state = state.model_copy(deep=True)
+    state.recent_events = accumulated_events
     return state
