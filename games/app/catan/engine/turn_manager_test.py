@@ -186,6 +186,45 @@ class TestTurnManager(unittest.TestCase):
         self.assertEqual(state.turn_state.player_index, 0)
         self.assertEqual(state.turn_state.pending_action, PendingActionType.ROLL_DICE)
 
+    def test_create_initial_state_with_ai_types(self) -> None:
+        """AI types are properly assigned to players when specified."""
+        state = create_initial_game_state(
+            ['Alice', 'AI Easy', 'Bob'],
+            ['red', 'blue', 'green'],
+            ai_types=[None, 'easy', None],
+        )
+        self.assertEqual(len(state.players), 3)
+        self.assertFalse(state.players[0].is_ai)
+        self.assertIsNone(state.players[0].ai_type)
+        self.assertTrue(state.players[1].is_ai)
+        self.assertEqual(state.players[1].ai_type, 'easy')
+        self.assertFalse(state.players[2].is_ai)
+        self.assertIsNone(state.players[2].ai_type)
+
+    def test_create_initial_state_without_ai_types(self) -> None:
+        """When ai_types is not provided, all players are human."""
+        state = create_initial_game_state(['Alice', 'Bob'], ['red', 'blue'])
+        self.assertEqual(len(state.players), 2)
+        self.assertFalse(state.players[0].is_ai)
+        self.assertIsNone(state.players[0].ai_type)
+        self.assertFalse(state.players[1].is_ai)
+        self.assertIsNone(state.players[1].ai_type)
+
+    def test_create_initial_state_all_ai_players(self) -> None:
+        """All players can be AI with different difficulty levels."""
+        state = create_initial_game_state(
+            ['AI Easy', 'AI Medium', 'AI Hard'],
+            ['red', 'blue', 'green'],
+            ai_types=['easy', 'medium', 'hard'],
+        )
+        self.assertEqual(len(state.players), 3)
+        self.assertTrue(state.players[0].is_ai)
+        self.assertEqual(state.players[0].ai_type, 'easy')
+        self.assertTrue(state.players[1].is_ai)
+        self.assertEqual(state.players[1].ai_type, 'medium')
+        self.assertTrue(state.players[2].is_ai)
+        self.assertEqual(state.players[2].ai_type, 'hard')
+
 
 if __name__ == '__main__':
     unittest.main()

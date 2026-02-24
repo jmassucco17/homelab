@@ -351,6 +351,48 @@ class TestCatanWebSocket(unittest.TestCase):
                         bob_msg['message_type'], ws_messages.ServerMessageType.GAME_OVER
                     )
 
+    # ------------------------------------------------------------------
+    # AI turn execution
+    # ------------------------------------------------------------------
+
+    def test_ai_turn_executes_after_human_action(self) -> None:
+        """AI turns execute automatically after a human player's action."""
+        code = self._create_room()
+        with self.client.websocket_connect(f'/catan/ws/{code}/Alice') as ws:
+            ws.receive_text()  # Alice's PlayerJoined
+
+            # Add an AI player
+            resp = self.client.post(f'/catan/rooms/{code}/add-ai?difficulty=easy')
+            self.assertEqual(resp.status_code, 200)
+            ws.receive_text()  # AI's PlayerJoined
+
+            room = self.mgr.get_room(code)
+            assert room is not None
+
+            # Start the game
+            self.client.post(f'/catan/rooms/{code}/start')
+            ws.receive_text()  # GameStarted
+            ws.receive_text()  # Initial GameStateUpdate
+
+            # Mock AI turn execution to avoid complex game logic
+            with unittest.mock.patch(
+                'games.app.catan.server.ws_handler.execute_ai_turns_if_needed'
+            ) as mock_ai_turns:
+                # Make the mock return immediately (it's async)
+                mock_ai_turns.return_value = None
+                ws.send_text(
+                    json.dumps(
+                        {
+                            'message_type': 'submit_action',
+                            'action': {'action_type': 'end_turn', 'player_index': 0},
+                        }
+                    )
+                )
+                # Should receive GameStateUpdate
+                ws.receive_text()
+                # Verify AI turn execution was called
+                mock_ai_turns.assert_called_once()
+
 
 if __name__ == '__main__':
     unittest.main()
