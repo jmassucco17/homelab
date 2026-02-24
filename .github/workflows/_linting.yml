@@ -25,15 +25,15 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
         with:
           python-version: '3.12'
 
       - name: Install dependencies
         run: |
-          python -m venv venv
-          venv/bin/pip install -r requirements.txt
+          uv venv venv
+          uv pip install --python venv/bin/python -r requirements.txt
           npm install
 
       - name: Run Pyright

@@ -1,6 +1,6 @@
 version: 2
 updates:
-  # Python packages (requirements.txt)
+  # Python packages (requirements.txt via uv)
   - package-ecosystem: 'pip'
     directory: '/'
     schedule:

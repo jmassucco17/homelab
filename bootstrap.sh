@@ -16,6 +16,7 @@ esac
 main() {
     echo "🔧 Bootstrapping project environment..."
     install_python
+    install_uv
     setup_virtualenv
     install_python_deps
     setup_pre_commit
@@ -26,7 +27,7 @@ main() {
 install_python() {
     echo "🔍 Installing Python..."
     if [ "$MACHINE" = "Linux" ]; then
-        REQUIRED_PKGS=(python3 python3-venv python3-pip)
+        REQUIRED_PKGS=(python3)
         MISSING_PKGS=()
 
         for pkg in "${REQUIRED_PKGS[@]}"; do
@@ -52,6 +53,18 @@ install_python() {
     fi
 }
 
+install_uv() {
+    if command -v uv &>/dev/null; then
+        echo "📦 uv already installed"
+        return
+    fi
+
+    echo "📦 Installing uv..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    # Add uv to PATH for current session
+    export PATH="$HOME/.local/bin:$PATH"
+}
+
 setup_virtualenv() {
     if [ -x "venv/bin/python" ]; then
         venv_version=$(venv/bin/python --version 2>&1)
@@ -64,7 +77,7 @@ setup_virtualenv() {
     fi
 
     echo "📁 Creating virtual environment..."
-    python3 -m venv venv
+    uv venv
     # shellcheck disable=SC1091
     source venv/bin/activate
 }
@@ -81,8 +94,7 @@ install_python_deps() {
     fi
 
     echo "📦 Updating Python dependencies..."
-    python3 -m pip install --upgrade pip --quiet
-    python3 -m pip install -r requirements.txt --quiet
+    uv pip install -r requirements.txt --quiet
 
     echo "$current_hash" > "$hash_file"
 
@@ -96,7 +108,7 @@ fix_ssl_certificates() {
     echo "🔐 Ensuring SSL certificates are configured..."
 
     # Install certifi if not already installed
-    python3 -m pip install --upgrade certifi --quiet
+    uv pip install --upgrade certifi --quiet
 
     # Set SSL_CERT_FILE in shell profile if not already set
     local cert_path
