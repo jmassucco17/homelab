@@ -34,6 +34,8 @@ const DEV_CARD_LABELS = {
 
 const RESOURCE_OPTIONS = ['wood', 'brick', 'wheat', 'sheep', 'ore']
 
+const MAX_REQUESTING_AMOUNT = 10
+
 // ---------------------------------------------------------------------------
 // HTML helpers
 // ---------------------------------------------------------------------------
@@ -351,64 +353,194 @@ export class CatanUI {
   }
 
   _showYearOfPlentyDialog() {
-    const input = prompt(
-      'Year of Plenty — choose 2 resources (comma-separated).\nOptions: wood, brick, wheat, sheep, ore',
-    )
-    if (!input) return
-    const parts = input
-      .split(',')
-      .map((s) => s.trim().toLowerCase())
-      .filter((s) => RESOURCE_OPTIONS.includes(s))
-    if (parts.length !== 2) {
-      this.showToast('Enter exactly 2 valid resource names.', 'error')
-      return
+    const modal = document.getElementById('year-of-plenty-modal')
+    if (!modal) return
+
+    const selected = []
+    const picker = document.getElementById('yop-resources')
+    const display = document.getElementById('yop-selection-display')
+    const confirmBtn = document.getElementById('yop-confirm')
+    const cancelBtn = document.getElementById('yop-cancel')
+
+    picker.innerHTML = RESOURCE_OPTIONS.map(
+      (r) =>
+        `<button class="trade-res-btn" data-resource="${r}">
+          <span class="res-emoji">${RESOURCE_EMOJIS[r]}</span>
+          <span class="res-name">${r}</span>
+        </button>`,
+    ).join('')
+
+    const updateDisplay = () => {
+      display.textContent =
+        selected.length === 0
+          ? 'Selected: none'
+          : `Selected: ${selected.map((r) => RESOURCE_EMOJIS[r] + ' ' + r).join(', ')}`
+      confirmBtn.disabled = selected.length !== 2
     }
-    this.onAction({
-      action_type: 'play_year_of_plenty',
-      player_index: this.myPlayerIndex,
-      resource1: parts[0],
-      resource2: parts[1],
+    updateDisplay()
+
+    picker.querySelectorAll('.trade-res-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (selected.length < 2) {
+          selected.push(btn.dataset.resource)
+          btn.classList.add('selected')
+        } else {
+          // Reset and start over
+          selected.splice(0)
+          picker.querySelectorAll('.trade-res-btn').forEach((b) => b.classList.remove('selected'))
+          selected.push(btn.dataset.resource)
+          btn.classList.add('selected')
+        }
+        updateDisplay()
+      })
     })
+
+    confirmBtn.onclick = () => {
+      if (selected.length !== 2) return
+      modal.style.display = 'none'
+      this.onAction({
+        action_type: 'play_year_of_plenty',
+        player_index: this.myPlayerIndex,
+        resource1: selected[0],
+        resource2: selected[1],
+      })
+    }
+    cancelBtn.onclick = () => {
+      modal.style.display = 'none'
+    }
+
+    modal.style.display = 'flex'
   }
 
   _showMonopolyDialog() {
-    const input = prompt(
-      'Monopoly — choose a resource to take from all opponents.\nOptions: wood, brick, wheat, sheep, ore',
-    )
-    if (!input) return
-    const res = input.trim().toLowerCase()
-    if (!RESOURCE_OPTIONS.includes(res)) {
-      this.showToast('Invalid resource name.', 'error')
-      return
+    const modal = document.getElementById('monopoly-modal')
+    if (!modal) return
+
+    let selected = null
+    const picker = document.getElementById('monopoly-resources')
+    const confirmBtn = document.getElementById('monopoly-confirm')
+    const cancelBtn = document.getElementById('monopoly-cancel')
+
+    picker.innerHTML = RESOURCE_OPTIONS.map(
+      (r) =>
+        `<button class="trade-res-btn" data-resource="${r}">
+          <span class="res-emoji">${RESOURCE_EMOJIS[r]}</span>
+          <span class="res-name">${r}</span>
+        </button>`,
+    ).join('')
+    confirmBtn.disabled = true
+
+    picker.querySelectorAll('.trade-res-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        picker.querySelectorAll('.trade-res-btn').forEach((b) => b.classList.remove('selected'))
+        btn.classList.add('selected')
+        selected = btn.dataset.resource
+        confirmBtn.disabled = false
+      })
+    })
+
+    confirmBtn.onclick = () => {
+      if (!selected) return
+      modal.style.display = 'none'
+      this.onAction({ action_type: 'play_monopoly', player_index: this.myPlayerIndex, resource: selected })
     }
-    this.onAction({ action_type: 'play_monopoly', player_index: this.myPlayerIndex, resource: res })
+    cancelBtn.onclick = () => {
+      modal.style.display = 'none'
+    }
+
+    modal.style.display = 'flex'
   }
 
   _showBankTradeDialog() {
-    const giving = prompt(
-      'Bank Trade — which resource are you giving?\nOptions: wood, brick, wheat, sheep, ore',
-    )
-    if (!giving) return
-    const giv = giving.trim().toLowerCase()
-    if (!RESOURCE_OPTIONS.includes(giv)) {
-      this.showToast('Invalid resource name.', 'error')
-      return
-    }
-    const receiving = prompt(
-      'Which resource do you want to receive?\nOptions: wood, brick, wheat, sheep, ore',
-    )
-    if (!receiving) return
-    const rec = receiving.trim().toLowerCase()
-    if (!RESOURCE_OPTIONS.includes(rec)) {
-      this.showToast('Invalid resource name.', 'error')
-      return
-    }
-    this.onAction({
-      action_type: 'trade_with_bank',
-      player_index: this.myPlayerIndex,
-      giving: giv,
-      receiving: rec,
+    const modal = document.getElementById('bank-trade-modal')
+    if (!modal || !this.gameState || this.myPlayerIndex === null) return
+    const player = this.gameState.players[this.myPlayerIndex]
+    if (!player) return
+
+    let selectedGiving = null
+    let selectedReceiving = null
+
+    const giveContainer = document.getElementById('bank-give-resources')
+    const receiveSection = document.getElementById('bank-receive-section')
+    const receiveContainer = document.getElementById('bank-receive-resources')
+    const ratioDisplay = document.getElementById('bank-trade-ratio')
+    const confirmBtn = document.getElementById('bank-trade-confirm')
+    const cancelBtn = document.getElementById('bank-trade-cancel')
+
+    // Reset state
+    receiveSection.style.display = 'none'
+    ratioDisplay.style.display = 'none'
+    confirmBtn.disabled = true
+
+    giveContainer.innerHTML = RESOURCE_OPTIONS.map((r) => {
+      const count = player.resources[r] || 0
+      return `<button class="trade-res-btn${count === 0 ? ' unaffordable' : ''}" data-resource="${r}" ${count === 0 ? 'disabled' : ''}>
+          <span class="res-emoji">${RESOURCE_EMOJIS[r]}</span>
+          <span class="res-name">${r}</span>
+          <span class="res-count">×${count}</span>
+        </button>`
+    }).join('')
+
+    giveContainer.querySelectorAll('.trade-res-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        giveContainer.querySelectorAll('.trade-res-btn').forEach((b) => b.classList.remove('selected'))
+        btn.classList.add('selected')
+        selectedGiving = btn.dataset.resource
+        selectedReceiving = null
+        confirmBtn.disabled = true
+
+        const ratio = this._getBankTradeRatio(selectedGiving)
+        ratioDisplay.textContent = `Trade ratio: ${ratio}:1 (you give ${ratio}, you receive 1)`
+        ratioDisplay.style.display = 'block'
+
+        receiveContainer.innerHTML = RESOURCE_OPTIONS.filter((r) => r !== selectedGiving)
+          .map(
+            (r) =>
+              `<button class="trade-res-btn" data-resource="${r}">
+                <span class="res-emoji">${RESOURCE_EMOJIS[r]}</span>
+                <span class="res-name">${r}</span>
+              </button>`,
+          )
+          .join('')
+
+        receiveContainer.querySelectorAll('.trade-res-btn').forEach((rb) => {
+          rb.addEventListener('click', () => {
+            receiveContainer.querySelectorAll('.trade-res-btn').forEach((b) => b.classList.remove('selected'))
+            rb.classList.add('selected')
+            selectedReceiving = rb.dataset.resource
+            confirmBtn.disabled = false
+          })
+        })
+
+        receiveSection.style.display = 'block'
+      })
     })
+
+    confirmBtn.onclick = () => {
+      if (!selectedGiving || !selectedReceiving) return
+      modal.style.display = 'none'
+      this.onAction({
+        action_type: 'trade_with_bank',
+        player_index: this.myPlayerIndex,
+        giving: selectedGiving,
+        receiving: selectedReceiving,
+      })
+    }
+    cancelBtn.onclick = () => {
+      modal.style.display = 'none'
+    }
+
+    modal.style.display = 'flex'
+  }
+
+  _getBankTradeRatio(resource) {
+    if (!this.gameState || this.myPlayerIndex === null) return 4
+    const player = this.gameState.players[this.myPlayerIndex]
+    if (!player) return 4
+    const ports = player.ports_owned || []
+    if (ports.includes(resource)) return 2
+    if (ports.includes('generic')) return 3
+    return 4
   }
 
   // -------------------------------------------------------------------------
@@ -420,83 +552,109 @@ export class CatanUI {
   }
 
   _showPlayerTradeDialog() {
-    if (!this.gameState || this.myPlayerIndex === null) return
+    const modal = document.getElementById('player-trade-modal')
+    if (!modal || !this.gameState || this.myPlayerIndex === null) return
     const player = this.gameState.players[this.myPlayerIndex]
+    if (!player) return
 
-    // Build resource selection strings
-    const resStr = (res) => `${RESOURCE_EMOJIS[res]} ${res} (${player.resources[res] || 0})`
+    const offeringGrid = document.getElementById('player-trade-offering')
+    const requestingGrid = document.getElementById('player-trade-requesting')
+    const targetsContainer = document.getElementById('player-trade-targets')
+    const confirmBtn = document.getElementById('player-trade-confirm')
+    const cancelBtn = document.getElementById('player-trade-cancel')
 
-    // Ask what they're offering
-    const offeringStr = prompt(
-      'Propose Trade — What will you offer?\nFormat: resource:amount, resource:amount\nExample: wood:2, brick:1\n\nOptions: ' +
-        RESOURCE_OPTIONS.map(resStr).join(', '),
-    )
-    if (!offeringStr) return
-    const offering = this._parseResourceDict(offeringStr)
-    if (!offering) {
-      this.showToast('Invalid format. Use "resource:amount, resource:amount"', 'error')
-      return
+    // Build stepper rows for offering (limited by player's hand)
+    offeringGrid.innerHTML = RESOURCE_OPTIONS.map((r) => {
+      const max = player.resources[r] || 0
+      return `<div class="trade-stepper-row">
+          <span class="res-emoji">${RESOURCE_EMOJIS[r]}</span>
+          <span class="res-name">${r}</span>
+          <span class="res-hand">(${max})</span>
+          <button class="stepper-btn" data-dir="-1" data-resource="${r}" data-side="offering">−</button>
+          <span class="stepper-value" id="offering-${r}">0</span>
+          <button class="stepper-btn" data-dir="1" data-resource="${r}" data-side="offering" ${max === 0 ? 'disabled' : ''}>+</button>
+        </div>`
+    }).join('')
+
+    // Build stepper rows for requesting (no max)
+    requestingGrid.innerHTML = RESOURCE_OPTIONS.map(
+      (r) =>
+        `<div class="trade-stepper-row">
+          <span class="res-emoji">${RESOURCE_EMOJIS[r]}</span>
+          <span class="res-name">${r}</span>
+          <button class="stepper-btn" data-dir="-1" data-resource="${r}" data-side="requesting">−</button>
+          <span class="stepper-value" id="requesting-${r}">0</span>
+          <button class="stepper-btn" data-dir="1" data-resource="${r}" data-side="requesting">+</button>
+        </div>`,
+    ).join('')
+
+    // Track values
+    const offeringValues = Object.fromEntries(RESOURCE_OPTIONS.map((r) => [r, 0]))
+    const requestingValues = Object.fromEntries(RESOURCE_OPTIONS.map((r) => [r, 0]))
+
+    const updateConfirm = () => {
+      const hasOffering = Object.values(offeringValues).some((v) => v > 0)
+      const hasRequesting = Object.values(requestingValues).some((v) => v > 0)
+      confirmBtn.disabled = !(hasOffering && hasRequesting)
     }
 
-    // Ask what they're requesting
-    const requestingStr = prompt(
-      'What do you want in return?\nFormat: resource:amount, resource:amount\nExample: wheat:1, ore:1\n\nOptions: ' +
-        RESOURCE_OPTIONS.map((r) => `${RESOURCE_EMOJIS[r]} ${r}`).join(', '),
-    )
-    if (!requestingStr) return
-    const requesting = this._parseResourceDict(requestingStr)
-    if (!requesting) {
-      this.showToast('Invalid format. Use "resource:amount, resource:amount"', 'error')
-      return
+    const handleStepper = (btn) => {
+      const res = btn.dataset.resource
+      const side = btn.dataset.side
+      const dir = parseInt(btn.dataset.dir, 10)
+      const values = side === 'offering' ? offeringValues : requestingValues
+      const max = side === 'offering' ? player.resources[res] || 0 : MAX_REQUESTING_AMOUNT
+      const newVal = Math.max(0, Math.min(max, values[res] + dir))
+      values[res] = newVal
+      document.getElementById(`${side}-${res}`).textContent = newVal
+      updateConfirm()
     }
 
-    // Ask which player (or all)
-    const otherPlayers = this.gameState.players
-      .filter((p) => p.player_index !== this.myPlayerIndex)
-      .map((p) => `${p.player_index}: ${p.name}`)
-      .join('\n')
-    const targetStr = prompt(
-      `Trade with which player?\nEnter player number, or leave blank to offer to all players.\n\n${otherPlayers}`,
-    )
+    offeringGrid.querySelectorAll('.stepper-btn').forEach((btn) => btn.addEventListener('click', () => handleStepper(btn)))
+    requestingGrid.querySelectorAll('.stepper-btn').forEach((btn) => btn.addEventListener('click', () => handleStepper(btn)))
 
-    let targetPlayer = null
-    if (targetStr && targetStr.trim()) {
-      targetPlayer = parseInt(targetStr.trim(), 10)
-      if (
-        isNaN(targetPlayer) ||
-        targetPlayer === this.myPlayerIndex ||
-        !this.gameState.players[targetPlayer]
-      ) {
-        this.showToast('Invalid player number.', 'error')
-        return
-      }
-    }
+    // Player targets
+    const otherPlayers = this.gameState.players.filter((p) => p.player_index !== this.myPlayerIndex)
+    targetsContainer.innerHTML =
+      `<button class="trade-target-btn selected" data-target="all">🌐 All Players</button>` +
+      otherPlayers
+        .map(
+          (p) =>
+            `<button class="trade-target-btn" data-target="${p.player_index}">
+              <span class="player-dot-sm" style="background:${escapeHtml(p.color)}"></span>
+              ${escapeHtml(p.name)}
+            </button>`,
+        )
+        .join('')
 
-    this.onAction({
-      action_type: 'trade_offer',
-      player_index: this.myPlayerIndex,
-      offering,
-      requesting,
-      target_player: targetPlayer,
+    targetsContainer.querySelectorAll('.trade-target-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        targetsContainer.querySelectorAll('.trade-target-btn').forEach((b) => b.classList.remove('selected'))
+        btn.classList.add('selected')
+      })
     })
-  }
 
-  _parseResourceDict(str) {
-    try {
-      const result = {}
-      const pairs = str.split(',').map((s) => s.trim())
-      for (const pair of pairs) {
-        const [res, amtStr] = pair.split(':').map((s) => s.trim().toLowerCase())
-        const amt = parseInt(amtStr, 10)
-        if (!RESOURCE_OPTIONS.includes(res) || isNaN(amt) || amt <= 0) {
-          return null
-        }
-        result[res] = (result[res] || 0) + amt
-      }
-      return Object.keys(result).length > 0 ? result : null
-    } catch {
-      return null
+    confirmBtn.disabled = true
+    confirmBtn.onclick = () => {
+      const offering = Object.fromEntries(Object.entries(offeringValues).filter(([, v]) => v > 0))
+      const requesting = Object.fromEntries(Object.entries(requestingValues).filter(([, v]) => v > 0))
+      const selectedTarget = targetsContainer.querySelector('.trade-target-btn.selected')
+      const targetRaw = selectedTarget ? selectedTarget.dataset.target : 'all'
+      const targetPlayer = targetRaw === 'all' ? null : parseInt(targetRaw, 10)
+      modal.style.display = 'none'
+      this.onAction({
+        action_type: 'trade_offer',
+        player_index: this.myPlayerIndex,
+        offering,
+        requesting,
+        target_player: targetPlayer,
+      })
     }
+    cancelBtn.onclick = () => {
+      modal.style.display = 'none'
+    }
+
+    modal.style.display = 'flex'
   }
 
   _renderTradeNotifications() {
