@@ -700,7 +700,11 @@ class TestActionProcessorEvents(unittest.TestCase):
         state.players[0].resources = player.Resources(wood=4)
         result = processor.apply_action(
             state,
-            actions.TradeWithBank(player_index=0, giving='wood', receiving='ore'),
+            actions.TradeWithBank(
+                player_index=0,
+                giving=actions.ResourceType('wood'),
+                receiving=actions.ResourceType('ore'),
+            ),
         )
         self.assertTrue(result.success)
         assert result.updated_state is not None
