@@ -15,6 +15,7 @@ def create_initial_game_state(
     player_names: list[str],
     colors: list[str],
     seed: int | None = None,
+    ai_types: list[str | None] | None = None,
 ) -> game_state.GameState:
     """Create and return a fresh GameState ready for the setup phase.
 
@@ -22,14 +23,26 @@ def create_initial_game_state(
         player_names: Display names for each player (determines player count).
         colors: Hex/CSS colour strings for each player (same length as names).
         seed: Optional RNG seed for reproducible boards and deck order.
+        ai_types: List of AI types ('easy', 'medium', 'hard') for each player.
 
     Returns:
         A :class:`GameState` in SETUP_FORWARD phase, player 0 to place first.
     """
     brd = board_generator.generate_board(seed=seed)
 
+    # Use defaults if not provided
+    _ai_types: list[str | None] = (
+        ai_types if ai_types is not None else [None] * len(player_names)
+    )
+
     players = [
-        player.Player(player_index=i, name=name, color=color)
+        player.Player(
+            player_index=i,
+            name=name,
+            color=color,
+            is_ai=_ai_types[i] is not None,
+            ai_type=_ai_types[i],
+        )
         for i, (name, color) in enumerate(zip(player_names, colors, strict=True))
     ]
 

@@ -75,6 +75,32 @@ class TestPlayerSlot(unittest.TestCase):
         slot.websocket = None
         self.assertFalse(slot.is_connected)
 
+    def test_ai_player_is_connected(self) -> None:
+        """AI players are always considered connected."""
+        slot = rm_module.PlayerSlot(
+            player_index=0,
+            name='AI Easy',
+            color='red',
+            websocket=None,
+            is_ai=True,
+            ai_type='easy',
+        )
+        self.assertTrue(slot.is_connected)
+
+    def test_ai_player_attributes(self) -> None:
+        """AI player slots have correct AI attributes."""
+        slot = rm_module.PlayerSlot(
+            player_index=1,
+            name='AI Medium',
+            color='blue',
+            websocket=None,
+            is_ai=True,
+            ai_type='medium',
+        )
+        self.assertTrue(slot.is_ai)
+        self.assertEqual(slot.ai_type, 'medium')
+        self.assertIsNone(slot.websocket)
+
 
 class TestRoomManagerJoin(unittest.TestCase):
     """Tests for RoomManager.join_room."""
@@ -156,6 +182,77 @@ class TestRoomManagerDisconnect(unittest.TestCase):
         self.mgr.disconnect_player(self.code, 'NoSuchPlayer')  # should not raise
 
 
+class TestRoomManagerAddAI(unittest.TestCase):
+    """Tests for RoomManager.add_ai_player."""
+
+    def setUp(self) -> None:
+        self.mgr = rm_module.RoomManager()
+        self.code = self.mgr.create_room()
+
+    def test_add_ai_player_returns_slot(self) -> None:
+        """add_ai_player returns a PlayerSlot."""
+        slot = self.mgr.add_ai_player(self.code, 'easy')
+        self.assertIsNotNone(slot)
+
+    def test_add_ai_player_sets_ai_attributes(self) -> None:
+        """AI player slot has correct is_ai and ai_type."""
+        slot = self.mgr.add_ai_player(self.code, 'medium')
+        assert slot is not None
+        self.assertTrue(slot.is_ai)
+        self.assertEqual(slot.ai_type, 'medium')
+
+    def test_add_ai_player_assigns_sequential_index(self) -> None:
+        """AI players get sequential player indices."""
+        ws = unittest.mock.MagicMock(spec=fastapi.WebSocket)
+        self.mgr.join_room(self.code, 'Alice', ws)
+        slot = self.mgr.add_ai_player(self.code, 'easy')
+        assert slot is not None
+        self.assertEqual(slot.player_index, 1)
+
+    def test_add_ai_player_increases_player_count(self) -> None:
+        """Adding AI increases room player count."""
+        room = self.mgr.get_room(self.code)
+        assert room is not None
+        self.assertEqual(room.player_count, 0)
+        self.mgr.add_ai_player(self.code, 'easy')
+        self.assertEqual(room.player_count, 1)
+
+    def test_add_ai_player_full_room_returns_none(self) -> None:
+        """Cannot add AI to a full room (4 players)."""
+        for i in range(4):
+            ws = unittest.mock.MagicMock(spec=fastapi.WebSocket)
+            self.mgr.join_room(self.code, f'P{i}', ws)
+        result = self.mgr.add_ai_player(self.code, 'easy')
+        self.assertIsNone(result)
+
+    def test_add_ai_player_unknown_room_returns_none(self) -> None:
+        """add_ai_player with unknown room code returns None."""
+        result = self.mgr.add_ai_player('ZZZZ', 'easy')
+        self.assertIsNone(result)
+
+    def test_add_ai_player_creates_ai_instance(self) -> None:
+        """Adding AI creates an AI instance in room.ai_instances."""
+        room = self.mgr.get_room(self.code)
+        assert room is not None
+        slot = self.mgr.add_ai_player(self.code, 'hard')
+        assert slot is not None
+        self.assertIn(slot.player_index, room.ai_instances)
+        self.assertIsNotNone(room.ai_instances[slot.player_index])
+
+    def test_add_multiple_ai_players(self) -> None:
+        """Can add multiple AI players with different difficulties."""
+        slot1 = self.mgr.add_ai_player(self.code, 'easy')
+        slot2 = self.mgr.add_ai_player(self.code, 'medium')
+        slot3 = self.mgr.add_ai_player(self.code, 'hard')
+        assert slot1 is not None and slot2 is not None and slot3 is not None
+        self.assertEqual(slot1.ai_type, 'easy')
+        self.assertEqual(slot2.ai_type, 'medium')
+        self.assertEqual(slot3.ai_type, 'hard')
+        room = self.mgr.get_room(self.code)
+        assert room is not None
+        self.assertEqual(room.player_count, 3)
+
+
 class TestRoomManagerStartGame(unittest.TestCase):
     """Tests for RoomManager.start_game."""
 
@@ -211,6 +308,34 @@ class TestRoomManagerStartGame(unittest.TestCase):
         assert room is not None
         state = self.mgr.start_game(room)
         self.assertEqual(state.phase, gs_module.GamePhase.SETUP_FORWARD)
+
+    def test_start_game_with_ai_players(self) -> None:
+        """start_game correctly initializes AI players in game state."""
+        room = self.mgr.get_room(self.code)
+        assert room is not None
+        # Remove human players and add AI
+        room.players.clear()
+        self.mgr.add_ai_player(self.code, 'easy')
+        self.mgr.add_ai_player(self.code, 'medium')
+        state = self.mgr.start_game(room)
+        self.assertEqual(len(state.players), 2)
+        self.assertTrue(state.players[0].is_ai)
+        self.assertEqual(state.players[0].ai_type, 'easy')
+        self.assertTrue(state.players[1].is_ai)
+        self.assertEqual(state.players[1].ai_type, 'medium')
+
+    def test_start_game_mixed_human_and_ai_players(self) -> None:
+        """start_game works with mixed human and AI players."""
+        room = self.mgr.get_room(self.code)
+        assert room is not None
+        # Alice and Bob are already added as humans
+        self.mgr.add_ai_player(self.code, 'hard')
+        state = self.mgr.start_game(room)
+        self.assertEqual(len(state.players), 3)
+        self.assertFalse(state.players[0].is_ai)
+        self.assertFalse(state.players[1].is_ai)
+        self.assertTrue(state.players[2].is_ai)
+        self.assertEqual(state.players[2].ai_type, 'hard')
 
 
 if __name__ == '__main__':

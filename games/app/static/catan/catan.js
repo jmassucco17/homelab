@@ -302,15 +302,39 @@ async function initGame() {
 
   const startBtn = document.getElementById('start-game-btn')
   if (startBtn) {
-    startBtn.addEventListener('click', () => {
-      wsClient.sendAction({ action_type: 'start_game', player_index: myPlayerIndex })
+    startBtn.addEventListener('click', async () => {
+      startBtn.disabled = true
+      try {
+        const resp = await fetch(`/catan/rooms/${roomCode}/start`, { method: 'POST' })
+        if (!resp.ok) {
+          const data = await resp.json()
+          ui.showToast(data.detail || 'Failed to start game', 'error')
+          startBtn.disabled = false
+        }
+      } catch (err) {
+        ui.showToast('Failed to start game', 'error')
+        startBtn.disabled = false
+      }
     })
   }
 
   const addAiBtn = document.getElementById('add-ai-btn')
   if (addAiBtn) {
-    addAiBtn.addEventListener('click', () => {
-      wsClient.sendAction({ action_type: 'add_ai', player_index: myPlayerIndex })
+    addAiBtn.addEventListener('click', async () => {
+      addAiBtn.disabled = true
+      try {
+        const resp = await fetch(`/catan/rooms/${roomCode}/add-ai?difficulty=easy`, {
+          method: 'POST',
+        })
+        if (!resp.ok) {
+          const data = await resp.json()
+          ui.showToast(data.detail || 'Failed to add AI', 'error')
+        }
+      } catch (err) {
+        ui.showToast('Failed to add AI', 'error')
+      } finally {
+        addAiBtn.disabled = false
+      }
     })
   }
 
