@@ -46,7 +46,7 @@ Follow all instructions in this section whenever you are contributing code to th
 
 ### Style Guides
 
-- See `docs/style/<language>` for language-specific style and usage
+- Always read and follow `docs/style/<language>.md` when working with a specific language (e.g. Python)
 - If a language is not listed by name, use `other.md`
 - These guides include usage information that should be followed whenever working with that language
 
