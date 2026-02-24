@@ -19,6 +19,7 @@ Message flow
 from __future__ import annotations
 
 import json
+from typing import cast
 
 import fastapi
 import pydantic
@@ -238,6 +239,58 @@ async def execute_ai_turns_if_needed(room: room_manager.GameRoom) -> None:
         await room_manager.room_manager.broadcast(room, state_update.model_dump_json())
 
 
+async def _trigger_ai_trade_responses(
+    room: room_manager.GameRoom, trade_id: str
+) -> None:
+    """Have eligible AI players immediately respond to a pending trade offer.
+
+    Iterates over all AI players who are eligible to respond (i.e. not the
+    offering player, and matching the target if one is specified).  Each AI
+    either accepts or rejects the trade.  If an AI accepts, the trade is
+    executed immediately and iteration stops.  After all eligible AIs have
+    responded, if no one accepted the trade is left open for any remaining
+    human players to respond.
+    """
+    if room.game_state is None or room.pending_trade is None:
+        return
+    if room.pending_trade.trade_id != trade_id:
+        return
+
+    pending = room.pending_trade
+    if pending.target_player is not None:
+        eligible = [pending.target_player]
+    else:
+        eligible = [
+            p.player_index
+            for p in room.game_state.players
+            if p.player_index != pending.offering_player
+        ]
+
+    for player_index in eligible:
+        # Re-fetch the pending trade each iteration since a prior AI response
+        # (e.g. auto-cancel after unanimous rejection) may have cleared it.
+        current: trade.PendingTrade | None = cast(
+            trade.PendingTrade | None, room.pending_trade
+        )
+        if current is None or current.trade_id != trade_id:
+            return
+
+        slot = room.get_player_by_index(player_index)
+        if slot is None or not slot.is_ai:
+            continue
+
+        ai_instance = room.ai_instances.get(player_index)
+        if ai_instance is None:
+            continue
+
+        response = ai_instance.respond_to_trade(room.game_state, player_index, current)
+        if isinstance(response, actions.AcceptTrade):
+            await _handle_accept_trade(room, response)
+            return
+        else:
+            await _handle_reject_trade(room, response)
+
+
 async def _handle_trade_offer(
     room: room_manager.GameRoom, action: actions.TradeOffer
 ) -> None:
@@ -271,6 +324,9 @@ async def _handle_trade_offer(
         target_player=pending_trade.target_player,
     )
     await room_manager.room_manager.broadcast(room, trade_msg.model_dump_json())
+
+    # Trigger immediate responses from any AI players eligible for this trade.
+    await _trigger_ai_trade_responses(room, pending_trade.trade_id)
 
 
 async def _handle_accept_trade(
@@ -344,6 +400,24 @@ async def _handle_reject_trade(
         rejecting_player=action.player_index,
     )
     await room_manager.room_manager.broadcast(room, trade_msg.model_dump_json())
+
+    # Cancel the trade automatically when all eligible players have rejected it.
+    if room.game_state is not None:
+        pending = room.pending_trade
+        if pending.target_player is not None:
+            eligible = [pending.target_player]
+        else:
+            eligible = [
+                p.player_index
+                for p in room.game_state.players
+                if p.player_index != pending.offering_player
+            ]
+        if all(p in pending.rejected_by for p in eligible):
+            cancel_action = actions.CancelTrade(
+                player_index=pending.offering_player,
+                trade_id=pending.trade_id,
+            )
+            await _handle_cancel_trade(room, cancel_action)
 
 
 async def _handle_cancel_trade(
