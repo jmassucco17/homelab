@@ -1,3 +1,37 @@
+[project]
+name = "homelab"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    # Alphabetical order
+    "click>=8.2,<9",
+    "exifread>=3.5,<4",
+    "fastapi>=0.116,<1",
+    "geopy>=2.4,<3",
+    "httpx>=0.28,<1",
+    "jinja2>=3.1,<4",
+    "markdown>=3.8,<4",
+    "pillow>=12.1,<13",
+    "pillow-heif>=1.1,<2",
+    "pydantic>=2.11,<3",
+    "python-frontmatter>=1.1,<2",
+    "python-multipart>=0.0.20,<1",
+    "sqlmodel>=0.0.24,<1",
+    "uvicorn>=0.35,<1",
+    "websockets>=16.0,<17",
+]
+
+[dependency-groups]
+dev = [
+    # Alphabetical order
+    "ipython>=9.4,<10",
+    "pre-commit>=4.3,<5",
+    "pytest>=9.0,<10",
+    "pytest-cov>=7.0,<8",
+    "ruff>=0.12,<1",
+]
+
+
 [tool.ruff]
 # Line and indent settings
 line-length = 88

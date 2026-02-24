@@ -21,7 +21,7 @@ repos:
         language: system
         files: \.css$
 
-  # NOTE: ruff version must stay in sync with requirements.txt
+  # NOTE: ruff version must stay in sync with pyproject.toml
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     rev: v0.12.9
     hooks:

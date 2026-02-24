@@ -29,11 +29,11 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           python-version: '3.12'
+          activate-environment: true
 
       - name: Install dependencies
         run: |
-          uv venv venv
-          uv pip install --python venv/bin/python -r requirements.txt
+          uv sync --frozen
           npm install
 
       - name: Run Pyright

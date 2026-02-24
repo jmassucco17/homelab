@@ -17,8 +17,7 @@ main() {
     echo "🔧 Bootstrapping project environment..."
     install_python
     install_uv
-    setup_virtualenv
-    install_python_deps
+    sync_python_deps
     setup_pre_commit
     install_node_deps
     echo "✅ Bootstrap complete."
@@ -65,38 +64,26 @@ install_uv() {
     export PATH="$HOME/.local/bin:$PATH"
 }
 
-setup_virtualenv() {
-    if [ -x "venv/bin/python" ]; then
-        venv_version=$(venv/bin/python --version 2>&1)
-        sys_version=$(python3 --version 2>&1)
-        if [[ "$venv_version" == "$sys_version" ]]; then
-            # shellcheck disable=SC1091
-            source venv/bin/activate
-            return
-        fi
-    fi
-
-    echo "📁 Creating virtual environment..."
-    uv venv
-    # shellcheck disable=SC1091
-    source venv/bin/activate
-}
-
-install_python_deps() {
-    echo "🐍 Installing Python dependencies..."
-    local hash_file=".requirements.hash"
+sync_python_deps() {
+    echo "🐍 Syncing Python dependencies..."
+    local hash_file=".uv.lock.hash"
     local current_hash
-    current_hash=$(sha256sum requirements.txt | awk '{print $1}')
+    current_hash=$(sha256sum uv.lock | awk '{print $1}')
 
     if [ -f "$hash_file" ] && grep -q "$current_hash" "$hash_file"; then
         echo "📦 Python dependencies already up-to-date"
+        # shellcheck disable=SC1091
+        source .venv/bin/activate
         return
     fi
 
-    echo "📦 Updating Python dependencies..."
-    uv pip install -r requirements.txt --quiet
+    echo "📦 Syncing Python dependencies with uv..."
+    uv sync
 
     echo "$current_hash" > "$hash_file"
+
+    # shellcheck disable=SC1091
+    source .venv/bin/activate
 
     # Fix SSL certificate issues on macOS
     if [ "$MACHINE" = "Mac" ]; then
@@ -106,9 +93,6 @@ install_python_deps() {
 
 fix_ssl_certificates() {
     echo "🔐 Ensuring SSL certificates are configured..."
-
-    # Install certifi if not already installed
-    uv pip install --upgrade certifi --quiet
 
     # Set SSL_CERT_FILE in shell profile if not already set
     local cert_path
