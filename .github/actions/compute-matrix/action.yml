@@ -1,0 +1,87 @@
+name: Compute service matrix
+description: >
+  Builds a JSON array of selected services for use with fromJSON matrix strategy.
+  In 'build' mode each entry includes {service, image, context, file}.
+  In 'deploy' mode each entry includes {service} only.
+
+inputs:
+  mode:
+    description: "'build' or 'deploy'"
+    required: true
+  shared-assets:
+    description: 'Include shared-assets'
+    required: false
+    default: 'true'
+  homepage:
+    description: 'Include homepage'
+    required: false
+    default: 'true'
+  blog:
+    description: 'Include blog'
+    required: false
+    default: 'true'
+  games:
+    description: 'Include games'
+    required: false
+    default: 'true'
+  tools:
+    description: 'Include tools'
+    required: false
+    default: 'true'
+  travel:
+    description: 'Include travel'
+    required: false
+    default: 'true'
+  # deploy-only inputs
+  monitoring:
+    description: '[deploy only] Include monitoring'
+    required: false
+    default: 'false'
+  environment:
+    description: '[deploy only] Deployment environment; monitoring is only included when set to prod'
+    required: false
+    default: ''
+
+outputs:
+  services:
+    description: 'JSON array of selected service objects'
+    value: ${{ steps.filter.outputs.services }}
+  has-services:
+    description: 'true if at least one service was selected, false otherwise'
+    value: ${{ steps.filter.outputs.has-services }}
+
+runs:
+  using: composite
+  steps:
+    - name: Filter services
+      id: filter
+      shell: bash
+      run: |
+        services=''
+        if [ "${{ inputs.mode }}" = "build" ]; then
+          add() {
+            local svc="$1" ctx="$2"
+            services="${services:+$services,}{\"service\":\"${svc}\",\"image\":\"ghcr.io/jmassucco17/homelab/${svc}\",\"context\":\"${ctx}\",\"file\":\"${svc}/Dockerfile\"}"
+          }
+          [ "${{ inputs['shared-assets'] }}" = "true" ] && add shared-assets shared-assets
+          [ "${{ inputs.homepage }}"         = "true" ] && add homepage homepage
+          [ "${{ inputs.blog }}"             = "true" ] && add blog .
+          [ "${{ inputs.games }}"            = "true" ] && add games .
+          [ "${{ inputs.tools }}"            = "true" ] && add tools .
+          [ "${{ inputs.travel }}"           = "true" ] && add travel .
+        else
+          add() { services="${services:+$services,}{\"service\":\"$1\"}"; }
+          [ "${{ inputs['shared-assets'] }}" = "true" ]                                              && add shared-assets
+          [ "${{ inputs.homepage }}"         = "true" ]                                              && add homepage
+          [ "${{ inputs.blog }}"             = "true" ]                                              && add blog
+          [ "${{ inputs.games }}"            = "true" ]                                              && add games
+          [ "${{ inputs.tools }}"            = "true" ]                                              && add tools
+          [ "${{ inputs.travel }}"           = "true" ]                                              && add travel
+          [ "${{ inputs.monitoring }}"       = "true" ] && [ "${{ inputs.environment }}" = "prod" ] && add monitoring
+        fi
+        echo "services=[${services}]" >> "$GITHUB_OUTPUT"
+        if [ -z "$services" ]; then
+          echo "has-services=false" >> "$GITHUB_OUTPUT"
+        else
+          echo "has-services=true" >> "$GITHUB_OUTPUT"
+        fi

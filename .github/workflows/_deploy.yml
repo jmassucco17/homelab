@@ -50,27 +50,22 @@ jobs:
     permissions:
       contents: read
     outputs:
-      services: ${{ steps.filter.outputs.services }}
-      has-services: ${{ steps.filter.outputs.has-services }}
+      services: ${{ steps.cm.outputs.services }}
+      has-services: ${{ steps.cm.outputs.has-services }}
     steps:
-      - name: Filter services
-        id: filter
-        run: |
-          services=''
-          add() { services="${services:+$services,}{\"service\":\"$1\"}"; }
-          [ "${{ inputs['shared-assets'] }}" = "true" ]                                       && add shared-assets
-          [ "${{ inputs.homepage }}"         = "true" ]                                       && add homepage
-          [ "${{ inputs.blog }}"             = "true" ]                                       && add blog
-          [ "${{ inputs.games }}"            = "true" ]                                       && add games
-          [ "${{ inputs.tools }}"            = "true" ]                                       && add tools
-          [ "${{ inputs.travel }}"           = "true" ]                                       && add travel
-          [ "${{ inputs.monitoring }}"       = "true" ] && [ "${{ inputs.environment }}" = "prod" ] && add monitoring
-          echo "services=[${services}]" >> "$GITHUB_OUTPUT"
-          if [ -z "$services" ]; then
-            echo "has-services=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "has-services=true" >> "$GITHUB_OUTPUT"
-          fi
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/compute-matrix
+        id: cm
+        with:
+          mode: deploy
+          shared-assets: ${{ inputs['shared-assets'] }}
+          homepage: ${{ inputs.homepage }}
+          blog: ${{ inputs.blog }}
+          games: ${{ inputs.games }}
+          tools: ${{ inputs.tools }}
+          travel: ${{ inputs.travel }}
+          monitoring: ${{ inputs.monitoring }}
+          environment: ${{ inputs.environment }}
 
   setup-server:
     runs-on: ubuntu-latest
