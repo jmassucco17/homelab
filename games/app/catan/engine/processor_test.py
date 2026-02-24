@@ -490,5 +490,224 @@ class TestActionProcessor(unittest.TestCase):
         self.assertTrue(result.success)
 
 
+# ---------------------------------------------------------------------------
+# Event-generation tests
+# ---------------------------------------------------------------------------
+
+
+class TestActionProcessorEvents(unittest.TestCase):
+    """Tests that apply_action populates recent_events correctly."""
+
+    def test_place_settlement_emits_event(self) -> None:
+        """PlaceSettlement appends a settlement event."""
+        state = _make_2p_state()
+        result = processor.apply_action(
+            state, actions.PlaceSettlement(player_index=0, vertex_id=5)
+        )
+        self.assertTrue(result.success)
+        assert result.updated_state is not None
+        events = result.updated_state.recent_events
+        self.assertEqual(len(events), 1)
+        self.assertIn('Alice', events[0])
+        self.assertIn('settlement', events[0])
+
+    def test_place_road_emits_event(self) -> None:
+        """PlaceRoad appends a road event."""
+        state = _make_2p_state()
+        state = _place_setup_settlement(state, 0)
+        edge_id = state.board.vertices[0].adjacent_edge_ids[0]
+        result = processor.apply_action(
+            state, actions.PlaceRoad(player_index=0, edge_id=edge_id)
+        )
+        self.assertTrue(result.success)
+        assert result.updated_state is not None
+        events = result.updated_state.recent_events
+        self.assertTrue(any('road' in e for e in events))
+
+    def test_place_city_emits_event(self) -> None:
+        """PlaceCity appends a city event."""
+        state = _make_2p_state()
+        state.phase = game_state.GamePhase.MAIN
+        state.turn_state = game_state.TurnState(
+            player_index=0, pending_action=game_state.PendingActionType.BUILD_OR_TRADE
+        )
+        # Place a settlement first
+        state.board.vertices[3].building = board.Building(
+            player_index=0, building_type=board.BuildingType.SETTLEMENT
+        )
+        state.players[0].resources = player.Resources(wheat=2, ore=3)
+        result = processor.apply_action(
+            state, actions.PlaceCity(player_index=0, vertex_id=3)
+        )
+        self.assertTrue(result.success)
+        assert result.updated_state is not None
+        events = result.updated_state.recent_events
+        self.assertTrue(any('city' in e for e in events))
+
+    def test_roll_dice_emits_roll_event(self) -> None:
+        """RollDice appends a dice-roll event."""
+        state = _make_2p_state()
+        state.phase = game_state.GamePhase.MAIN
+        state.turn_state = game_state.TurnState(
+            player_index=0, pending_action=game_state.PendingActionType.ROLL_DICE
+        )
+        result = processor.apply_action(state, actions.RollDice(player_index=0))
+        self.assertTrue(result.success)
+        assert result.updated_state is not None
+        events = result.updated_state.recent_events
+        roll_events = [e for e in events if 'rolled' in e]
+        self.assertEqual(len(roll_events), 1)
+        self.assertIn('Alice', roll_events[0])
+
+    def test_roll_7_emits_robber_event(self) -> None:
+        """Rolling 7 appends a robber-activation event."""
+        import unittest.mock
+
+        state = _make_2p_state()
+        state.phase = game_state.GamePhase.MAIN
+        state.turn_state = game_state.TurnState(
+            player_index=0, pending_action=game_state.PendingActionType.ROLL_DICE
+        )
+        with unittest.mock.patch('random.randint', side_effect=[4, 3]):
+            result = processor.apply_action(state, actions.RollDice(player_index=0))
+        self.assertTrue(result.success)
+        assert result.updated_state is not None
+        events = result.updated_state.recent_events
+        self.assertTrue(any('robber' in e.lower() for e in events))
+
+    def test_roll_non_7_emits_resource_events(self) -> None:
+        """A non-7 roll that distributes resources appends per-player gain events."""
+        import unittest.mock
+
+        state = _make_2p_state()
+        state.phase = game_state.GamePhase.MAIN
+
+        # Find a tile with a number token and place a settlement on it.
+        game_board = state.board
+        target_tile = next(t for t in game_board.tiles if t.number_token is not None)
+        tile_idx = game_board.tiles.index(target_tile)
+        adj_vertex = next(
+            v for v in game_board.vertices if tile_idx in v.adjacent_tile_indices
+        )
+        game_board.vertices[adj_vertex.vertex_id].building = board.Building(
+            player_index=0, building_type=board.BuildingType.SETTLEMENT
+        )
+        # Ensure robber is not on the target tile.
+        if game_board.robber_tile_index == tile_idx:
+            game_board.robber_tile_index = next(
+                i for i, _ in enumerate(game_board.tiles) if i != tile_idx
+            )
+
+        roll = target_tile.number_token
+        assert roll is not None
+        state.turn_state = game_state.TurnState(
+            player_index=0, pending_action=game_state.PendingActionType.ROLL_DICE
+        )
+        with unittest.mock.patch('random.randint', side_effect=[roll - 1, 1]):
+            result = processor.apply_action(state, actions.RollDice(player_index=0))
+
+        self.assertTrue(result.success)
+        assert result.updated_state is not None
+        events = result.updated_state.recent_events
+        # At least one "received" event should be present.
+        self.assertTrue(any('received' in e for e in events))
+
+    def test_end_turn_emits_next_player_event(self) -> None:
+        """EndTurn appends a turn-change event naming the next player."""
+        state = _make_2p_state()
+        state.phase = game_state.GamePhase.MAIN
+        state.turn_state = game_state.TurnState(
+            player_index=0, pending_action=game_state.PendingActionType.BUILD_OR_TRADE
+        )
+        result = processor.apply_action(state, actions.EndTurn(player_index=0))
+        self.assertTrue(result.success)
+        assert result.updated_state is not None
+        events = result.updated_state.recent_events
+        self.assertEqual(len(events), 1)
+        # Should name the next player (Bob in a 2-player game).
+        self.assertIn('Bob', events[0])
+        self.assertIn('turn', events[0])
+
+    def test_move_robber_emits_event(self) -> None:
+        """MoveRobber appends a robber-move event."""
+        state = _make_2p_state()
+        state.phase = game_state.GamePhase.MAIN
+        state.turn_state = game_state.TurnState(
+            player_index=0, pending_action=game_state.PendingActionType.MOVE_ROBBER
+        )
+        new_tile = next(
+            i
+            for i in range(len(state.board.tiles))
+            if i != state.board.robber_tile_index
+        )
+        result = processor.apply_action(
+            state, actions.MoveRobber(player_index=0, tile_index=new_tile)
+        )
+        self.assertTrue(result.success)
+        assert result.updated_state is not None
+        events = result.updated_state.recent_events
+        self.assertTrue(any('robber' in e for e in events))
+        self.assertTrue(any('Alice' in e for e in events))
+
+    def test_discard_emits_event(self) -> None:
+        """DiscardResources appends a discard event with correct count."""
+        state = _make_2p_state()
+        state.phase = game_state.GamePhase.MAIN
+        state.turn_state = game_state.TurnState(
+            player_index=0,
+            pending_action=game_state.PendingActionType.DISCARD_RESOURCES,
+            discard_player_indices=[0],
+        )
+        state.players[0].resources = player.Resources(wood=4, brick=4, wheat=2)
+        result = processor.apply_action(
+            state,
+            actions.DiscardResources(player_index=0, resources={'wood': 3, 'brick': 2}),
+        )
+        self.assertTrue(result.success)
+        assert result.updated_state is not None
+        events = result.updated_state.recent_events
+        self.assertTrue(any('discarded' in e for e in events))
+        self.assertTrue(any('5' in e for e in events))
+
+    def test_recent_events_cleared_between_actions(self) -> None:
+        """recent_events from a previous action are cleared before each new action."""
+        state = _make_2p_state()
+        result1 = processor.apply_action(
+            state, actions.PlaceSettlement(player_index=0, vertex_id=5)
+        )
+        assert result1.updated_state is not None
+        # First action should have exactly one settlement event.
+        self.assertEqual(len(result1.updated_state.recent_events), 1)
+
+        road_edge = result1.updated_state.board.vertices[5].adjacent_edge_ids[0]
+        result2 = processor.apply_action(
+            result1.updated_state,
+            actions.PlaceRoad(player_index=0, edge_id=road_edge),
+        )
+        assert result2.updated_state is not None
+        # Second action events should NOT include the settlement event.
+        self.assertFalse(
+            any('settlement' in e for e in result2.updated_state.recent_events)
+        )
+
+    def test_bank_trade_emits_event(self) -> None:
+        """TradeWithBank appends a bank-trade event."""
+        state = _make_2p_state()
+        state.phase = game_state.GamePhase.MAIN
+        state.turn_state = game_state.TurnState(
+            player_index=0, pending_action=game_state.PendingActionType.BUILD_OR_TRADE
+        )
+        state.players[0].resources = player.Resources(wood=4)
+        result = processor.apply_action(
+            state,
+            actions.TradeWithBank(player_index=0, giving='wood', receiving='ore'),
+        )
+        self.assertTrue(result.success)
+        assert result.updated_state is not None
+        events = result.updated_state.recent_events
+        self.assertTrue(any('bank' in e for e in events))
+        self.assertTrue(any('Alice' in e for e in events))
+
+
 if __name__ == '__main__':
     unittest.main()
