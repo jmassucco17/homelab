@@ -19,4 +19,4 @@ python-multipart>=0.0.20,<1
 ruff>=0.12,<1
 sqlmodel>=0.0.24,<1
 uvicorn>=0.35,<1
-websockets>=14.2,<15
+websockets>=16.0,<17
