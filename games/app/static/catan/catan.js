@@ -225,6 +225,50 @@ async function initGame() {
       }
       statusEl.textContent = labels[status] || status
     },
+
+    onTradeProposed: (msg) => {
+      ui.setActiveTrade({
+        trade_id: msg.trade_id,
+        offering_player: msg.offering_player,
+        offering: msg.offering,
+        requesting: msg.requesting,
+        target_player: msg.target_player,
+      })
+      const offeringPlayer = ui.gameState?.players[msg.offering_player]
+      if (offeringPlayer && msg.offering_player !== myPlayerIndex) {
+        ui.updateLog(`🤝 ${offeringPlayer.name} proposed a trade`)
+      }
+    },
+
+    onTradeAccepted: (msg) => {
+      ui.setActiveTrade(null)
+      const offeringPlayer = ui.gameState?.players[msg.offering_player]
+      const acceptingPlayer = ui.gameState?.players[msg.accepting_player]
+      if (offeringPlayer && acceptingPlayer) {
+        ui.updateLog(`✅ ${acceptingPlayer.name} accepted ${offeringPlayer.name}'s trade`)
+        ui.showToast('Trade completed!', 'success')
+      }
+    },
+
+    onTradeRejected: (msg) => {
+      const rejectingPlayer = ui.gameState?.players[msg.rejecting_player]
+      if (rejectingPlayer && msg.rejecting_player !== myPlayerIndex) {
+        ui.updateLog(`❌ ${rejectingPlayer.name} rejected the trade`)
+      }
+      if (ui.activeTrade && ui.activeTrade.trade_id === msg.trade_id) {
+        if (msg.rejecting_player === myPlayerIndex) {
+          ui.setActiveTrade(null)
+        }
+      }
+    },
+
+    onTradeCancelled: (msg) => {
+      ui.setActiveTrade(null)
+      const offeringPlayer = ui.gameState?.players[msg.offering_player]
+      if (offeringPlayer && msg.offering_player !== myPlayerIndex) {
+        ui.updateLog(`🚫 ${offeringPlayer.name} cancelled their trade offer`)
+      }
+    },
   })
 
   wsClient.connect()
@@ -302,16 +346,61 @@ async function initGame() {
 
   const startBtn = document.getElementById('start-game-btn')
   if (startBtn) {
-    startBtn.addEventListener('click', () => {
-      wsClient.sendAction({ action_type: 'start_game', player_index: myPlayerIndex })
+    startBtn.addEventListener('click', async () => {
+      startBtn.disabled = true
+      try {
+        const resp = await fetch(`/catan/rooms/${roomCode}/start`, { method: 'POST' })
+        if (!resp.ok) {
+          const data = await resp.json()
+          ui.showToast(data.detail || 'Failed to start game', 'error')
+          startBtn.disabled = false
+        }
+      } catch (err) {
+        ui.showToast('Failed to start game', 'error')
+        startBtn.disabled = false
+      }
     })
   }
 
   const addAiBtn = document.getElementById('add-ai-btn')
-  if (addAiBtn) {
+  const aiModal = document.getElementById('ai-difficulty-modal')
+  const aiModalCancel = document.getElementById('ai-modal-cancel')
+
+  if (addAiBtn && aiModal) {
+    // Show modal when Add AI button is clicked
     addAiBtn.addEventListener('click', () => {
-      wsClient.sendAction({ action_type: 'add_ai', player_index: myPlayerIndex })
+      aiModal.style.display = 'flex'
     })
+
+    // Handle difficulty button clicks
+    aiModal.querySelectorAll('[data-difficulty]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const difficulty = btn.dataset.difficulty
+        addAiBtn.disabled = true
+        aiModal.style.display = 'none'
+
+        try {
+          const resp = await fetch(`/catan/rooms/${roomCode}/add-ai?difficulty=${difficulty}`, {
+            method: 'POST',
+          })
+          if (!resp.ok) {
+            const data = await resp.json()
+            ui.showToast(data.detail || 'Failed to add AI', 'error')
+          }
+        } catch (err) {
+          ui.showToast('Failed to add AI', 'error')
+        } finally {
+          addAiBtn.disabled = false
+        }
+      })
+    })
+
+    // Handle cancel button
+    if (aiModalCancel) {
+      aiModalCancel.addEventListener('click', () => {
+        aiModal.style.display = 'none'
+      })
+    }
   }
 
   // ---------------------------------------------------------------------------

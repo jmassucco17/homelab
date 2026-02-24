@@ -23,8 +23,9 @@ import json
 import fastapi
 import pydantic
 
-from ..engine import processor
-from ..models import game_state, serializers, ws_messages
+from ..ai import driver
+from ..engine import processor, trade
+from ..models import actions, game_state, serializers, ws_messages
 from . import room_manager
 
 router = fastapi.APIRouter()
@@ -122,6 +123,24 @@ async def _handle_submit_action(
         )
         return
 
+    # Handle trade offers specially (they don't go through the processor)
+    if isinstance(msg.action, actions.TradeOffer):
+        await _handle_trade_offer(room, msg.action)
+        return
+
+    # Handle trade responses specially
+    if isinstance(msg.action, actions.AcceptTrade):
+        await _handle_accept_trade(room, msg.action)
+        return
+
+    if isinstance(msg.action, actions.RejectTrade):
+        await _handle_reject_trade(room, msg.action)
+        return
+
+    if isinstance(msg.action, actions.CancelTrade):
+        await _handle_cancel_trade(room, msg.action)
+        return
+
     result = processor.apply_action(room.game_state, msg.action)
     if not result.success:
         await room_manager.room_manager.send_to_player(
@@ -162,3 +181,203 @@ async def _handle_submit_action(
         game_state=serializers.serialize_model(new_state)
     )
     await room_manager.room_manager.broadcast(room, state_update.model_dump_json())
+
+    # Execute AI turns if the current player is an AI
+    await execute_ai_turns_if_needed(room)
+
+
+async def execute_ai_turns_if_needed(room: room_manager.GameRoom) -> None:
+    """Execute AI turns for the current player if they are an AI.
+
+    Continues executing AI turns until a human player's turn or game ends.
+    Broadcasts state updates after each AI turn.
+    """
+    if room.game_state is None or room.game_state.phase == game_state.GamePhase.ENDED:
+        return
+
+    # Keep executing AI turns while the current player is an AI
+    while True:
+        current_player_index = room.game_state.turn_state.player_index
+        current_slot = room.get_player_by_index(current_player_index)
+
+        if current_slot is None or not current_slot.is_ai:
+            break
+
+        # Get the AI instance for this player
+        ai_instance = room.ai_instances.get(current_player_index)
+        if ai_instance is None:
+            break
+
+        # Execute one AI turn
+        room.game_state = await driver.run_ai_turn(
+            room.game_state, current_player_index, ai_instance
+        )
+
+        # Check for game over
+        if room.game_state.phase == game_state.GamePhase.ENDED:
+            winner_index = room.game_state.winner_index
+            if winner_index is not None:
+                winner_slot = room.get_player_by_index(winner_index)
+                winner_name = winner_slot.name if winner_slot else ''
+                game_over_msg = ws_messages.GameOver(
+                    winner_player_index=winner_index,
+                    winner_name=winner_name,
+                    final_victory_points=[
+                        p.victory_points for p in room.game_state.players
+                    ],
+                )
+                await room_manager.room_manager.broadcast(
+                    room, game_over_msg.model_dump_json()
+                )
+            return
+
+        # Broadcast the updated state
+        state_update = ws_messages.GameStateUpdate(
+            game_state=serializers.serialize_model(room.game_state)
+        )
+        await room_manager.room_manager.broadcast(room, state_update.model_dump_json())
+
+
+async def _handle_trade_offer(
+    room: room_manager.GameRoom, action: actions.TradeOffer
+) -> None:
+    """Handle a trade offer action and broadcast the trade proposal."""
+    if room.game_state is None:
+        return
+
+    success, error_msg, pending_trade = trade.create_trade_offer(
+        room.game_state, action
+    )
+    if not success or pending_trade is None:
+        await room_manager.room_manager.send_to_player(
+            room,
+            action.player_index,
+            ws_messages.ErrorMessage(error=error_msg).model_dump_json(),
+        )
+        return
+
+    # Store the pending trade in the room
+    room.pending_trade = pending_trade
+
+    # Update the game state with the active trade ID
+    room.game_state.turn_state.active_trade_id = pending_trade.trade_id
+
+    # Broadcast the trade proposal to all players
+    trade_msg = ws_messages.TradeProposed(
+        trade_id=pending_trade.trade_id,
+        offering_player=pending_trade.offering_player,
+        offering=pending_trade.offering,
+        requesting=pending_trade.requesting,
+        target_player=pending_trade.target_player,
+    )
+    await room_manager.room_manager.broadcast(room, trade_msg.model_dump_json())
+
+
+async def _handle_accept_trade(
+    room: room_manager.GameRoom, action: actions.AcceptTrade
+) -> None:
+    """Handle a trade acceptance action and execute the trade."""
+    if room.game_state is None or room.pending_trade is None:
+        await room_manager.room_manager.send_to_player(
+            room,
+            action.player_index,
+            ws_messages.ErrorMessage(error='No active trade offer').model_dump_json(),
+        )
+        return
+
+    if room.pending_trade.trade_id != action.trade_id:
+        await room_manager.room_manager.send_to_player(
+            room,
+            action.player_index,
+            ws_messages.ErrorMessage(error='Trade ID mismatch').model_dump_json(),
+        )
+        return
+
+    success, error_msg, new_state = trade.accept_trade(
+        room.game_state, room.pending_trade, action.player_index
+    )
+    if not success or new_state is None:
+        await room_manager.room_manager.send_to_player(
+            room,
+            action.player_index,
+            ws_messages.ErrorMessage(error=error_msg).model_dump_json(),
+        )
+        return
+
+    # Store offering player before clearing pending trade
+    offering_player = room.pending_trade.offering_player
+
+    # Update game state and clear pending trade
+    room.game_state = new_state
+    room.pending_trade = None
+
+    # Broadcast trade accepted message
+    trade_msg = ws_messages.TradeAccepted(
+        trade_id=action.trade_id,
+        offering_player=offering_player,
+        accepting_player=action.player_index,
+    )
+    await room_manager.room_manager.broadcast(room, trade_msg.model_dump_json())
+
+    # Broadcast updated game state
+    state_update = ws_messages.GameStateUpdate(
+        game_state=serializers.serialize_model(room.game_state)
+    )
+    await room_manager.room_manager.broadcast(room, state_update.model_dump_json())
+
+
+async def _handle_reject_trade(
+    room: room_manager.GameRoom, action: actions.RejectTrade
+) -> None:
+    """Handle a trade rejection action."""
+    if room.pending_trade is None:
+        return
+
+    if room.pending_trade.trade_id != action.trade_id:
+        return
+
+    room.pending_trade = trade.reject_trade(room.pending_trade, action.player_index)
+
+    # Broadcast trade rejected message
+    trade_msg = ws_messages.TradeRejected(
+        trade_id=action.trade_id,
+        rejecting_player=action.player_index,
+    )
+    await room_manager.room_manager.broadcast(room, trade_msg.model_dump_json())
+
+
+async def _handle_cancel_trade(
+    room: room_manager.GameRoom, action: actions.CancelTrade
+) -> None:
+    """Handle a trade cancellation action."""
+    if room.pending_trade is None:
+        return
+
+    if room.pending_trade.trade_id != action.trade_id:
+        return
+
+    if room.pending_trade.offering_player != action.player_index:
+        await room_manager.room_manager.send_to_player(
+            room,
+            action.player_index,
+            ws_messages.ErrorMessage(
+                error='Only the offering player can cancel a trade'
+            ).model_dump_json(),
+        )
+        return
+
+    room.pending_trade = trade.cancel_trade(room.pending_trade)
+
+    # Clear the active trade ID from game state
+    if room.game_state:
+        room.game_state.turn_state.active_trade_id = None
+
+    # Broadcast trade cancelled message
+    trade_msg = ws_messages.TradeCancelled(
+        trade_id=action.trade_id,
+        offering_player=action.player_index,
+    )
+    await room_manager.room_manager.broadcast(room, trade_msg.model_dump_json())
+
+    # Clear the pending trade
+    room.pending_trade = None

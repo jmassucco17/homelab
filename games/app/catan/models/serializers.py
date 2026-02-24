@@ -12,10 +12,9 @@ import typing
 
 import pydantic
 
-if typing.TYPE_CHECKING:
-    from .board import Board
-    from .game_state import GameState
-    from .player import Player
+from .board import Board
+from .game_state import GameState
+from .player import Player
 
 
 def serialize_model(model: pydantic.BaseModel) -> dict[str, typing.Any]:

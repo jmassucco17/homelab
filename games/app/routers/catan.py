@@ -5,6 +5,7 @@ Registers:
 * ``GET  /catan``                      — lobby/landing page
 * ``POST /catan/rooms``                — create a new game room
 * ``GET  /catan/rooms/{room_code}``    — room status
+* ``POST /catan/rooms/{room_code}/add-ai`` — add an AI player to a room
 * ``POST /catan/rooms/{room_code}/start`` — start a game (≥2 players required)
 
 The WebSocket endpoint (``/catan/ws/{room_code}/{player_name}``) is defined
@@ -94,8 +95,62 @@ async def room_status(room_code: str) -> RoomStatusResponse:
     )
 
 
+@router.post('/catan/rooms/{room_code}/add-ai')
+async def add_ai_player(
+    room_code: str, difficulty: str = 'easy'
+) -> dict[str, str | int]:
+    """Add an AI player to a room.
+
+    Args:
+        room_code: The room code.
+        difficulty: AI difficulty level ('easy', 'medium', or 'hard').
+
+    Returns:
+        Status dict with player info.
+    """
+    if difficulty not in ('easy', 'medium', 'hard'):
+        raise fastapi.HTTPException(
+            status_code=400,
+            detail=f"Invalid difficulty '{difficulty}'. "
+            "Must be 'easy', 'medium', or 'hard'",
+        )
+
+    room = room_manager.room_manager.get_room(room_code)
+    if room is None:
+        raise fastapi.HTTPException(
+            status_code=404, detail=f'Room {room_code!r} not found'
+        )
+    if room.game_state is not None:
+        raise fastapi.HTTPException(
+            status_code=400, detail='Cannot add AI after game has started'
+        )
+
+    slot = room_manager.room_manager.add_ai_player(room_code, difficulty)
+    if slot is None:
+        raise fastapi.HTTPException(
+            status_code=400, detail='Room is full (max 4 players)'
+        )
+
+    # Broadcast PlayerJoined message to all connected clients
+    joined_msg = ws_messages.PlayerJoined(
+        player_name=slot.name,
+        player_index=slot.player_index,
+        total_players=room.player_count,
+    )
+    await room_manager.room_manager.broadcast(room, joined_msg.model_dump_json())
+
+    return {
+        'status': 'added',
+        'player_name': slot.name,
+        'player_index': slot.player_index,
+        'total_players': room.player_count,
+    }
+
+
 @router.post('/catan/rooms/{room_code}/start')
-async def start_game(room_code: str) -> dict[str, str]:
+async def start_game(
+    room_code: str, background_tasks: fastapi.BackgroundTasks
+) -> dict[str, str]:
     """Start the game for a room.
 
     Requires at least 2 players.  Broadcasts :class:`GameStarted` followed
@@ -125,5 +180,8 @@ async def start_game(room_code: str) -> dict[str, str]:
         game_state=serializers.serialize_model(game_state)
     )
     await room_manager.room_manager.broadcast(room, state_update.model_dump_json())
+
+    # Execute AI turns in the background to avoid blocking the HTTP response
+    background_tasks.add_task(ws_handler.execute_ai_turns_if_needed, room)
 
     return {'status': 'started'}
