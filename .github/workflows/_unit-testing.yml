@@ -18,4 +18,4 @@ jobs:
         uses: ./.github/actions/setup-python
 
       - name: Run unit tests
-        run: pytest -v -W error
+        run: pytest -v -W error --cov --cov-fail-under=85

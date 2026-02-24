@@ -25,6 +25,24 @@ unfixable = ["F401"]
 # Ignore B008
 ignore = ["B008"]
 
+[tool.coverage.run]
+source = [
+    "blog",
+    "games",
+    "scripts",
+    "tools",
+    "travel",
+]
+omit = ["*_test.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "if typing.TYPE_CHECKING:",
+]
+
 [tool.pytest.ini_options]
 # Filter out SQLAlchemy warnings about duplicate class names in registry
 # This occurs when multiple modules define models with the same class name (e.g., Location)
