@@ -82,6 +82,105 @@ class TestActionProcessor(unittest.TestCase):
         )
         self.assertFalse(result2.success)
 
+    def test_place_settlement_setup_forward_no_resources(self) -> None:
+        """During SETUP_FORWARD, placing settlement does not award resources."""
+        state = _make_2p_state()
+        self.assertEqual(state.phase, game_state.GamePhase.SETUP_FORWARD)
+        # Record initial resource count
+        initial_resources = state.players[0].resources.total()
+        # Place settlement
+        result = processor.apply_action(
+            state, actions.PlaceSettlement(player_index=0, vertex_id=5)
+        )
+        self.assertTrue(result.success)
+        assert result.updated_state is not None
+        # Resources should not change
+        final_resources = result.updated_state.players[0].resources.total()
+        self.assertEqual(initial_resources, final_resources)
+
+    def test_place_settlement_setup_backward_awards_resources(self) -> None:
+        """During SETUP_BACKWARD, placing settlement awards initial resources."""
+        state = _make_2p_state()
+        # Advance through SETUP_FORWARD to reach SETUP_BACKWARD
+        # Player 0 places first settlement and road
+        state = _place_setup_settlement(state, 0)
+        road_edge = state.board.vertices[0].adjacent_edge_ids[0]
+        result = processor.apply_action(
+            state, actions.PlaceRoad(player_index=0, edge_id=road_edge)
+        )
+        assert result.success and result.updated_state is not None
+        state = result.updated_state
+
+        # Player 1 places first settlement and road
+        state = _place_setup_settlement(state, 10)
+        road_edge = state.board.vertices[10].adjacent_edge_ids[0]
+        result = processor.apply_action(
+            state, actions.PlaceRoad(player_index=1, edge_id=road_edge)
+        )
+        assert result.success and result.updated_state is not None
+        state = result.updated_state
+
+        # Now we should be in SETUP_BACKWARD with player 1
+        self.assertEqual(state.phase, game_state.GamePhase.SETUP_BACKWARD)
+        self.assertEqual(state.turn_state.player_index, 1)
+
+        # Record initial resource count for player 1
+        initial_resources = state.players[1].resources.total()
+
+        # Place second settlement for player 1
+        result = processor.apply_action(
+            state, actions.PlaceSettlement(player_index=1, vertex_id=15)
+        )
+        self.assertTrue(result.success)
+        assert result.updated_state is not None
+
+        # Resources should have increased
+        final_resources = result.updated_state.players[1].resources.total()
+        self.assertGreater(final_resources, initial_resources)
+
+    def test_place_settlement_setup_backward_correct_resource_types(self) -> None:
+        """Resources awarded match adjacent tiles (excluding desert)."""
+        state = _make_2p_state()
+        # Advance through SETUP_FORWARD to SETUP_BACKWARD
+        # Player 0 places
+        state = _place_setup_settlement(state, 0)
+        road_edge = state.board.vertices[0].adjacent_edge_ids[0]
+        result = processor.apply_action(
+            state, actions.PlaceRoad(player_index=0, edge_id=road_edge)
+        )
+        assert result.success and result.updated_state is not None
+        state = result.updated_state
+
+        # Player 1 places
+        state = _place_setup_settlement(state, 10)
+        road_edge = state.board.vertices[10].adjacent_edge_ids[0]
+        result = processor.apply_action(
+            state, actions.PlaceRoad(player_index=1, edge_id=road_edge)
+        )
+        assert result.success and result.updated_state is not None
+        state = result.updated_state
+
+        # Now in SETUP_BACKWARD - place second settlement
+        vertex_id = 15
+        vertex = state.board.vertices[vertex_id]
+
+        # Count non-desert tiles adjacent to this vertex
+        non_desert_tiles = 0
+        for tile_idx in vertex.adjacent_tile_indices:
+            tile = state.board.tiles[tile_idx]
+            if tile.tile_type != board.TileType.DESERT:
+                non_desert_tiles += 1
+
+        initial_resources = state.players[1].resources.total()
+        result = processor.apply_action(
+            state, actions.PlaceSettlement(player_index=1, vertex_id=vertex_id)
+        )
+        assert result.success and result.updated_state is not None
+        final_resources = result.updated_state.players[1].resources.total()
+
+        # Should receive exactly one resource per non-desert tile
+        self.assertEqual(final_resources - initial_resources, non_desert_tiles)
+
     def test_place_road_setup_advances_turn(self) -> None:
         """After placing a road in setup, turn advances to next player."""
         state = _make_2p_state()
@@ -316,6 +415,79 @@ class TestActionProcessor(unittest.TestCase):
         # dev_cards should now have the knight; new_dev_cards cleared.
         self.assertEqual(result.updated_state.players[0].dev_cards.knight, 1)
         self.assertEqual(result.updated_state.players[0].new_dev_cards.knight, 0)
+
+    def test_setup_second_road_must_connect_to_second_settlement(self) -> None:
+        """During setup, second road must connect to second settlement."""
+        state = _make_2p_state()
+
+        # Player 0: Place first settlement and road
+        state = _place_setup_settlement(state, 0)
+        first_settlement_vertex = 0
+        vertex = state.board.vertices[first_settlement_vertex]
+        first_road_edge = vertex.adjacent_edge_ids[0]
+        result = processor.apply_action(
+            state, actions.PlaceRoad(player_index=0, edge_id=first_road_edge)
+        )
+        self.assertTrue(result.success)
+        assert result.updated_state is not None
+        state = result.updated_state
+
+        # Player 1: Place first settlement and road
+        state = _place_setup_settlement(state, 10)
+        player1_road_edge = state.board.vertices[10].adjacent_edge_ids[0]
+        result = processor.apply_action(
+            state, actions.PlaceRoad(player_index=1, edge_id=player1_road_edge)
+        )
+        self.assertTrue(result.success)
+        assert result.updated_state is not None
+        state = result.updated_state
+
+        # Now in SETUP_BACKWARD, player 1 places second settlement
+        state = _place_setup_settlement(state, 20)
+        second_settlement_vertex = 20
+        v = state.board.vertices[second_settlement_vertex]
+        player1_second_road = v.adjacent_edge_ids[0]
+        result = processor.apply_action(
+            state, actions.PlaceRoad(player_index=1, edge_id=player1_second_road)
+        )
+        self.assertTrue(result.success)
+        assert result.updated_state is not None
+        state = result.updated_state
+
+        # Player 0: Place second settlement at a different location
+        state = _place_setup_settlement(state, 30)
+        second_settlement_vertex = 30
+
+        # Get edges adjacent to both settlements
+        v1 = state.board.vertices[first_settlement_vertex]
+        first_settlement_edges = set(v1.adjacent_edge_ids)
+        v2 = state.board.vertices[second_settlement_vertex]
+        second_settlement_edges = set(v2.adjacent_edge_ids)
+
+        # Find edge only adjacent to first settlement (not second)
+        first_only_edges = first_settlement_edges - second_settlement_edges
+        if first_only_edges:
+            invalid_edge = next(iter(first_only_edges))
+            # Make sure this edge doesn't already have a road
+            if state.board.edges[invalid_edge].road is None:
+                result = processor.apply_action(
+                    state, actions.PlaceRoad(player_index=0, edge_id=invalid_edge)
+                )
+                self.assertFalse(result.success)
+                assert result.error_message is not None
+                self.assertIn('most recently placed settlement', result.error_message)
+
+        # Place road adjacent to second settlement - should succeed
+        valid_edge = None
+        for edge_id in second_settlement_edges:
+            if state.board.edges[edge_id].road is None:
+                valid_edge = edge_id
+                break
+        assert valid_edge is not None
+        result = processor.apply_action(
+            state, actions.PlaceRoad(player_index=0, edge_id=valid_edge)
+        )
+        self.assertTrue(result.success)
 
 
 if __name__ == '__main__':

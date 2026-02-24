@@ -132,31 +132,25 @@ def _setup_legal_actions(
         return result
 
     if pending == game_state.PendingActionType.PLACE_ROAD:
-        return _setup_road_actions(brd, player_index)
+        return _setup_road_actions(state, player_index)
 
     return []
 
 
-def _setup_road_actions(brd: board.Board, player_index: int) -> list[actions.Action]:
-    """Return road placement actions adjacent to any own settlement (setup only)."""
-    settlement_vertices: set[int] = {
-        v.vertex_id
-        for v in brd.vertices
-        if v.building and v.building.player_index == player_index
-    }
+def _setup_road_actions(
+    state: game_state.GameState, player_index: int
+) -> list[actions.Action]:
+    """Return road actions adjacent to most recent settlement (setup)."""
+    # During setup, road must be adjacent to just-placed settlement
+    setup_vertex_id = state.turn_state.setup_settlement_vertex
+    if setup_vertex_id is None:
+        return []
+
+    vertex = state.board.vertices[setup_vertex_id]
     result: list[actions.Action] = []
-    seen: set[int] = set()
-    for vertex in brd.vertices:
-        if vertex.vertex_id not in settlement_vertices:
-            continue
-        for edge_id in vertex.adjacent_edge_ids:
-            if edge_id in seen:
-                continue
-            seen.add(edge_id)
-            if brd.edges[edge_id].road is None:
-                result.append(
-                    actions.PlaceRoad(player_index=player_index, edge_id=edge_id)
-                )
+    for edge_id in vertex.adjacent_edge_ids:
+        if state.board.edges[edge_id].road is None:
+            result.append(actions.PlaceRoad(player_index=player_index, edge_id=edge_id))
     return result
 
 

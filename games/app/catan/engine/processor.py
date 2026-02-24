@@ -121,6 +121,11 @@ def _apply_place_settlement(
     # During setup, next action is to place a road.
     if state.phase in _SETUP_PHASES:
         state.turn_state.pending_action = game_state.PendingActionType.PLACE_ROAD
+        state.turn_state.setup_settlement_vertex = action.vertex_id
+
+        # During SETUP_BACKWARD (second settlement placement), award initial resources
+        if state.phase == game_state.GamePhase.SETUP_BACKWARD:
+            _award_resources_for_vertex(state, action.vertex_id, action.player_index)
 
 
 def _apply_place_road(state: game_state.GameState, action: actions.PlaceRoad) -> None:
@@ -165,16 +170,19 @@ def _apply_place_road(state: game_state.GameState, action: actions.PlaceRoad) ->
 def _validate_setup_road(
     state: game_state.GameState, action: actions.PlaceRoad
 ) -> None:
-    """Validate that the road edge is adjacent to an own settlement (setup)."""
+    """Validate road edge is adjacent to most recent settlement (setup)."""
     edge = state.board.edges[action.edge_id]
-    for vid in edge.vertex_ids:
-        vertex = state.board.vertices[vid]
-        if (
-            vertex.building is not None
-            and vertex.building.player_index == action.player_index
-        ):
-            return
-    raise ValueError('Setup road must be adjacent to own settlement.')
+
+    # During setup, road must be adjacent to just-placed settlement
+    setup_vertex_id = state.turn_state.setup_settlement_vertex
+    if setup_vertex_id is None:
+        raise ValueError('No settlement has been placed yet.')
+
+    # Check if the edge is adjacent to the setup settlement vertex
+    if setup_vertex_id in edge.vertex_ids:
+        return
+
+    raise ValueError('Setup road must be adjacent to most recent settlement.')
 
 
 def _apply_place_city(state: game_state.GameState, action: actions.PlaceCity) -> None:
@@ -223,6 +231,38 @@ def _apply_roll_dice(state: game_state.GameState, action: actions.RollDice) -> N
     else:
         _distribute_resources(state, roll)
         state.turn_state.pending_action = game_state.PendingActionType.BUILD_OR_TRADE
+
+
+def _award_resources_for_vertex(
+    state: game_state.GameState, vertex_id: int, player_index: int
+) -> None:
+    """Award resources to a player for tiles adjacent to a specific vertex.
+
+    Used during initial placement in SETUP_BACKWARD phase to give starting resources.
+
+    Args:
+        state: The current game state.
+        vertex_id: The vertex ID where the settlement is placed.
+        player_index: The player receiving the resources.
+    """
+    vertex = state.board.vertices[vertex_id]
+    p = state.players[player_index]
+
+    for tile_idx in vertex.adjacent_tile_indices:
+        tile = state.board.tiles[tile_idx]
+
+        # Skip desert tiles
+        if tile.tile_type == board.TileType.DESERT:
+            continue
+
+        # Get the resource type for this tile
+        resource = board.TILE_RESOURCE.get(tile.tile_type)
+        if resource is None:
+            continue
+
+        # Award 1 resource of this type
+        current = p.resources.get(resource)
+        p.resources = p.resources.with_resource(resource, current + 1)
 
 
 def _distribute_resources(state: game_state.GameState, roll: int) -> None:

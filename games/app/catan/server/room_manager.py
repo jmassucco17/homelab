@@ -19,11 +19,25 @@ import string
 import fastapi
 
 from ..ai import base
-from ..engine import turn_manager
+from ..engine import trade, turn_manager
 from ..models import game_state as gs
 
 # Player colours assigned in join order (index 0–3).
 _PLAYER_COLORS: list[str] = ['red', 'blue', 'white', 'orange']
+
+# AI name elements for generating random names
+_AI_NAME_ELEMENTS: list[str] = ['Joe', 'John', 'Jicky']
+
+
+def generate_ai_name() -> str:
+    """Generate a random AI first name by selecting 1 or 2 elements from the name list.
+
+    Returns:
+        A string like "Joe", "John Jicky", "Jicky Joe", etc.
+    """
+    num_elements = random.randint(1, 2)
+    chosen = random.sample(_AI_NAME_ELEMENTS, num_elements)
+    return ' '.join(chosen)
 
 
 # ---------------------------------------------------------------------------
@@ -66,6 +80,8 @@ class GameRoom:
         self.created_at: datetime.datetime = datetime.datetime.now(datetime.UTC)
         # AI instances indexed by player_index (only for AI players)
         self.ai_instances: dict[int, base.CatanAI] = {}
+        # Active trade offer (if any)
+        self.pending_trade: trade.PendingTrade | None = None
 
     # ------------------------------------------------------------------
     # Convenience properties
@@ -191,7 +207,7 @@ class RoomManager:
         if room is None or not room.can_join():
             return None
 
-        ai_name = f'AI {ai_type.capitalize()} {len(room.players) + 1}'
+        ai_name = f'{generate_ai_name()} (AI, {ai_type})'
         color = _PLAYER_COLORS[len(room.players)]
         slot = PlayerSlot(
             player_index=len(room.players),
