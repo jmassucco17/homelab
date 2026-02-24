@@ -45,6 +45,35 @@ on:
         default: true
 
 jobs:
+  compute-matrix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      services: ${{ steps.filter.outputs.services }}
+      has-services: ${{ steps.filter.outputs.has-services }}
+    steps:
+      - name: Filter services
+        id: filter
+        run: |
+          services=''
+          add() {
+            local svc="$1" ctx="$2"
+            services="${services:+$services,}{\"service\":\"${svc}\",\"image\":\"ghcr.io/jmassucco17/homelab/${svc}\",\"context\":\"${ctx}\",\"file\":\"${svc}/Dockerfile\"}"
+          }
+          [ "${{ inputs['shared-assets'] }}" = "true" ] && add shared-assets shared-assets
+          [ "${{ inputs.homepage }}"         = "true" ] && add homepage homepage
+          [ "${{ inputs.blog }}"             = "true" ] && add blog .
+          [ "${{ inputs.games }}"            = "true" ] && add games .
+          [ "${{ inputs.tools }}"            = "true" ] && add tools .
+          [ "${{ inputs.travel }}"           = "true" ] && add travel .
+          echo "services=[${services}]" >> "$GITHUB_OUTPUT"
+          if [ -z "$services" ]; then
+            echo "has-services=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-services=true" >> "$GITHUB_OUTPUT"
+          fi
+
   build-base:
     name: build python-base
     if: inputs.rebuild_base
@@ -68,55 +97,23 @@ jobs:
 
   build:
     name: build ${{ matrix.service }}
-    needs: build-base
-    if: "!failure() && !cancelled()"
+    needs: [build-base, compute-matrix]
+    if: needs.compute-matrix.outputs.has-services == 'true' && !failure() && !cancelled()
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     strategy:
       matrix:
-        include:
-          - service: shared-assets
-            image: ghcr.io/jmassucco17/homelab/shared-assets
-            context: shared-assets
-            file: shared-assets/Dockerfile
-            enabled: ${{ inputs['shared-assets'] }}
-          - service: homepage
-            image: ghcr.io/jmassucco17/homelab/homepage
-            context: homepage
-            file: homepage/Dockerfile
-            enabled: ${{ inputs.homepage }}
-          - service: blog
-            image: ghcr.io/jmassucco17/homelab/blog
-            context: .
-            file: blog/Dockerfile
-            enabled: ${{ inputs.blog }}
-          - service: games
-            image: ghcr.io/jmassucco17/homelab/games
-            context: .
-            file: games/Dockerfile
-            enabled: ${{ inputs.games }}
-          - service: tools
-            image: ghcr.io/jmassucco17/homelab/tools
-            context: .
-            file: tools/Dockerfile
-            enabled: ${{ inputs.tools }}
-          - service: travel
-            image: ghcr.io/jmassucco17/homelab/travel
-            context: .
-            file: travel/Dockerfile
-            enabled: ${{ inputs.travel }}
+        include: ${{ fromJSON(needs.compute-matrix.outputs.services) }}
 
     steps:
       - uses: actions/checkout@v6
 
       - name: Setup Docker and login
-        if: matrix.enabled
         uses: ./.github/actions/docker-setup
 
       - name: Build and push ${{ matrix.service }}
-        if: matrix.enabled
         uses: ./.github/actions/docker-build-push
         with:
           image: ${{ matrix.image }}

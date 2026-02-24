@@ -45,6 +45,33 @@ on:
         default: true
 
 jobs:
+  compute-matrix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      services: ${{ steps.filter.outputs.services }}
+      has-services: ${{ steps.filter.outputs.has-services }}
+    steps:
+      - name: Filter services
+        id: filter
+        run: |
+          services=''
+          add() { services="${services:+$services,}{\"service\":\"$1\"}"; }
+          [ "${{ inputs['shared-assets'] }}" = "true" ]                                       && add shared-assets
+          [ "${{ inputs.homepage }}"         = "true" ]                                       && add homepage
+          [ "${{ inputs.blog }}"             = "true" ]                                       && add blog
+          [ "${{ inputs.games }}"            = "true" ]                                       && add games
+          [ "${{ inputs.tools }}"            = "true" ]                                       && add tools
+          [ "${{ inputs.travel }}"           = "true" ]                                       && add travel
+          [ "${{ inputs.monitoring }}"       = "true" ] && [ "${{ inputs.environment }}" = "prod" ] && add monitoring
+          echo "services=[${services}]" >> "$GITHUB_OUTPUT"
+          if [ -z "$services" ]; then
+            echo "has-services=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-services=true" >> "$GITHUB_OUTPUT"
+          fi
+
   setup-server:
     runs-on: ubuntu-latest
     permissions:
@@ -207,40 +234,22 @@ jobs:
 
   deploy-service:
     name: deploy ${{ matrix.service }}
-    needs: deploy-networking
-    # !failure() && !cancelled() allows this job to run even when deploy-networking
-    # was skipped (i.e. inputs.networking == false)
-    if: "!failure() && !cancelled()"
+    needs: [deploy-networking, compute-matrix]
+    if: needs.compute-matrix.outputs.has-services == 'true' && !failure() && !cancelled()
     runs-on: ubuntu-latest
     permissions:
       contents: read
     strategy:
       matrix:
-        include:
-          - service: shared-assets
-            enabled: ${{ inputs['shared-assets'] }}
-          - service: homepage
-            enabled: ${{ inputs.homepage }}
-          - service: blog
-            enabled: ${{ inputs.blog }}
-          - service: games
-            enabled: ${{ inputs.games }}
-          - service: tools
-            enabled: ${{ inputs.tools }}
-          - service: travel
-            enabled: ${{ inputs.travel }}
-          - service: monitoring
-            enabled: ${{ inputs.monitoring && inputs.environment == 'prod' }}
+        include: ${{ fromJSON(needs.compute-matrix.outputs.services) }}
     steps:
       - uses: actions/checkout@v6
 
       - name: Set image tag
         id: image-tag
-        if: matrix.enabled
         uses: ./.github/actions/set-image-tag
 
       - uses: ./.github/actions/setup-deploy
-        if: matrix.enabled
         with:
           tailscale-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
           tailscale-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
@@ -248,7 +257,6 @@ jobs:
           server-ssh-host-key: ${{ secrets.SERVER_SSH_HOST_KEY }}
 
       - name: Deploy ${{ matrix.service }}
-        if: matrix.enabled
         env:
           SERVER_USER: ${{ vars.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
