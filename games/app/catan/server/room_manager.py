@@ -19,7 +19,7 @@ import string
 import fastapi
 
 from ..ai import base
-from ..engine import turn_manager
+from ..engine import trade, turn_manager
 from ..models import game_state as gs
 
 # Player colours assigned in join order (index 0–3).
@@ -81,7 +81,7 @@ class GameRoom:
         # AI instances indexed by player_index (only for AI players)
         self.ai_instances: dict[int, base.CatanAI] = {}
         # Active trade offer (if any)
-        self.pending_trade: object | None = None
+        self.pending_trade: trade.PendingTrade | None = None
 
     # ------------------------------------------------------------------
     # Convenience properties
