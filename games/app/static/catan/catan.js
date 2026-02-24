@@ -179,6 +179,10 @@ async function initGame() {
       )
       ui.setGameState(gameState, myPlayerIndex)
       updateLegalHighlights(gameState, boardRenderer, myPlayerIndex)
+      // Log any events produced by the most recent action(s).
+      if (Array.isArray(gameState.recent_events)) {
+        gameState.recent_events.forEach((evt) => ui.updateLog(evt))
+      }
     },
 
     onErrorMessage: (error) => {
