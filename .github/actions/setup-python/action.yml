@@ -1,14 +1,15 @@
 name: Setup Python
-description: Sets up Python 3.12 and installs dependencies from requirements.txt
+description: Sets up Python 3.12 and installs dependencies via uv sync
 
 runs:
   using: composite
   steps:
-    - name: Set up Python
-      uses: actions/setup-python@v6
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v7
       with:
         python-version: '3.12'
+        activate-environment: true
 
     - name: Install dependencies
       shell: bash
-      run: pip install -r requirements.txt
+      run: uv sync --frozen

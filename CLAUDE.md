@@ -11,7 +11,8 @@ NOTE: From here on out, we'll refer to top-level directories that contain docker
 ## Environment
 
 - Run `bootstrap.sh` to fully initialize a new environment, including installing all necessary packages
-- When adding a new package, add it to `requirements.txt` or `package.json` and then run `bootstrap.sh` to install
+- When adding a new package, add it to `pyproject.toml` or `package.json` and then run `bootstrap.sh` to install
+- Python packages are managed with `uv` (`uv sync`)
 - If running `bootstrap.sh` does not install a package that you need to use, be sure to treat that as an issue and try to fix by updating either the requirements, or the `bootstrap.sh` script itself
 
 ## Modules
