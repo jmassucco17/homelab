@@ -36,7 +36,7 @@ jobs:
 
       - name: Validate all Compose files
         run: |
-          for dir in networking monitoring shared-assets homepage blog travel games tools; do
+          for dir in networking monitoring shared-assets homepage blog games portainer tools travel; do
             echo "--- Validating $dir ---"
 
             # Validate base compose file
@@ -268,6 +268,32 @@ jobs:
         if: always()
         with:
           service: tools
+
+  portainer:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Create docker web network
+        run: docker network create web 2>/dev/null || true
+
+      - name: Pull and start portainer
+        run: |
+          cd portainer
+          docker compose up -d --wait
+
+      - name: Test portainer status endpoint
+        run: |
+          PORTAINER_IP=$(docker inspect portainer --format='{{.NetworkSettings.Networks.web.IPAddress}}')
+          docker run --rm --network web alpine wget -qO- "http://${PORTAINER_IP}:9000/api/system/status"
+
+      - name: Stop portainer service
+        if: always()
+        run: |
+          cd portainer
+          docker compose down --remove-orphans
 
   monitoring:
     runs-on: ubuntu-latest

@@ -155,6 +155,7 @@ services:
         whoami.jamesmassucco.com,
         travel.jamesmassucco.com,
         games.jamesmassucco.com,
+        portainer.jamesmassucco.com,
         tools.jamesmassucco.com,
       PROXIED: true
       TZ: America/Los_Angeles
