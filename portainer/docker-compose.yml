@@ -2,6 +2,8 @@ services:
   portainer:
     image: portainer/portainer-ce:2.33.7
     container_name: portainer
+    command:
+      - --http-enabled
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - portainer_data:/data
@@ -13,12 +15,6 @@ services:
       - 'traefik.http.routers.portainer.tls.certresolver=cloudflare'
       - 'traefik.http.routers.portainer.middlewares=oauth-auth,ratelimit'
       - 'traefik.http.services.portainer.loadbalancer.server.port=9000'
-    healthcheck:
-      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:9000/api/system/status']
-      interval: 5s
-      timeout: 1s
-      retries: 3
-      start_period: 10s
     networks:
       - web
     restart: unless-stopped

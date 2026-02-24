@@ -282,12 +282,21 @@ jobs:
       - name: Pull and start portainer
         run: |
           cd portainer
-          docker compose up -d --wait
+          docker compose up -d
 
-      - name: Test portainer status endpoint
+      - name: Wait for portainer API to be ready
         run: |
           PORTAINER_IP=$(docker inspect portainer --format='{{.NetworkSettings.Networks.web.IPAddress}}')
-          docker run --rm --network web alpine wget -qO- "http://${PORTAINER_IP}:9000/api/system/status"
+          for i in $(seq 1 12); do
+            if docker run --rm --network web alpine wget -qO- "http://${PORTAINER_IP}:9000/api/system/status" 2>/dev/null; then
+              echo "Portainer is ready"
+              exit 0
+            fi
+            echo "Attempt ${i}/12: portainer not ready yet, waiting 5s..."
+            sleep 5
+          done
+          echo "Portainer did not become ready in time"
+          exit 1
 
       - name: Stop portainer service
         if: always()
