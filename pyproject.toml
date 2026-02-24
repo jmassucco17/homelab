@@ -26,13 +26,7 @@ unfixable = ["F401"]
 ignore = ["B008"]
 
 [tool.coverage.run]
-source = [
-    "blog",
-    "games",
-    "scripts",
-    "tools",
-    "travel",
-]
+source = ["."]
 omit = ["*_test.py"]
 
 [tool.coverage.report]
