@@ -21,14 +21,14 @@ import pathlib
 
 import fastapi
 import fastapi.responses
-import fastapi.templating
 import pydantic
 
+from .. import templates as tmpl
 from ..catan.models import ws_messages
 from ..catan.server import room_manager, ws_handler
 
 APP_DIR = pathlib.Path(__file__).resolve().parent.parent
-templates = fastapi.templating.Jinja2Templates(directory=APP_DIR / 'templates')
+templates = tmpl.templates
 
 
 def _compute_catan_version() -> str:

@@ -110,6 +110,20 @@ class TestCatanRouter(unittest.TestCase):
         resp = self.client.get('/catan/game')
         self.assertIn('catan.js?v=', resp.text)
 
+    def test_catan_lobby_renders_domain(self) -> None:
+        """Test the catan lobby renders the domain variable from shared templates."""
+        resp = self.client.get('/catan')
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('jamesmassucco.com', resp.text)
+        self.assertNotIn('{{ domain }}', resp.text)
+
+    def test_catan_game_renders_domain(self) -> None:
+        """Test the catan game page renders the domain variable from shared templates."""
+        resp = self.client.get('/catan/game')
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('jamesmassucco.com', resp.text)
+        self.assertNotIn('{{ domain }}', resp.text)
+
     def test_create_room_returns_code(self) -> None:
         """POST /catan/rooms returns a 4-character room code."""
         resp = self.client.post('/catan/rooms')
