@@ -19,6 +19,7 @@ Message flow
 from __future__ import annotations
 
 import json
+import logging
 
 import fastapi
 import pydantic
@@ -27,6 +28,8 @@ from ..ai import driver
 from ..engine import processor, trade
 from ..models import actions, game_state, serializers, ws_messages
 from . import room_manager
+
+logger = logging.getLogger(__name__)
 
 router = fastapi.APIRouter()
 
@@ -51,9 +54,11 @@ async def catan_ws(
     """
     # Always accept before sending any message (WebSocket protocol requires it).
     await websocket.accept()
+    logger.info('[%s] Player %r connected', room_code, player_name)
 
     room = room_manager.room_manager.get_room(room_code)
     if room is None:
+        logger.warning('[%s] Player %r: room not found', room_code, player_name)
         await websocket.send_text(
             ws_messages.ErrorMessage(
                 error=f'Room {room_code!r} does not exist'
@@ -64,6 +69,9 @@ async def catan_ws(
 
     slot = room_manager.room_manager.join_room(room_code, player_name, websocket)
     if slot is None:
+        logger.warning(
+            '[%s] Player %r: room full or name taken', room_code, player_name
+        )
         await websocket.send_text(
             ws_messages.ErrorMessage(
                 error='Room is full or player name is taken'
@@ -71,6 +79,14 @@ async def catan_ws(
         )
         await websocket.close(code=1008)
         return
+
+    logger.info(
+        '[%s] Player %r joined as index %d (%d total)',
+        room_code,
+        player_name,
+        slot.player_index,
+        room.player_count,
+    )
 
     # Announce the new (or reconnected) player to everyone in the room.
     joined_msg = ws_messages.PlayerJoined(
@@ -89,6 +105,12 @@ async def catan_ws(
                     _client_message_adapter.validate_python(data)
                 )
             except (json.JSONDecodeError, pydantic.ValidationError) as exc:
+                logger.warning(
+                    '[%s] Player %r sent invalid message: %s',
+                    room_code,
+                    player_name,
+                    exc,
+                )
                 await room_manager.room_manager.send_to_player(
                     room,
                     slot.player_index,
@@ -99,10 +121,19 @@ async def catan_ws(
                 continue
 
             if isinstance(client_msg, ws_messages.SubmitAction):
+                action_type = client_msg.action.action_type
+                logger.info(
+                    '[%s] Player %r (index %d) submitted action: %s',
+                    room_code,
+                    player_name,
+                    slot.player_index,
+                    action_type,
+                )
                 await _handle_submit_action(room, slot.player_index, client_msg)
             # JoinGame is redundant (join is via URL); RequestUndo is Phase 9.
 
     except fastapi.WebSocketDisconnect:
+        logger.info('[%s] Player %r disconnected', room_code, player_name)
         room_manager.room_manager.disconnect_player(room_code, player_name)
 
 
@@ -114,6 +145,11 @@ async def _handle_submit_action(
     """Validate and apply a :class:`SubmitAction` message, then broadcast."""
 
     if room.game_state is None:
+        logger.warning(
+            '[%s] Player index %d submitted action before game started',
+            room.room_code,
+            player_index,
+        )
         await room_manager.room_manager.send_to_player(
             room,
             player_index,
@@ -143,6 +179,13 @@ async def _handle_submit_action(
 
     result = processor.apply_action(room.game_state, msg.action)
     if not result.success:
+        logger.warning(
+            '[%s] Player index %d action %s failed: %s',
+            room.room_code,
+            player_index,
+            msg.action.action_type,
+            result.error_message,
+        )
         await room_manager.room_manager.send_to_player(
             room,
             player_index,
@@ -167,6 +210,12 @@ async def _handle_submit_action(
                 winner_name = ''
             else:
                 winner_name = winner_slot.name
+            logger.info(
+                '[%s] Game over — winner: %r (index %d)',
+                room.room_code,
+                winner_name,
+                winner_index,
+            )
             game_over_msg = ws_messages.GameOver(
                 winner_player_index=winner_index,
                 winner_name=winner_name,
