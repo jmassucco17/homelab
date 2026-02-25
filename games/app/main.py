@@ -1,5 +1,6 @@
 """FastAPI application for the games sub-site."""
 
+import logging
 import pathlib
 
 import fastapi
@@ -12,6 +13,17 @@ from .routers import catan, pong, snake
 APP_DIR = pathlib.Path(__file__).resolve().parent
 
 app = fastapi.FastAPI(title='Games')
+
+
+class HealthCheckFilter(logging.Filter):
+    """Filter out health check requests from uvicorn access logs."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        """Return False to suppress health check log entries."""
+        return '/health' not in record.getMessage()
+
+
+logging.getLogger('uvicorn.access').addFilter(HealthCheckFilter())
 
 app.mount(
     '/static',

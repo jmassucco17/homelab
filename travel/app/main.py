@@ -1,6 +1,7 @@
 """Combined travel application - landing, photos, and maps."""
 
 import contextlib
+import logging
 import os
 import pathlib
 from collections.abc import AsyncGenerator
@@ -16,6 +17,17 @@ from travel.app.photos import database as photos_db
 from travel.app.photos import routes as photos_routes
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
+
+
+class HealthCheckFilter(logging.Filter):
+    """Filter out health check requests from uvicorn access logs."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        """Return False to suppress health check log entries."""
+        return '/health' not in record.getMessage()
+
+
+logging.getLogger('uvicorn.access').addFilter(HealthCheckFilter())
 
 
 @contextlib.asynccontextmanager
