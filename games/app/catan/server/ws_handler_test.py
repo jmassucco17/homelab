@@ -467,10 +467,6 @@ class TestCatanWebSocket(unittest.TestCase):
                     action_logs, 'Expected an INFO log for end_turn action by Alice'
                 )
 
-
-class TestSerializeStateForBroadcast(unittest.TestCase):
-    """Unit tests for serialize_state_for_broadcast."""
-
     def _make_move_robber_state(self) -> gs_module.GameState:
         """Return a game state with pending_action == MOVE_ROBBER."""
         base = turn_manager.create_initial_game_state(
@@ -520,7 +516,7 @@ class TestSerializeStateForBroadcast(unittest.TestCase):
 
     def test_game_state_update_includes_legal_tile_indices(self) -> None:
         """GameStateUpdate includes legal_tile_indices when pending is move_robber."""
-        client, mgr = _fresh_client()
+        client, _ = _fresh_client()
         code = client.post('/catan/rooms').json()['room_code']
         with client.websocket_connect(f'/catan/ws/{code}/Alice') as ws1:
             ws1.receive_text()
@@ -541,6 +537,242 @@ class TestSerializeStateForBroadcast(unittest.TestCase):
                 self.assertIn('legal_tile_indices', update_msg['game_state'])
                 self.assertIn('legal_vertex_ids', update_msg['game_state'])
                 self.assertIn('legal_edge_ids', update_msg['game_state'])
+
+    # ------------------------------------------------------------------
+    # AI trade responses
+    # ------------------------------------------------------------------
+
+    def test_ai_player_responds_to_trade_offer(self) -> None:
+        """AI players immediately broadcast a response to a trade proposal."""
+        code = self._create_room()
+        with self.client.websocket_connect(f'/catan/ws/{code}/Alice') as ws:
+            ws.receive_text()  # Alice's PlayerJoined
+            # Always-reject AI so the test is deterministic.
+            resp = self.client.post(f'/catan/rooms/{code}/add-ai?difficulty=easy')
+            self.assertEqual(resp.status_code, 200)
+            ws.receive_text()  # AI's PlayerJoined
+
+            room = self.mgr.get_room(code)
+            assert room is not None
+            self.client.post(f'/catan/rooms/{code}/start')
+            ws.receive_text()  # GameStarted
+            ws.receive_text()  # GameStateUpdate
+
+            # Force MAIN phase state with player 0 active and resources for trade.
+            room.game_state = room.game_state.model_copy(  # type: ignore[union-attr]
+                update={
+                    'phase': gs_module.GamePhase.MAIN,
+                    'turn_state': gs_module.TurnState(
+                        player_index=0,
+                        pending_action=gs_module.PendingActionType.BUILD_OR_TRADE,
+                    ),
+                }
+            )
+            from games.app.catan.models import player as player_module
+
+            new_players = list(room.game_state.players)
+            new_players[0] = room.game_state.players[0].model_copy(
+                update={'resources': player_module.Resources(wood=2)}
+            )
+            new_players[1] = room.game_state.players[1].model_copy(
+                update={'resources': player_module.Resources(ore=2)}
+            )
+            room.game_state = room.game_state.model_copy(
+                update={'players': new_players}
+            )
+
+            # Patch the AI to always reject so we can assert deterministically.
+            ai_instance = list(room.ai_instances.values())[0]
+            with unittest.mock.patch.object(
+                ai_instance,
+                'respond_to_trade',
+                return_value=actions_module.RejectTrade(
+                    player_index=1, trade_id='__PLACEHOLDER__'
+                ),
+            ) as mock_respond:
+                # Make the return value use the actual trade_id.
+                def _reject(state: object, pidx: int, pt: object) -> object:
+                    return actions_module.RejectTrade(
+                        player_index=pidx,
+                        trade_id=pt.trade_id,  # type: ignore[union-attr]
+                    )
+
+                mock_respond.side_effect = _reject
+
+                ws.send_text(
+                    json.dumps(
+                        {
+                            'message_type': 'submit_action',
+                            'action': {
+                                'action_type': 'trade_offer',
+                                'player_index': 0,
+                                'offering': {'wood': 1},
+                                'requesting': {'ore': 1},
+                            },
+                        }
+                    )
+                )
+                # First broadcast: TradeProposed
+                msg1 = json.loads(ws.receive_text())
+                self.assertEqual(
+                    msg1['message_type'], ws_messages.ServerMessageType.TRADE_PROPOSED
+                )
+                # Second broadcast: TradeRejected (AI's response)
+                msg2 = json.loads(ws.receive_text())
+                self.assertEqual(
+                    msg2['message_type'], ws_messages.ServerMessageType.TRADE_REJECTED
+                )
+                mock_respond.assert_called_once()
+
+    def test_trade_cancelled_when_all_ai_players_reject(self) -> None:
+        """Trade is cancelled automatically when all AI players reject it."""
+        code = self._create_room()
+        with self.client.websocket_connect(f'/catan/ws/{code}/Alice') as ws:
+            ws.receive_text()  # Alice's PlayerJoined
+            self.client.post(f'/catan/rooms/{code}/add-ai?difficulty=easy')
+            ws.receive_text()  # AI's PlayerJoined
+
+            room = self.mgr.get_room(code)
+            assert room is not None
+            self.client.post(f'/catan/rooms/{code}/start')
+            ws.receive_text()  # GameStarted
+            ws.receive_text()  # GameStateUpdate
+
+            # Force a MAIN-phase state.
+            room.game_state = room.game_state.model_copy(  # type: ignore[union-attr]
+                update={
+                    'phase': gs_module.GamePhase.MAIN,
+                    'turn_state': gs_module.TurnState(
+                        player_index=0,
+                        pending_action=gs_module.PendingActionType.BUILD_OR_TRADE,
+                    ),
+                }
+            )
+            from games.app.catan.models import player as player_module
+
+            new_players = list(room.game_state.players)
+            new_players[0] = room.game_state.players[0].model_copy(
+                update={'resources': player_module.Resources(wood=2)}
+            )
+            room.game_state = room.game_state.model_copy(
+                update={'players': new_players}
+            )
+
+            # Patch AI to always reject.
+            ai_instance = list(room.ai_instances.values())[0]
+
+            def _reject(state: object, pidx: int, pt: object) -> object:
+                return actions_module.RejectTrade(
+                    player_index=pidx,
+                    trade_id=pt.trade_id,  # type: ignore[union-attr]
+                )
+
+            with unittest.mock.patch.object(
+                ai_instance, 'respond_to_trade', side_effect=_reject
+            ):
+                ws.send_text(
+                    json.dumps(
+                        {
+                            'message_type': 'submit_action',
+                            'action': {
+                                'action_type': 'trade_offer',
+                                'player_index': 0,
+                                'offering': {'wood': 1},
+                                'requesting': {'ore': 1},
+                            },
+                        }
+                    )
+                )
+                # Drain the TradeProposed and TradeRejected broadcasts.
+                ws.receive_text()  # TradeProposed
+                ws.receive_text()  # TradeRejected
+                # Final broadcast: TradeCancelled (auto-cancel after all reject).
+                cancelled_msg = json.loads(ws.receive_text())
+                self.assertEqual(
+                    cancelled_msg['message_type'],
+                    ws_messages.ServerMessageType.TRADE_CANCELLED,
+                )
+                # Pending trade is cleared after cancellation.
+                self.assertIsNone(room.pending_trade)
+
+    def test_trade_executes_when_ai_accepts(self) -> None:
+        """Trade is executed when an AI player accepts it."""
+        code = self._create_room()
+        with self.client.websocket_connect(f'/catan/ws/{code}/Alice') as ws:
+            ws.receive_text()  # Alice's PlayerJoined
+            self.client.post(f'/catan/rooms/{code}/add-ai?difficulty=easy')
+            ws.receive_text()  # AI's PlayerJoined
+
+            room = self.mgr.get_room(code)
+            assert room is not None
+            self.client.post(f'/catan/rooms/{code}/start')
+            ws.receive_text()  # GameStarted
+            ws.receive_text()  # GameStateUpdate
+
+            # Force MAIN phase with both players holding necessary resources.
+            room.game_state = room.game_state.model_copy(  # type: ignore[union-attr]
+                update={
+                    'phase': gs_module.GamePhase.MAIN,
+                    'turn_state': gs_module.TurnState(
+                        player_index=0,
+                        pending_action=gs_module.PendingActionType.BUILD_OR_TRADE,
+                    ),
+                }
+            )
+            from games.app.catan.models import player as player_module
+
+            new_players = list(room.game_state.players)
+            new_players[0] = room.game_state.players[0].model_copy(
+                update={'resources': player_module.Resources(wood=2)}
+            )
+            new_players[1] = room.game_state.players[1].model_copy(
+                update={'resources': player_module.Resources(ore=2)}
+            )
+            room.game_state = room.game_state.model_copy(
+                update={'players': new_players}
+            )
+
+            # Patch AI to always accept.
+            ai_instance = list(room.ai_instances.values())[0]
+
+            def _accept(state: object, pidx: int, pt: object) -> object:
+                return actions_module.AcceptTrade(
+                    player_index=pidx,
+                    trade_id=pt.trade_id,  # type: ignore[union-attr]
+                )
+
+            with unittest.mock.patch.object(
+                ai_instance, 'respond_to_trade', side_effect=_accept
+            ):
+                ws.send_text(
+                    json.dumps(
+                        {
+                            'message_type': 'submit_action',
+                            'action': {
+                                'action_type': 'trade_offer',
+                                'player_index': 0,
+                                'offering': {'wood': 1},
+                                'requesting': {'ore': 1},
+                            },
+                        }
+                    )
+                )
+                # TradeProposed
+                ws.receive_text()
+                # TradeAccepted broadcast
+                accepted_msg = json.loads(ws.receive_text())
+                self.assertEqual(
+                    accepted_msg['message_type'],
+                    ws_messages.ServerMessageType.TRADE_ACCEPTED,
+                )
+                # GameStateUpdate after resources exchanged
+                state_update = json.loads(ws.receive_text())
+                self.assertEqual(
+                    state_update['message_type'],
+                    ws_messages.ServerMessageType.GAME_STATE_UPDATE,
+                )
+                # Pending trade is cleared after acceptance.
+                self.assertIsNone(room.pending_trade)
 
 
 if __name__ == '__main__':
