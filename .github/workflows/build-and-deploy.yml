@@ -50,6 +50,10 @@ on:
         description: 'Deploy monitoring'
         type: boolean
         default: true
+      portainer:
+        description: 'Deploy portainer'
+        type: boolean
+        default: true
 
 jobs:
   # Determine environment based on trigger and inputs
@@ -101,3 +105,4 @@ jobs:
       games: ${{ github.event_name == 'push' || inputs.games }}
       tools: ${{ github.event_name == 'push' || inputs.tools }}
       monitoring: ${{ github.event_name == 'push' || inputs.monitoring }}
+      portainer: ${{ github.event_name == 'push' || inputs.portainer }}
