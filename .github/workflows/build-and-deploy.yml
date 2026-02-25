@@ -50,6 +50,10 @@ on:
         description: 'Deploy monitoring'
         type: boolean
         default: true
+      portainer:
+        description: 'Deploy portainer'
+        type: boolean
+        default: true
 
 jobs:
   # Determine environment based on trigger and inputs
@@ -77,6 +81,12 @@ jobs:
     uses: ./.github/workflows/_build.yml
     with:
       environment: ${{ needs.setup.outputs.environment }}
+      shared-assets: ${{ github.event_name == 'push' || inputs['shared-assets'] }}
+      homepage: ${{ github.event_name == 'push' || inputs.homepage }}
+      blog: ${{ github.event_name == 'push' || inputs.blog }}
+      travel: ${{ github.event_name == 'push' || inputs.travel }}
+      games: ${{ github.event_name == 'push' || inputs.games }}
+      tools: ${{ github.event_name == 'push' || inputs.tools }}
 
   deploy:
     needs: [setup, build]
@@ -85,14 +95,14 @@ jobs:
     uses: ./.github/workflows/_deploy.yml
     secrets: inherit
     with:
-      # Values after `||` are used on push to main
       environment: ${{ needs.setup.outputs.environment }}
-      seed_from_prod: ${{ inputs.seed_from_prod || false }}
-      networking: ${{ inputs.networking || true }}
-      shared-assets: ${{ inputs['shared-assets'] || true }}
-      homepage: ${{ inputs.homepage || true }}
-      blog: ${{ inputs.blog || true }}
-      travel: ${{ inputs.travel || true }}
-      games: ${{ inputs.games || true }}
-      tools: ${{ inputs.tools || true }}
-      monitoring: ${{ inputs.monitoring || true }}
+      seed_from_prod: ${{ github.event_name == 'workflow_dispatch' && inputs.seed_from_prod }}
+      networking: ${{ github.event_name == 'push' || inputs.networking }}
+      shared-assets: ${{ github.event_name == 'push' || inputs['shared-assets'] }}
+      homepage: ${{ github.event_name == 'push' || inputs.homepage }}
+      blog: ${{ github.event_name == 'push' || inputs.blog }}
+      travel: ${{ github.event_name == 'push' || inputs.travel }}
+      games: ${{ github.event_name == 'push' || inputs.games }}
+      tools: ${{ github.event_name == 'push' || inputs.tools }}
+      monitoring: ${{ github.event_name == 'push' || inputs.monitoring }}
+      portainer: ${{ github.event_name == 'push' || inputs.portainer }}
