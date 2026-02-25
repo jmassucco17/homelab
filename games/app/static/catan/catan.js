@@ -18,19 +18,25 @@
 
 'use strict'
 
-import { CatanBoardRenderer } from '/static/catan/board.js'
-import { CatanUI } from '/static/catan/ui.js'
-import { CatanWSClient } from '/static/catan/ws_client.js'
-
 // ---------------------------------------------------------------------------
 // Entry point
 // ---------------------------------------------------------------------------
 
-document.addEventListener('DOMContentLoaded', () => {
+// Propagate the cache-busting version query parameter to sub-module imports
+// so that board.js, ui.js, and ws_client.js are also re-fetched when any
+// Catan JS file changes.
+const _v = new URL(import.meta.url).search
+
+document.addEventListener('DOMContentLoaded', async () => {
   if (document.getElementById('catan-lobby')) {
     initLobby()
   } else if (document.getElementById('catan-game-area')) {
-    initGame()
+    const [{ CatanBoardRenderer }, { CatanUI }, { CatanWSClient }] = await Promise.all([
+      import(`/static/catan/board.js${_v}`),
+      import(`/static/catan/ui.js${_v}`),
+      import(`/static/catan/ws_client.js${_v}`),
+    ])
+    initGame(CatanBoardRenderer, CatanUI, CatanWSClient)
   }
 })
 
@@ -178,7 +184,7 @@ async function loadActiveGames() {
 // Game page
 // ---------------------------------------------------------------------------
 
-async function initGame() {
+async function initGame(CatanBoardRenderer, CatanUI, CatanWSClient) {
   const params = new URLSearchParams(window.location.search)
   const roomCode = params.get('room')
   const playerName = params.get('name') || 'Player'

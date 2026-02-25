@@ -46,6 +46,11 @@ class TestCatanRouter(unittest.TestCase):
         resp = self.client.get('/catan')
         self.assertIn('catan.js', resp.text)
 
+    def test_catan_lobby_script_has_version_param(self) -> None:
+        """Lobby page appends a ?v= cache-busting parameter to catan.js."""
+        resp = self.client.get('/catan')
+        self.assertIn('catan.js?v=', resp.text)
+
     def test_catan_lobby_has_catan_lobby_id(self) -> None:
         """Lobby page has id='catan-lobby' so catan.js can detect the page."""
         resp = self.client.get('/catan')
@@ -99,6 +104,11 @@ class TestCatanRouter(unittest.TestCase):
         """Game page references catan.js."""
         resp = self.client.get('/catan/game')
         self.assertIn('catan.js', resp.text)
+
+    def test_catan_game_script_has_version_param(self) -> None:
+        """Game page appends a ?v= cache-busting parameter to catan.js."""
+        resp = self.client.get('/catan/game')
+        self.assertIn('catan.js?v=', resp.text)
 
     def test_create_room_returns_code(self) -> None:
         """POST /catan/rooms returns a 4-character room code."""
