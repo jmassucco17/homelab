@@ -1,7 +1,6 @@
 """FastAPI application for the games sub-site."""
 
 import logging
-import os
 import pathlib
 
 import fastapi
