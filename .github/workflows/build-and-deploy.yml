@@ -80,7 +80,9 @@ jobs:
               if [ -n "$changed_files" ]; then
                 echo "✓ ${module}: CHANGED"
                 echo "  Files:"
-                echo "$changed_files" | sed 's/^/    - /'
+                while IFS= read -r file; do
+                  echo "    - $file"
+                done <<< "$changed_files"
                 echo "${module}=true" >> "$GITHUB_OUTPUT"
               else
                 echo "✗ ${module}: no changes"
