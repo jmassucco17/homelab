@@ -12,6 +12,8 @@ from .routers import catan, pong, snake
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
 
+logging.basicConfig(level=logging.INFO)
+
 app = fastapi.FastAPI(title='Games')
 
 
