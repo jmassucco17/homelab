@@ -5,8 +5,8 @@ services:
     container_name: shared-assets
     environment:
       - DOMAIN=${DOMAIN:-jamesmassucco.com}
-    # Copy assets, substitute DOMAIN in theme-toggle.js, then start nginx
-    entrypoint: /bin/sh -c "cp -r /tmp/assets/. /usr/share/nginx/html/ && envsubst '$$DOMAIN' < /tmp/assets/scripts/theme-toggle.js > /usr/share/nginx/html/scripts/theme-toggle.js && nginx -g 'daemon off;'"
+    # Substitute DOMAIN in theme-toggle.js, then start nginx
+    entrypoint: /bin/sh -c "envsubst '$$DOMAIN' < /tmp/theme-toggle.js > /usr/share/nginx/html/scripts/theme-toggle.js && nginx -g 'daemon off;'"
     labels:
       - 'traefik.enable=true'
     healthcheck:
