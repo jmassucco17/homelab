@@ -118,7 +118,7 @@ class TestCatanRouter(unittest.TestCase):
         self.assertNotIn('{{ domain }}', resp.text)
 
     def test_catan_game_renders_domain(self) -> None:
-        """Test rendering the domain variable from shared templates."""
+        """Test the catan game page renders the domain variable."""
         resp = self.client.get('/catan/game')
         self.assertEqual(resp.status_code, 200)
         self.assertIn('jamesmassucco.com', resp.text)
@@ -229,7 +229,7 @@ class TestAddAIEndpoint(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
         self.assertEqual(data['status'], 'added')
-        self.assertIn('AI, easy', data['player_name'])
+        self.assertIn('(bot)', data['player_name'])
         self.assertEqual(data['player_index'], 0)
         self.assertEqual(data['total_players'], 1)
 
@@ -304,7 +304,7 @@ class TestAddAIEndpoint(unittest.TestCase):
 
             msg = json.loads(ws.receive_text())
             self.assertEqual(msg['message_type'], 'player_joined')
-            self.assertIn('AI, medium', msg['player_name'])
+            self.assertIn('(bot)', msg['player_name'])
             self.assertEqual(msg['player_index'], 1)
 
     def test_add_multiple_ai_players(self) -> None:
@@ -333,7 +333,7 @@ class TestAddAIEndpoint(unittest.TestCase):
         resp = self.client.post(f'/catan/rooms/{code}/add-ai')
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
-        self.assertIn('AI, easy', data['player_name'])
+        self.assertIn('(bot)', data['player_name'])
 
 
 class TestListRoomsEndpoint(unittest.TestCase):

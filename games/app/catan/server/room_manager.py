@@ -247,7 +247,7 @@ class RoomManager:
         if room is None or not room.can_join():
             return None
 
-        ai_name = f'{generate_ai_name()} (AI, {ai_type})'
+        ai_name = f'{generate_ai_name()} (bot)'
         color = _PLAYER_COLORS[len(room.players)]
         slot = PlayerSlot(
             player_index=len(room.players),

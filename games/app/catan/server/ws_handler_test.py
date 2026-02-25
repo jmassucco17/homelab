@@ -774,6 +774,52 @@ class TestCatanWebSocket(unittest.TestCase):
                 # Pending trade is cleared after acceptance.
                 self.assertIsNone(room.pending_trade)
 
+    # ------------------------------------------------------------------
+    # Reconnection
+    # ------------------------------------------------------------------
+
+    def test_reconnect_mid_game_receives_current_state(self) -> None:
+        """A player who reconnects mid-game receives the current game state."""
+        code = self._create_room()
+        with self.client.websocket_connect(f'/catan/ws/{code}/Alice') as ws1:
+            ws1.receive_text()  # Alice's PlayerJoined
+            with self.client.websocket_connect(f'/catan/ws/{code}/Bob') as ws2:
+                ws1.receive_text()
+                ws2.receive_text()
+                self.client.post(f'/catan/rooms/{code}/start')
+                ws1.receive_text()  # GameStarted
+                ws1.receive_text()  # GameStateUpdate
+                ws2.receive_text()  # GameStarted
+                ws2.receive_text()  # GameStateUpdate
+        # Both websockets are now closed; Bob is disconnected from their slot.
+        # Bob reconnects using the same name.
+        with self.client.websocket_connect(f'/catan/ws/{code}/Bob') as ws_bob:
+            # Drain PlayerJoined broadcast
+            pj_msg = json.loads(ws_bob.receive_text())
+            self.assertEqual(
+                pj_msg['message_type'], ws_messages.ServerMessageType.PLAYER_JOINED
+            )
+            self.assertEqual(pj_msg['player_name'], 'Bob')
+            # Reconnecting player should immediately receive the current game state.
+            state_msg = json.loads(ws_bob.receive_text())
+            self.assertEqual(
+                state_msg['message_type'],
+                ws_messages.ServerMessageType.GAME_STATE_UPDATE,
+            )
+            self.assertIn('game_state', state_msg)
+
+    def test_new_player_join_before_game_start_does_not_receive_state_update(
+        self,
+    ) -> None:
+        """A player joining before the game starts does not receive a game state."""
+        code = self._create_room()
+        with self.client.websocket_connect(f'/catan/ws/{code}/Alice') as ws:
+            msg = json.loads(ws.receive_text())
+            # Should only receive PlayerJoined, not a GameStateUpdate.
+            self.assertEqual(
+                msg['message_type'], ws_messages.ServerMessageType.PLAYER_JOINED
+            )
+
 
 if __name__ == '__main__':
     unittest.main()

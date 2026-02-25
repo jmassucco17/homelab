@@ -164,6 +164,14 @@ async def catan_ws(
     # Persist the updated player list so reconnecting players survive restarts.
     room_manager.room_manager.save_state()
 
+    # If the game is already in progress, send the current state to this player
+    # immediately so they can resume without waiting for the next action.
+    if room.game_state is not None:
+        state_update = ws_messages.GameStateUpdate(
+            game_state=serialize_state_for_broadcast(room.game_state)
+        )
+        await websocket.send_text(state_update.model_dump_json())
+
     try:
         while True:
             raw = await websocket.receive_text()
