@@ -46,6 +46,13 @@ class TestPongRouter(unittest.TestCase):
         response = self.client.get('/pong')
         self.assertIn('id="rematch-btn"', response.text)
 
+    def test_pong_page_renders_domain(self) -> None:
+        """Test the pong page renders the domain variable from shared templates."""
+        response = self.client.get('/pong')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('jamesmassucco.com', response.text)
+        self.assertNotIn('{{ domain }}', response.text)
+
 
 if __name__ == '__main__':
     unittest.main()

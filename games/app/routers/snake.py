@@ -1,13 +1,11 @@
 """Snake game router."""
 
-import pathlib
-
 import fastapi
 import fastapi.responses
-import fastapi.templating
 
-APP_DIR = pathlib.Path(__file__).resolve().parent.parent
-templates = fastapi.templating.Jinja2Templates(directory=APP_DIR / 'templates')
+from .. import templates as tmpl
+
+templates = tmpl.templates
 
 router = fastapi.APIRouter()
 
