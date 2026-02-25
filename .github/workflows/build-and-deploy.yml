@@ -124,7 +124,23 @@ jobs:
       games: ${{ github.event_name == 'push' || inputs.games }}
       tools: ${{ github.event_name == 'push' || inputs.tools }}
 
-  deploy:
+  # Deploy standard (off-the-shelf) services in parallel with build
+  # These don't require custom images, so they can start immediately
+  deploy-standard:
+    needs: setup
+    permissions:
+      contents: read
+    uses: ./.github/workflows/_deploy-standard.yml
+    secrets: inherit
+    with:
+      environment: ${{ needs.setup.outputs.environment }}
+      networking: ${{ (github.event_name == 'push' && needs.setup.outputs.networking_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.networking) }}
+      monitoring: ${{ (github.event_name == 'push' && needs.setup.outputs.monitoring_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.monitoring) }}
+      portainer: ${{ (github.event_name == 'push' && needs.setup.outputs.portainer_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.portainer) }}
+
+  # Deploy custom services after build completes
+  # These require custom-built images from the build job
+  deploy-custom:
     needs: [setup, build]
     permissions:
       contents: read
@@ -133,12 +149,9 @@ jobs:
     with:
       environment: ${{ needs.setup.outputs.environment }}
       seed_from_prod: ${{ github.event_name == 'workflow_dispatch' && inputs.seed_from_prod }}
-      networking: ${{ (github.event_name == 'push' && needs.setup.outputs.networking_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.networking) }}
       shared-assets: ${{ github.event_name == 'push' || inputs['shared-assets'] }}
       homepage: ${{ github.event_name == 'push' || inputs.homepage }}
       blog: ${{ github.event_name == 'push' || inputs.blog }}
       travel: ${{ github.event_name == 'push' || inputs.travel }}
       games: ${{ github.event_name == 'push' || inputs.games }}
       tools: ${{ github.event_name == 'push' || inputs.tools }}
-      monitoring: ${{ (github.event_name == 'push' && needs.setup.outputs.monitoring_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.monitoring) }}
-      portainer: ${{ (github.event_name == 'push' && needs.setup.outputs.portainer_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.portainer) }}

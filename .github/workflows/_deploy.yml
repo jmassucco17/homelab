@@ -1,4 +1,4 @@
-name: Deploy Services (Reusable)
+name: Deploy Custom Services (Reusable)
 
 on:
   workflow_call:
@@ -11,10 +11,6 @@ on:
         description: '[staging only] Seed data from production volume'
         type: boolean
         default: false
-      networking:
-        description: 'Deploy networking'
-        type: boolean
-        default: true
       shared-assets:
         description: 'Deploy shared-assets'
         type: boolean
@@ -37,14 +33,6 @@ on:
         default: true
       tools:
         description: 'Deploy tools'
-        type: boolean
-        default: true
-      monitoring:
-        description: 'Deploy monitoring'
-        type: boolean
-        default: true
-      portainer:
-        description: 'Deploy portainer'
         type: boolean
         default: true
 
@@ -74,48 +62,11 @@ jobs:
           oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
           tags: tag:github
 
-      - name: Write networking/.env
-        env:
-          CLOUDFLARE_API_EMAIL: ${{ secrets.CLOUDFLARE_API_EMAIL }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_TRUSTED_IPS: ${{ vars.CLOUDFLARE_TRUSTED_IPS }}
-          GOOGLE_OAUTH2_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH2_CLIENT_ID }}
-          GOOGLE_OAUTH2_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH2_CLIENT_SECRET }}
-          GOOGLE_OAUTH2_COOKIE_SECRET: ${{ secrets.GOOGLE_OAUTH2_COOKIE_SECRET }}
-          OAUTH2_AUTHORIZED_EMAILS: ${{ secrets.OAUTH2_AUTHORIZED_EMAILS }}
-        run: |
-          {
-            printf 'CLOUDFLARE_API_EMAIL=%s\n' "$CLOUDFLARE_API_EMAIL"
-            printf 'CLOUDFLARE_API_TOKEN=%s\n' "$CLOUDFLARE_API_TOKEN"
-            printf 'CLOUDFLARE_TRUSTED_IPS=%s\n' "$CLOUDFLARE_TRUSTED_IPS"
-            printf 'GOOGLE_OAUTH2_CLIENT_ID=%s\n' "$GOOGLE_OAUTH2_CLIENT_ID"
-            printf 'GOOGLE_OAUTH2_CLIENT_SECRET=%s\n' "$GOOGLE_OAUTH2_CLIENT_SECRET"
-            printf 'GOOGLE_OAUTH2_COOKIE_SECRET=%s\n' "$GOOGLE_OAUTH2_COOKIE_SECRET"
-            printf 'OAUTH2_AUTHORIZED_EMAILS=%s\n' "$OAUTH2_AUTHORIZED_EMAILS"
-          } > networking/.env
-
       - name: Write tools/.env
         if: inputs.environment == 'prod'
         env:
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
         run: printf 'TMDB_API_KEY=%s\n' "$TMDB_API_KEY" > tools/.env
-
-      - name: Write monitoring/.env
-        if: inputs.environment == 'prod'
-        env:
-          GRAFANA_CLOUD_PROM_URL: ${{ secrets.GRAFANA_CLOUD_PROM_URL }}
-          GRAFANA_CLOUD_PROM_USER: ${{ secrets.GRAFANA_CLOUD_PROM_USER }}
-          GRAFANA_CLOUD_LOKI_URL: ${{ secrets.GRAFANA_CLOUD_LOKI_URL }}
-          GRAFANA_CLOUD_LOKI_USER: ${{ secrets.GRAFANA_CLOUD_LOKI_USER }}
-          GRAFANA_CLOUD_API_KEY: ${{ secrets.GRAFANA_CLOUD_API_KEY }}
-        run: |
-          {
-            printf 'GRAFANA_CLOUD_PROM_URL=%s\n' "$GRAFANA_CLOUD_PROM_URL"
-            printf 'GRAFANA_CLOUD_PROM_USER=%s\n' "$GRAFANA_CLOUD_PROM_USER"
-            printf 'GRAFANA_CLOUD_LOKI_URL=%s\n' "$GRAFANA_CLOUD_LOKI_URL"
-            printf 'GRAFANA_CLOUD_LOKI_USER=%s\n' "$GRAFANA_CLOUD_LOKI_USER"
-            printf 'GRAFANA_CLOUD_API_KEY=%s\n' "$GRAFANA_CLOUD_API_KEY"
-          } > monitoring/.env
 
       - name: Set up SSH key
         env:
@@ -132,10 +83,8 @@ jobs:
           grep -v '^#' .gitignore | grep -v '^$' > /tmp/exclude_list
           printf '*.tar.gz\n*.tar\n' >> /tmp/exclude_list
           tar --exclude-from=/tmp/exclude_list --exclude='.git' -cf /tmp/homelab-deploy.tar .
-          if [ "${{ inputs.environment }}" = "staging" ]; then
-            tar --append -f /tmp/homelab-deploy.tar networking/.env
-          else
-            tar --append -f /tmp/homelab-deploy.tar networking/.env tools/.env monitoring/.env
+          if [ "${{ inputs.environment }}" = "prod" ]; then
+            tar --append -f /tmp/homelab-deploy.tar tools/.env
           fi
           gzip /tmp/homelab-deploy.tar
 
@@ -180,145 +129,11 @@ jobs:
           fi
           REMOTE
 
-  # Deploy networking first (required dependency)
-  deploy-networking:
-    name: deploy networking
-    needs: setup
-    if: inputs.networking
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v4
-        with:
-          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
-          tags: tag:github
-
-      - name: Set up SSH key
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
-
-      - name: Deploy networking
-        env:
-          SERVER_USER: ${{ vars.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          ENVIRONMENT: ${{ inputs.environment }}
-          STAGING_IMAGE_TAG: ${{ needs.setup.outputs.image-tag }}
-        run: |
-          ssh -i ~/.ssh/deploy_key \
-            "${SERVER_USER}@${SERVER_HOST}" \
-            "cd /opt/homelab && ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' bash -s" << 'REMOTE'
-          set -euo pipefail
-          if [ "${ENVIRONMENT}" = "staging" ]; then
-            echo "--- Starting staging networking ---"
-            STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" /opt/homelab/scripts/start_service.sh networking --staging
-          else
-            echo "--- Deploying networking ---"
-            /opt/homelab/scripts/start_service.sh networking
-          fi
-          REMOTE
-
-  # Deploy prod-only services (monitoring, portainer) in parallel after networking
-  deploy-monitoring:
-    name: deploy monitoring
-    needs: [setup, deploy-networking]
-    if: |
-      !cancelled() &&
-      inputs.environment == 'prod' &&
-      inputs.monitoring &&
-      (needs.deploy-networking.result == 'success' || needs.deploy-networking.result == 'skipped')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v4
-        with:
-          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
-          tags: tag:github
-
-      - name: Set up SSH key
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
-
-      - name: Deploy monitoring
-        env:
-          SERVER_USER: ${{ vars.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-        run: |
-          ssh -i ~/.ssh/deploy_key \
-            "${SERVER_USER}@${SERVER_HOST}" \
-            "cd /opt/homelab && bash -s" << 'REMOTE'
-          set -euo pipefail
-          echo "--- Deploying monitoring ---"
-          /opt/homelab/scripts/start_service.sh monitoring
-          REMOTE
-
-  deploy-portainer:
-    name: deploy portainer
-    needs: [setup, deploy-networking]
-    if: |
-      !cancelled() &&
-      inputs.environment == 'prod' &&
-      inputs.portainer &&
-      (needs.deploy-networking.result == 'success' || needs.deploy-networking.result == 'skipped')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v4
-        with:
-          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
-          tags: tag:github
-
-      - name: Set up SSH key
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
-
-      - name: Deploy portainer
-        env:
-          SERVER_USER: ${{ vars.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-        run: |
-          ssh -i ~/.ssh/deploy_key \
-            "${SERVER_USER}@${SERVER_HOST}" \
-            "cd /opt/homelab && bash -s" << 'REMOTE'
-          set -euo pipefail
-          echo "--- Deploying portainer ---"
-          /opt/homelab/scripts/start_service.sh portainer
-          REMOTE
-
-  # Deploy all other services in parallel after networking
+  # Deploy all custom-built services in parallel
   deploy-shared-assets:
     name: deploy shared-assets
-    needs: [setup, deploy-networking]
-    if: |
-      !cancelled() &&
-      inputs.shared-assets &&
-      (needs.deploy-networking.result == 'success' || needs.deploy-networking.result == 'skipped')
+    needs: setup
+    if: inputs.shared-assets
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -360,11 +175,8 @@ jobs:
 
   deploy-homepage:
     name: deploy homepage
-    needs: [setup, deploy-networking]
-    if: |
-      !cancelled() &&
-      inputs.homepage &&
-      (needs.deploy-networking.result == 'success' || needs.deploy-networking.result == 'skipped')
+    needs: setup
+    if: inputs.homepage
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -406,11 +218,8 @@ jobs:
 
   deploy-blog:
     name: deploy blog
-    needs: [setup, deploy-networking]
-    if: |
-      !cancelled() &&
-      inputs.blog &&
-      (needs.deploy-networking.result == 'success' || needs.deploy-networking.result == 'skipped')
+    needs: setup
+    if: inputs.blog
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -452,11 +261,8 @@ jobs:
 
   deploy-games:
     name: deploy games
-    needs: [setup, deploy-networking]
-    if: |
-      !cancelled() &&
-      inputs.games &&
-      (needs.deploy-networking.result == 'success' || needs.deploy-networking.result == 'skipped')
+    needs: setup
+    if: inputs.games
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -498,11 +304,8 @@ jobs:
 
   deploy-tools:
     name: deploy tools
-    needs: [setup, deploy-networking]
-    if: |
-      !cancelled() &&
-      inputs.tools &&
-      (needs.deploy-networking.result == 'success' || needs.deploy-networking.result == 'skipped')
+    needs: setup
+    if: inputs.tools
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -544,11 +347,8 @@ jobs:
 
   deploy-travel:
     name: deploy travel
-    needs: [setup, deploy-networking]
-    if: |
-      !cancelled() &&
-      inputs.travel &&
-      (needs.deploy-networking.result == 'success' || needs.deploy-networking.result == 'skipped')
+    needs: setup
+    if: inputs.travel
     runs-on: ubuntu-latest
     permissions:
       contents: read
