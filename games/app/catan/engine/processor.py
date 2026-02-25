@@ -6,10 +6,13 @@ This is a pure function: the original state is never modified.
 
 from __future__ import annotations
 
+import logging
 import random
 
 from ..models import actions, board, game_state, player
 from . import rules, turn_manager
+
+logger = logging.getLogger(__name__)
 
 _LONGEST_ROAD_THRESHOLD = 4  # player must exceed this length to claim (i.e. ≥ 5 roads)
 _SETUP_PHASES = (
@@ -158,7 +161,20 @@ def _apply_place_settlement(
     for port in state.board.ports:
         if action.vertex_id in port.vertex_ids and port.port_type not in p.ports_owned:
             p.ports_owned.append(port.port_type)
+            logger.debug(
+                '[place_settlement] player=%s awarded port=%s at vertex=%d',
+                p.name,
+                port.port_type.value,
+                action.vertex_id,
+            )
 
+    logger.debug(
+        '[place_settlement] player=%s vertex=%d phase=%s vp=%d',
+        p.name,
+        action.vertex_id,
+        state.phase.value,
+        p.victory_points,
+    )
     state.recent_events.append(f'🏠 {p.name} placed a settlement')
 
     # During setup, next action is to place a road.
@@ -209,6 +225,12 @@ def _apply_place_road(state: game_state.GameState, action: actions.PlaceRoad) ->
     # Recalculate longest road.
     new_length = rules.calculate_longest_road(state.board, action.player_index)
     p.longest_road_length = new_length
+    logger.debug(
+        '[place_road] player=%s edge=%d new_road_length=%d',
+        p.name,
+        action.edge_id,
+        new_length,
+    )
     _update_longest_road(state)
 
     # During setup, advance to the next turn segment.
@@ -258,16 +280,27 @@ def _apply_place_city(state: game_state.GameState, action: actions.PlaceCity) ->
     p.build_inventory.settlements_remaining += 1
     p.victory_points += 1  # was 1 for settlement, now 2 total
 
+    logger.debug(
+        '[place_city] player=%s vertex=%d vp=%d',
+        p.name,
+        action.vertex_id,
+        p.victory_points,
+    )
     state.recent_events.append(f'🏙️ {p.name} upgraded a settlement to a city')
 
 
 def _apply_roll_dice(state: game_state.GameState, action: actions.RollDice) -> None:
-    roll = random.randint(1, 6) + random.randint(1, 6)
+    die1 = random.randint(1, 6)
+    die2 = random.randint(1, 6)
+    roll = die1 + die2
     state.dice_roll_history.append(roll)
     state.turn_state.roll_value = roll
     state.turn_state.has_rolled = True
 
     p_name = state.players[action.player_index].name
+    logger.debug(
+        '[roll_dice] player=%s die1=%d die2=%d total=%d', p_name, die1, die2, roll
+    )
     state.recent_events.append(f'🎲 {p_name} rolled a {roll}!')
 
     if roll == 7:
@@ -336,6 +369,9 @@ def _distribute_resources(state: game_state.GameState, roll: int) -> None:
         if tile.number_token != roll:
             continue
         if tile_idx == state.board.robber_tile_index:
+            logger.debug(
+                '[distribute] tile=%d blocked by robber (roll=%d)', tile_idx, roll
+            )
             continue
         if tile.tile_type == board.TileType.DESERT:
             continue
@@ -355,6 +391,14 @@ def _distribute_resources(state: game_state.GameState, roll: int) -> None:
             p = state.players[vertex.building.player_index]
             current = p.resources.get(resource)
             p.resources = p.resources.with_resource(resource, current + amount)
+            logger.debug(
+                '[distribute] tile=%d resource=%s amount=%d -> player=%s (vertex=%d)',
+                tile_idx,
+                resource.value,
+                amount,
+                p.name,
+                vertex.vertex_id,
+            )
 
 
 def _apply_build_dev_card(
@@ -370,6 +414,7 @@ def _apply_build_dev_card(
     card_type = player.DevCardType(state.dev_card_deck.pop())
     p.new_dev_cards = p.new_dev_cards.add(card_type)
 
+    logger.debug('[build_dev_card] player=%s drew=%s', p.name, card_type.value)
     state.recent_events.append(f'🃏 {p.name} bought a development card')
 
 
@@ -385,6 +430,7 @@ def _apply_play_knight(state: game_state.GameState, action: actions.PlayKnight) 
     new_holder = rules.get_largest_army_holder(state.players)
     _update_largest_army(state, new_holder)
 
+    logger.debug('[play_knight] player=%s knights_played=%d', p.name, p.knights_played)
     state.recent_events.append(f'⚔️ {p.name} played a Knight card')
 
     state.turn_state.pending_action = game_state.PendingActionType.MOVE_ROBBER
@@ -551,6 +597,12 @@ def _apply_steal_resource(
     actor = state.players[action.player_index]
     actor.resources = actor.resources.add(player.Resources(**{chosen: 1}))
 
+    logger.debug(
+        '[steal_resource] actor=%s target=%s resource=%s',
+        actor.name,
+        target.name,
+        chosen,
+    )
     state.recent_events.append(f'🦹 {actor.name} stole a card from {target.name}')
 
     state.turn_state.pending_action = game_state.PendingActionType.BUILD_OR_TRADE
@@ -571,6 +623,12 @@ def _apply_discard_resources(
     total_discarded = sum(action.resources.values())
     p.resources = p.resources.subtract(action.resources)
 
+    logger.debug(
+        '[discard_resources] player=%s discarded=%s total=%d',
+        p.name,
+        action.resources,
+        total_discarded,
+    )
     state.recent_events.append(f'🗑️ {p.name} discarded {total_discarded} card(s)')
 
     state.turn_state.discard_player_indices.remove(action.player_index)
@@ -615,6 +673,9 @@ def _update_longest_road(state: game_state.GameState) -> None:
 
     # If no one qualifies, clear the award.
     if best_owner is None:
+        logger.debug(
+            '[longest_road] no player qualifies (threshold=%d)', _LONGEST_ROAD_THRESHOLD
+        )
         state.longest_road_owner = None
         return
 
@@ -625,6 +686,14 @@ def _update_longest_road(state: game_state.GameState) -> None:
         if holder_length >= best_length:
             best_owner = current_holder
 
+    logger.debug(
+        '[longest_road] owner=player%d length=%d (prev_owner=%s)',
+        best_owner,
+        best_length,
+        f'player{state.longest_road_owner}'
+        if state.longest_road_owner is not None
+        else 'None',
+    )
     state.longest_road_owner = best_owner
 
 

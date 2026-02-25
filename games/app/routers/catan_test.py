@@ -498,5 +498,36 @@ class TestObserverEndpoint(unittest.TestCase):
                         self.assertEqual(obs_msg['winner_name'], 'Alice')
 
 
+class TestDebugLogLevelEndpoint(unittest.TestCase):
+    """Tests for the POST /catan/debug/log-level endpoint."""
+
+    def setUp(self) -> None:
+        self.client, _ = _fresh_client()
+
+    def test_enable_debug_returns_debug_level(self) -> None:
+        """POST /catan/debug/log-level?enable=true returns log_level=DEBUG."""
+        resp = self.client.post('/catan/debug/log-level?enable=true')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json(), {'log_level': 'DEBUG'})
+
+    def test_disable_debug_returns_info_level(self) -> None:
+        """POST /catan/debug/log-level?enable=false returns log_level=INFO."""
+        resp = self.client.post('/catan/debug/log-level?enable=false')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json(), {'log_level': 'INFO'})
+
+    def test_toggle_actually_changes_logger_level(self) -> None:
+        """The endpoint updates the games.app.catan logger level in process."""
+        import logging
+
+        catan_logger = logging.getLogger('games.app.catan')
+
+        self.client.post('/catan/debug/log-level?enable=true')
+        self.assertEqual(catan_logger.level, logging.DEBUG)
+
+        self.client.post('/catan/debug/log-level?enable=false')
+        self.assertEqual(catan_logger.level, logging.INFO)
+
+
 if __name__ == '__main__':
     unittest.main()
