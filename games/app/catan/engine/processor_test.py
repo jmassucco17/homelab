@@ -746,5 +746,103 @@ class TestActionProcessorEvents(unittest.TestCase):
         self.assertTrue(any('Alice' in e for e in events))
 
 
+class TestActionProcessorDebugLogging(unittest.TestCase):
+    """Tests that verify detailed debug log messages are emitted."""
+
+    def test_roll_dice_logs_individual_dice(self) -> None:
+        """Rolling dice emits a debug log with die1, die2, and total."""
+        state = _make_2p_state()
+        # Advance through setup to reach MAIN phase with player 0 to roll.
+        state = _setup_full_game(state)
+        with self.assertLogs('games.app.catan.engine.processor', level='DEBUG') as cm:
+            processor.apply_action(state, actions.RollDice(player_index=0))
+        roll_logs = [m for m in cm.output if '[roll_dice]' in m]
+        self.assertEqual(len(roll_logs), 1)
+        self.assertIn('die1=', roll_logs[0])
+        self.assertIn('die2=', roll_logs[0])
+        self.assertIn('total=', roll_logs[0])
+
+    def test_place_settlement_logs_vertex_and_player(self) -> None:
+        """Placing a settlement emits a debug log with vertex and player info."""
+        state = _make_2p_state()
+        with self.assertLogs('games.app.catan.engine.processor', level='DEBUG') as cm:
+            processor.apply_action(
+                state, actions.PlaceSettlement(player_index=0, vertex_id=5)
+            )
+        settle_logs = [m for m in cm.output if '[place_settlement]' in m]
+        self.assertGreater(len(settle_logs), 0)
+        self.assertIn('vertex=5', settle_logs[0])
+        self.assertIn('Alice', settle_logs[0])
+
+    def test_place_road_logs_edge_and_road_length(self) -> None:
+        """Placing a road emits a debug log with edge_id and new road length."""
+        state = _make_2p_state()
+        result = processor.apply_action(
+            state, actions.PlaceSettlement(player_index=0, vertex_id=5)
+        )
+        assert result.updated_state is not None
+        state2 = result.updated_state
+        road_edge = state2.board.vertices[5].adjacent_edge_ids[0]
+        with self.assertLogs('games.app.catan.engine.processor', level='DEBUG') as cm:
+            processor.apply_action(
+                state2, actions.PlaceRoad(player_index=0, edge_id=road_edge)
+            )
+        road_logs = [m for m in cm.output if '[place_road]' in m]
+        self.assertEqual(len(road_logs), 1)
+        self.assertIn(f'edge={road_edge}', road_logs[0])
+        self.assertIn('new_road_length=', road_logs[0])
+
+    def test_steal_resource_logs_stolen_resource(self) -> None:
+        """Stealing a resource emits a debug log naming the stolen resource."""
+        state = _make_2p_state()
+        state = _setup_full_game(state)
+        # Give Bob a resource so Alice can steal it.
+        state.players[1].resources = player.Resources(wood=1)
+        state.turn_state.pending_action = game_state.PendingActionType.STEAL_RESOURCE
+        state.board.robber_tile_index = 0
+        # Place Bob's settlement adjacent to tile 0 so steal is legal.
+        for vertex in state.board.vertices:
+            if 0 in vertex.adjacent_tile_indices and vertex.building is None:
+                vertex.building = board.Building(
+                    player_index=1, building_type=board.BuildingType.SETTLEMENT
+                )
+                break
+        with self.assertLogs('games.app.catan.engine.processor', level='DEBUG') as cm:
+            processor.apply_action(
+                state,
+                actions.StealResource(player_index=0, target_player_index=1),
+            )
+        steal_logs = [m for m in cm.output if '[steal_resource]' in m]
+        self.assertEqual(len(steal_logs), 1)
+        self.assertIn('Alice', steal_logs[0])
+        self.assertIn('Bob', steal_logs[0])
+
+
+def _setup_full_game(state: game_state.GameState) -> game_state.GameState:
+    """Advance a 2-player game through the entire setup phase to MAIN/ROLL_DICE."""
+    # Forward: player 0 settlement + road, player 1 settlement + road
+    # Backward: player 1 settlement + road, player 0 settlement + road
+    for vertex_id in [0, 10, 20, 30]:
+        player_idx = state.turn_state.player_index
+        result = processor.apply_action(
+            state, actions.PlaceSettlement(player_index=player_idx, vertex_id=vertex_id)
+        )
+        assert result.success and result.updated_state is not None
+        state = result.updated_state
+        # Place road on first available adjacent edge.
+        road_edges = state.board.vertices[vertex_id].adjacent_edge_ids
+        for edge_id in road_edges:
+            if state.board.edges[edge_id].road is None:
+                result = processor.apply_action(
+                    state, actions.PlaceRoad(player_index=player_idx, edge_id=edge_id)
+                )
+                assert result.success and result.updated_state is not None
+                state = result.updated_state
+                break
+        if state.phase == game_state.GamePhase.MAIN:
+            break
+    return state
+
+
 if __name__ == '__main__':
     unittest.main()
