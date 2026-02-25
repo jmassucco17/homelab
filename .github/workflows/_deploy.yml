@@ -49,10 +49,12 @@ on:
         default: true
 
 jobs:
-  deploy:
+  setup:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    outputs:
+      image-tag: ${{ steps.image-tag.outputs.tag }}
     steps:
       - uses: actions/checkout@v6
 
@@ -146,26 +148,17 @@ jobs:
             /tmp/homelab-deploy.tar.gz \
             "${SERVER_USER}@${SERVER_HOST}:/tmp/homelab-deploy.tar.gz"
 
-      - name: Deploy services on server
+      - name: Extract and prepare deployment on server
         env:
           SERVER_USER: ${{ vars.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
-          STAGING_IMAGE_TAG: ${{ steps.image-tag.outputs.tag }}
           SEED_FROM_PROD: ${{ inputs.seed_from_prod }}
-          DEPLOY_NETWORKING: ${{ inputs.networking }}
-          DEPLOY_MONITORING: ${{ inputs.monitoring }}
-          DEPLOY_PORTAINER: ${{ inputs.portainer }}
-          DEPLOY_SHARED_ASSETS: ${{ inputs['shared-assets'] }}
-          DEPLOY_HOMEPAGE: ${{ inputs.homepage }}
-          DEPLOY_BLOG: ${{ inputs.blog }}
-          DEPLOY_TRAVEL: ${{ inputs.travel }}
-          DEPLOY_GAMES: ${{ inputs.games }}
-          DEPLOY_TOOLS: ${{ inputs.tools }}
+          STAGING_IMAGE_TAG: ${{ steps.image-tag.outputs.tag }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             "${SERVER_USER}@${SERVER_HOST}" \
-            "ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' SEED_FROM_PROD='${SEED_FROM_PROD}' DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' DEPLOY_MONITORING='${DEPLOY_MONITORING}' DEPLOY_PORTAINER='${DEPLOY_PORTAINER}' DEPLOY_SHARED_ASSETS='${DEPLOY_SHARED_ASSETS}' DEPLOY_HOMEPAGE='${DEPLOY_HOMEPAGE}' DEPLOY_BLOG='${DEPLOY_BLOG}' DEPLOY_TRAVEL='${DEPLOY_TRAVEL}' DEPLOY_GAMES='${DEPLOY_GAMES}' DEPLOY_TOOLS='${DEPLOY_TOOLS}' bash -s" << 'REMOTE'
+            "ENVIRONMENT='${ENVIRONMENT}' SEED_FROM_PROD='${SEED_FROM_PROD}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' bash -s" << 'REMOTE'
           set -euo pipefail
           mkdir -p /opt/homelab
           cd /opt/homelab
@@ -185,39 +178,412 @@ jobs:
               alpine \
               sh -c "cp -a /src/. /dst/ && echo 'Seed complete.'"
           fi
+          REMOTE
 
-          # Deploy each service if its flag is true
-          deploy_if_enabled() {
-            local svc="$1"
-            local flag="$2"
-            if [ "$flag" = "true" ]; then
-              if [ "${ENVIRONMENT}" = "staging" ]; then
-                echo "--- Starting staging $svc ---"
-                STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" \
-                  /opt/homelab/scripts/start_service.sh "$svc" --staging
-              else
-                echo "--- Deploying $svc ---"
-                /opt/homelab/scripts/start_service.sh "$svc"
-              fi
-            else
-              echo "--- Skipping $svc ---"
-            fi
-          }
+  # Deploy networking first (required dependency)
+  deploy-networking:
+    name: deploy networking
+    needs: setup
+    if: inputs.networking
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          tags: tag:github
 
-          # Deploy services in dependency order
-          deploy_if_enabled networking      "$DEPLOY_NETWORKING"
-          # monitoring and portainer are prod-only (no staging counterpart)
-          if [ "${ENVIRONMENT}" = "prod" ]; then
-            deploy_if_enabled monitoring    "$DEPLOY_MONITORING"
-            deploy_if_enabled portainer     "$DEPLOY_PORTAINER"
+      - name: Set up SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
+
+      - name: Deploy networking
+        env:
+          SERVER_USER: ${{ vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          STAGING_IMAGE_TAG: ${{ needs.setup.outputs.image-tag }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            "${SERVER_USER}@${SERVER_HOST}" \
+            "cd /opt/homelab && ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' bash -s" << 'REMOTE'
+          set -euo pipefail
+          if [ "${ENVIRONMENT}" = "staging" ]; then
+            echo "--- Starting staging networking ---"
+            STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" /opt/homelab/scripts/start_service.sh networking --staging
+          else
+            echo "--- Deploying networking ---"
+            /opt/homelab/scripts/start_service.sh networking
           fi
-          deploy_if_enabled shared-assets   "$DEPLOY_SHARED_ASSETS"
-          deploy_if_enabled homepage        "$DEPLOY_HOMEPAGE"
-          deploy_if_enabled blog            "$DEPLOY_BLOG"
-          deploy_if_enabled games           "$DEPLOY_GAMES"
-          deploy_if_enabled tools           "$DEPLOY_TOOLS"
-          deploy_if_enabled travel          "$DEPLOY_TRAVEL"
+          REMOTE
 
-          rm -f /tmp/homelab-deploy.tar.gz
-          echo "Deployment complete."
+  # Deploy prod-only services (monitoring, portainer) in parallel after networking
+  deploy-monitoring:
+    name: deploy monitoring
+    needs: [setup, deploy-networking]
+    if: |
+      !cancelled() &&
+      inputs.environment == 'prod' &&
+      inputs.monitoring &&
+      (needs.deploy-networking.result == 'success' || needs.deploy-networking.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          tags: tag:github
+
+      - name: Set up SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
+
+      - name: Deploy monitoring
+        env:
+          SERVER_USER: ${{ vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            "${SERVER_USER}@${SERVER_HOST}" \
+            "cd /opt/homelab && bash -s" << 'REMOTE'
+          set -euo pipefail
+          echo "--- Deploying monitoring ---"
+          /opt/homelab/scripts/start_service.sh monitoring
+          REMOTE
+
+  deploy-portainer:
+    name: deploy portainer
+    needs: [setup, deploy-networking]
+    if: |
+      !cancelled() &&
+      inputs.environment == 'prod' &&
+      inputs.portainer &&
+      (needs.deploy-networking.result == 'success' || needs.deploy-networking.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          tags: tag:github
+
+      - name: Set up SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
+
+      - name: Deploy portainer
+        env:
+          SERVER_USER: ${{ vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            "${SERVER_USER}@${SERVER_HOST}" \
+            "cd /opt/homelab && bash -s" << 'REMOTE'
+          set -euo pipefail
+          echo "--- Deploying portainer ---"
+          /opt/homelab/scripts/start_service.sh portainer
+          REMOTE
+
+  # Deploy all other services in parallel after networking
+  deploy-shared-assets:
+    name: deploy shared-assets
+    needs: [setup, deploy-networking]
+    if: |
+      !cancelled() &&
+      inputs.shared-assets &&
+      (needs.deploy-networking.result == 'success' || needs.deploy-networking.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          tags: tag:github
+      - name: Set up SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
+      - name: Deploy shared-assets
+        env:
+          SERVER_USER: ${{ vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          STAGING_IMAGE_TAG: ${{ needs.setup.outputs.image-tag }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            "${SERVER_USER}@${SERVER_HOST}" \
+            "cd /opt/homelab && ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' bash -s" << 'REMOTE'
+          set -euo pipefail
+          if [ "${ENVIRONMENT}" = "staging" ]; then
+            echo "--- Starting staging shared-assets ---"
+            STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" /opt/homelab/scripts/start_service.sh shared-assets --staging
+          else
+            echo "--- Deploying shared-assets ---"
+            /opt/homelab/scripts/start_service.sh shared-assets
+          fi
+          REMOTE
+
+  deploy-homepage:
+    name: deploy homepage
+    needs: [setup, deploy-networking]
+    if: |
+      !cancelled() &&
+      inputs.homepage &&
+      (needs.deploy-networking.result == 'success' || needs.deploy-networking.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          tags: tag:github
+      - name: Set up SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
+      - name: Deploy homepage
+        env:
+          SERVER_USER: ${{ vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          STAGING_IMAGE_TAG: ${{ needs.setup.outputs.image-tag }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            "${SERVER_USER}@${SERVER_HOST}" \
+            "cd /opt/homelab && ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' bash -s" << 'REMOTE'
+          set -euo pipefail
+          if [ "${ENVIRONMENT}" = "staging" ]; then
+            echo "--- Starting staging homepage ---"
+            STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" /opt/homelab/scripts/start_service.sh homepage --staging
+          else
+            echo "--- Deploying homepage ---"
+            /opt/homelab/scripts/start_service.sh homepage
+          fi
+          REMOTE
+
+  deploy-blog:
+    name: deploy blog
+    needs: [setup, deploy-networking]
+    if: |
+      !cancelled() &&
+      inputs.blog &&
+      (needs.deploy-networking.result == 'success' || needs.deploy-networking.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          tags: tag:github
+      - name: Set up SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
+      - name: Deploy blog
+        env:
+          SERVER_USER: ${{ vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          STAGING_IMAGE_TAG: ${{ needs.setup.outputs.image-tag }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            "${SERVER_USER}@${SERVER_HOST}" \
+            "cd /opt/homelab && ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' bash -s" << 'REMOTE'
+          set -euo pipefail
+          if [ "${ENVIRONMENT}" = "staging" ]; then
+            echo "--- Starting staging blog ---"
+            STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" /opt/homelab/scripts/start_service.sh blog --staging
+          else
+            echo "--- Deploying blog ---"
+            /opt/homelab/scripts/start_service.sh blog
+          fi
+          REMOTE
+
+  deploy-games:
+    name: deploy games
+    needs: [setup, deploy-networking]
+    if: |
+      !cancelled() &&
+      inputs.games &&
+      (needs.deploy-networking.result == 'success' || needs.deploy-networking.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          tags: tag:github
+      - name: Set up SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
+      - name: Deploy games
+        env:
+          SERVER_USER: ${{ vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          STAGING_IMAGE_TAG: ${{ needs.setup.outputs.image-tag }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            "${SERVER_USER}@${SERVER_HOST}" \
+            "cd /opt/homelab && ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' bash -s" << 'REMOTE'
+          set -euo pipefail
+          if [ "${ENVIRONMENT}" = "staging" ]; then
+            echo "--- Starting staging games ---"
+            STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" /opt/homelab/scripts/start_service.sh games --staging
+          else
+            echo "--- Deploying games ---"
+            /opt/homelab/scripts/start_service.sh games
+          fi
+          REMOTE
+
+  deploy-tools:
+    name: deploy tools
+    needs: [setup, deploy-networking]
+    if: |
+      !cancelled() &&
+      inputs.tools &&
+      (needs.deploy-networking.result == 'success' || needs.deploy-networking.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          tags: tag:github
+      - name: Set up SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
+      - name: Deploy tools
+        env:
+          SERVER_USER: ${{ vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          STAGING_IMAGE_TAG: ${{ needs.setup.outputs.image-tag }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            "${SERVER_USER}@${SERVER_HOST}" \
+            "cd /opt/homelab && ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' bash -s" << 'REMOTE'
+          set -euo pipefail
+          if [ "${ENVIRONMENT}" = "staging" ]; then
+            echo "--- Starting staging tools ---"
+            STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" /opt/homelab/scripts/start_service.sh tools --staging
+          else
+            echo "--- Deploying tools ---"
+            /opt/homelab/scripts/start_service.sh tools
+          fi
+          REMOTE
+
+  deploy-travel:
+    name: deploy travel
+    needs: [setup, deploy-networking]
+    if: |
+      !cancelled() &&
+      inputs.travel &&
+      (needs.deploy-networking.result == 'success' || needs.deploy-networking.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          tags: tag:github
+      - name: Set up SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
+      - name: Deploy travel
+        env:
+          SERVER_USER: ${{ vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          STAGING_IMAGE_TAG: ${{ needs.setup.outputs.image-tag }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            "${SERVER_USER}@${SERVER_HOST}" \
+            "cd /opt/homelab && ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' bash -s" << 'REMOTE'
+          set -euo pipefail
+          if [ "${ENVIRONMENT}" = "staging" ]; then
+            echo "--- Starting staging travel ---"
+            STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" /opt/homelab/scripts/start_service.sh travel --staging
+          else
+            echo "--- Deploying travel ---"
+            /opt/homelab/scripts/start_service.sh travel
+          fi
           REMOTE
