@@ -23,7 +23,7 @@ import fastapi.responses
 import fastapi.templating
 import pydantic
 
-from ..catan.models import serializers, ws_messages
+from ..catan.models import ws_messages
 from ..catan.server import room_manager, ws_handler
 
 APP_DIR = pathlib.Path(__file__).resolve().parent.parent
@@ -177,7 +177,7 @@ async def start_game(
     await room_manager.room_manager.broadcast(room, started_msg.model_dump_json())
 
     state_update = ws_messages.GameStateUpdate(
-        game_state=serializers.serialize_model(game_state)
+        game_state=ws_handler.serialize_state_for_broadcast(game_state)
     )
     await room_manager.room_manager.broadcast(room, state_update.model_dump_json())
 
