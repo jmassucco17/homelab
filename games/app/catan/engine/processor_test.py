@@ -181,6 +181,39 @@ class TestActionProcessor(unittest.TestCase):
         # Should receive exactly one resource per non-desert tile
         self.assertEqual(final_resources - initial_resources, non_desert_tiles)
 
+    def test_place_settlement_normal_play_deducts_resources(self) -> None:
+        """During normal play, placing a settlement deducts settlement cost."""
+        state = _make_2p_state()
+        state.phase = game_state.GamePhase.MAIN
+        state.turn_state = game_state.TurnState(
+            player_index=0, pending_action=game_state.PendingActionType.BUILD_OR_TRADE
+        )
+        state.players[0].resources = player.Resources(wood=1, brick=1, wheat=1, sheep=1)
+        result = processor.apply_action(
+            state, actions.PlaceSettlement(player_index=0, vertex_id=5)
+        )
+        self.assertTrue(result.success)
+        assert result.updated_state is not None
+        res = result.updated_state.players[0].resources
+        self.assertEqual(res.wood, 0)
+        self.assertEqual(res.brick, 0)
+        self.assertEqual(res.wheat, 0)
+        self.assertEqual(res.sheep, 0)
+
+    def test_place_settlement_normal_play_insufficient_resources(self) -> None:
+        """During normal play, placing a settlement without resources fails."""
+        state = _make_2p_state()
+        state.phase = game_state.GamePhase.MAIN
+        state.turn_state = game_state.TurnState(
+            player_index=0, pending_action=game_state.PendingActionType.BUILD_OR_TRADE
+        )
+        state.players[0].resources = player.Resources()
+        result = processor.apply_action(
+            state, actions.PlaceSettlement(player_index=0, vertex_id=5)
+        )
+        self.assertFalse(result.success)
+        self.assertIn('Insufficient', result.error_message or '')
+
     def test_place_road_setup_advances_turn(self) -> None:
         """After placing a road in setup, turn advances to next player."""
         state = _make_2p_state()
