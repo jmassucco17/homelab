@@ -97,8 +97,8 @@ function initLobby() {
         showError('Please enter your name first.')
         return
       }
-      if (!code || code.length !== 4 || !/^[A-Z]{4}$/.test(code)) {
-        showError('Enter a valid 4-letter room code.')
+      if (!code || code.length !== 4 || !/^[A-Z0-9]{4}$/.test(code)) {
+        showError('Enter a valid 4-character room code.')
         return
       }
       window.location.href = `/catan/game?room=${code}&name=${encodeURIComponent(name)}`
