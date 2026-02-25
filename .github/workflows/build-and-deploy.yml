@@ -61,6 +61,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       environment: ${{ steps.determine-env.outputs.environment }}
+      networking_changed: ${{ steps.check-changes.outputs.networking }}
       portainer_changed: ${{ steps.check-changes.outputs.portainer }}
     steps:
       - name: Checkout code
@@ -68,10 +69,15 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Check for portainer changes
+      - name: Check for changes
         id: check-changes
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
+            if git diff --name-only HEAD^ HEAD | grep -q "^networking/"; then
+              echo "networking=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "networking=false" >> "$GITHUB_OUTPUT"
+            fi
             if git diff --name-only HEAD^ HEAD | grep -q "^portainer/"; then
               echo "portainer=true" >> "$GITHUB_OUTPUT"
             else
@@ -79,6 +85,7 @@ jobs:
             fi
           else
             # For manual triggers, respect the input
+            echo "networking=true" >> "$GITHUB_OUTPUT"
             echo "portainer=true" >> "$GITHUB_OUTPUT"
           fi
 
@@ -117,7 +124,7 @@ jobs:
     with:
       environment: ${{ needs.setup.outputs.environment }}
       seed_from_prod: ${{ github.event_name == 'workflow_dispatch' && inputs.seed_from_prod }}
-      networking: ${{ github.event_name == 'push' || inputs.networking }}
+      networking: ${{ (github.event_name == 'push' && needs.setup.outputs.networking_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.networking) }}
       shared-assets: ${{ github.event_name == 'push' || inputs['shared-assets'] }}
       homepage: ${{ github.event_name == 'push' || inputs.homepage }}
       blog: ${{ github.event_name == 'push' || inputs.blog }}
