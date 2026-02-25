@@ -39,6 +39,46 @@ _client_message_adapter: pydantic.TypeAdapter[ws_messages.ClientMessage] = (
 )
 
 
+@router.websocket('/catan/observe/{room_code}')
+async def catan_observe(
+    websocket: fastapi.WebSocket,
+    room_code: str,
+) -> None:
+    """WebSocket endpoint for observing a Catan game session.
+
+    Observers receive all server broadcasts (game state updates, player
+    events, etc.) but cannot send game actions.  If the game is already in
+    progress the current state is sent immediately on connect.
+    """
+    await websocket.accept()
+
+    room = room_manager.room_manager.get_room(room_code)
+    if room is None:
+        await websocket.send_text(
+            ws_messages.ErrorMessage(
+                error=f'Room {room_code!r} does not exist'
+            ).model_dump_json()
+        )
+        await websocket.close(code=1008)
+        return
+
+    room_manager.room_manager.add_observer(room_code, websocket)
+
+    # Send the current game state immediately if the game has already started.
+    if room.game_state is not None:
+        state_update = ws_messages.GameStateUpdate(
+            game_state=serializers.serialize_model(room.game_state)
+        )
+        await websocket.send_text(state_update.model_dump_json())
+
+    try:
+        while True:
+            # Observers only receive; drain any unexpected client messages.
+            await websocket.receive_text()
+    except fastapi.WebSocketDisconnect:
+        room_manager.room_manager.remove_observer(room_code, websocket)
+
+
 @router.websocket('/catan/ws/{room_code}/{player_name}')
 async def catan_ws(
     websocket: fastapi.WebSocket,
