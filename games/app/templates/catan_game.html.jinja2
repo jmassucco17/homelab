@@ -48,6 +48,14 @@
         <!-- Connection status -->
         <div id="connection-status" class="connection-status">🟡 Connecting…</div>
 
+        <!-- Rejoin prompt (shown when auto-reconnect is exhausted) -->
+        <div id="rejoin-prompt" class="rejoin-prompt" style="display: none">
+          <p>
+            Connection lost. <a href="/catan">Return to lobby</a> and enter your name and room code
+            <strong id="rejoin-room-code"></strong> to rejoin.
+          </p>
+        </div>
+
         <!-- Dice display -->
         <div id="catan-dice-display" class="catan-dice-display">🎲 —</div>
 
@@ -64,7 +72,11 @@
         <div id="catan-action-buttons" class="catan-action-buttons"></div>
 
         <!-- Trade notifications (shows active trade offers) -->
-        <div id="catan-trade-notifications" class="catan-trade-notifications" style="display: none"></div>
+        <div
+          id="catan-trade-notifications"
+          class="catan-trade-notifications"
+          style="display: none"
+        ></div>
 
         <!-- Contextual build hint (shown briefly when player clicks a build button) -->
         <div id="catan-build-hint" class="catan-build-hint" style="display: none"></div>
@@ -101,7 +113,9 @@
           <button class="lobby-btn" data-difficulty="medium">Medium</button>
           <button class="lobby-btn" data-difficulty="hard">Hard</button>
         </div>
-        <button id="ai-modal-cancel" class="lobby-btn secondary" style="margin-top: 10px">Cancel</button>
+        <button id="ai-modal-cancel" class="lobby-btn secondary" style="margin-top: 10px">
+          Cancel
+        </button>
       </div>
     </div>
 
@@ -146,7 +160,9 @@
           <div id="player-trade-targets" class="trade-player-targets"></div>
         </div>
         <div class="modal-actions">
-          <button id="player-trade-confirm" class="lobby-btn primary" disabled>Propose Trade</button>
+          <button id="player-trade-confirm" class="lobby-btn primary" disabled>
+            Propose Trade
+          </button>
           <button id="player-trade-cancel" class="lobby-btn secondary">Cancel</button>
         </div>
       </div>

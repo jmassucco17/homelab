@@ -195,9 +195,11 @@ async function initGame(CatanBoardRenderer, CatanUI, CatanWSClient) {
     return
   }
 
-  // Show room code in waiting room header
+  // Show room code in waiting room header and rejoin prompt
   const rcEl = document.getElementById('room-code-display')
   if (rcEl) rcEl.textContent = roomCode
+  const rejoinRoomCodeEl = document.getElementById('rejoin-room-code')
+  if (rejoinRoomCodeEl) rejoinRoomCodeEl.textContent = roomCode
 
   // In observer mode, hide the waiting-room action buttons (can't start/add AI)
   if (isObserver) {
@@ -247,10 +249,12 @@ async function initGame(CatanBoardRenderer, CatanUI, CatanWSClient) {
       // Initialise board on first state update
       if (!boardRenderer.board) {
         boardRenderer.setBoard(gameState.board)
-        // If observing a game already in progress, switch to the game view now
-        if (isObserver) {
+        // Switch to the game view for observers, or when reconnecting mid-game
+        // (game area is still hidden but we just received a game state).
+        const gameAreaEl = document.getElementById('game-area')
+        if (isObserver || gameAreaEl?.classList.contains('hidden')) {
           document.getElementById('waiting-room')?.classList.add('hidden')
-          document.getElementById('game-area')?.classList.remove('hidden')
+          gameAreaEl?.classList.remove('hidden')
           window.dispatchEvent(new Event('resize'))
         }
       } else {
@@ -310,6 +314,12 @@ async function initGame(CatanBoardRenderer, CatanUI, CatanWSClient) {
         failed: '🔴 Connection failed',
       }
       statusEl.textContent = labels[status] || status
+
+      // When auto-reconnect is exhausted, show the manual rejoin prompt.
+      const rejoinPrompt = document.getElementById('rejoin-prompt')
+      if (rejoinPrompt) {
+        rejoinPrompt.style.display = status === 'failed' ? 'block' : 'none'
+      }
     },
 
     onTradeProposed: (msg) => {
