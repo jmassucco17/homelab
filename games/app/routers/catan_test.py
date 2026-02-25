@@ -67,6 +67,12 @@ class TestCatanRouter(unittest.TestCase):
         resp = self.client.get('/catan')
         self.assertIn('type="module"', resp.text)
 
+    def test_catan_lobby_has_active_games_section(self) -> None:
+        """Lobby page has the active-games section for viewing running games."""
+        resp = self.client.get('/catan')
+        self.assertIn('active-games-list', resp.text)
+        self.assertIn('active-games-empty', resp.text)
+
     def test_catan_game_returns_html(self) -> None:
         """GET /catan/game renders an HTML page."""
         resp = self.client.get('/catan/game')
@@ -406,6 +412,66 @@ class TestObserverEndpoint(unittest.TestCase):
                     msg = json.loads(obs.receive_text())
                     self.assertEqual(msg['message_type'], 'game_state_update')
                     self.assertIn('game_state', msg)
+
+    def test_observer_receives_game_over(self) -> None:
+        """Observer receives the GameOver broadcast when the game ends."""
+        import json
+        import unittest.mock
+
+        from games.app.catan.models import actions as actions_module
+        from games.app.catan.models import game_state as gs_module
+
+        code = self.client.post('/catan/rooms').json()['room_code']
+        with self.client.websocket_connect(f'/catan/ws/{code}/Alice') as ws1:
+            ws1.receive_text()
+            with self.client.websocket_connect(f'/catan/ws/{code}/Bob') as ws2:
+                ws1.receive_text()
+                ws2.receive_text()
+                self.client.post(f'/catan/rooms/{code}/start')
+                ws1.receive_text()
+                ws1.receive_text()
+                ws2.receive_text()
+                ws2.receive_text()
+
+                with self.client.websocket_connect(f'/catan/observe/{code}') as obs:
+                    obs.receive_text()  # drain initial game_state_update
+
+                    room = self.mgr.get_room(code)
+                    assert room is not None
+                    winning_state = room.game_state.model_copy(  # type: ignore[union-attr]
+                        update={
+                            'phase': gs_module.GamePhase.ENDED,
+                            'winner_index': 0,
+                        }
+                    )
+                    winning_result = actions_module.ActionResult(
+                        success=True, updated_state=winning_state
+                    )
+
+                    with unittest.mock.patch(
+                        'games.app.catan.engine.processor.apply_action',
+                        return_value=winning_result,
+                    ):
+                        ws1.send_text(
+                            json.dumps(
+                                {
+                                    'message_type': 'submit_action',
+                                    'action': {
+                                        'action_type': 'end_turn',
+                                        'player_index': 0,
+                                    },
+                                }
+                            )
+                        )
+                        # Drain player messages
+                        ws1.receive_text()
+                        ws2.receive_text()
+
+                        # Observer should also receive the game_over broadcast
+                        obs_msg = json.loads(obs.receive_text())
+                        self.assertEqual(obs_msg['message_type'], 'game_over')
+                        self.assertEqual(obs_msg['winner_player_index'], 0)
+                        self.assertEqual(obs_msg['winner_name'], 'Alice')
 
 
 if __name__ == '__main__':

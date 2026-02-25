@@ -104,6 +104,84 @@
         <button id="ai-modal-cancel" class="lobby-btn secondary" style="margin-top: 10px">Cancel</button>
       </div>
     </div>
+
+    <!-- ------------------------------------------------------------------ -->
+    <!-- Bank Trade Modal                                                     -->
+    <!-- ------------------------------------------------------------------ -->
+    <div id="bank-trade-modal" class="modal-overlay" style="display: none">
+      <div class="modal-card trade-modal-card">
+        <h3>🔄 Bank Trade</h3>
+        <div class="trade-modal-section">
+          <p class="trade-modal-label">You give:</p>
+          <div id="bank-give-resources" class="trade-resource-picker"></div>
+          <p id="bank-trade-ratio" class="trade-ratio-display" style="display: none"></p>
+        </div>
+        <div class="trade-modal-section" id="bank-receive-section" style="display: none">
+          <p class="trade-modal-label">You receive:</p>
+          <div id="bank-receive-resources" class="trade-resource-picker"></div>
+        </div>
+        <div class="modal-actions">
+          <button id="bank-trade-confirm" class="lobby-btn primary" disabled>Confirm Trade</button>
+          <button id="bank-trade-cancel" class="lobby-btn secondary">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ------------------------------------------------------------------ -->
+    <!-- Player Trade Modal                                                   -->
+    <!-- ------------------------------------------------------------------ -->
+    <div id="player-trade-modal" class="modal-overlay" style="display: none">
+      <div class="modal-card trade-modal-card">
+        <h3>🤝 Propose Trade</h3>
+        <div class="trade-modal-section">
+          <p class="trade-modal-label">You offer:</p>
+          <div id="player-trade-offering" class="trade-stepper-grid"></div>
+        </div>
+        <div class="trade-modal-section">
+          <p class="trade-modal-label">You want:</p>
+          <div id="player-trade-requesting" class="trade-stepper-grid"></div>
+        </div>
+        <div class="trade-modal-section">
+          <p class="trade-modal-label">Offer to:</p>
+          <div id="player-trade-targets" class="trade-player-targets"></div>
+        </div>
+        <div class="modal-actions">
+          <button id="player-trade-confirm" class="lobby-btn primary" disabled>Propose Trade</button>
+          <button id="player-trade-cancel" class="lobby-btn secondary">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ------------------------------------------------------------------ -->
+    <!-- Year of Plenty Modal                                                 -->
+    <!-- ------------------------------------------------------------------ -->
+    <div id="year-of-plenty-modal" class="modal-overlay" style="display: none">
+      <div class="modal-card">
+        <h3>🌟 Year of Plenty</h3>
+        <p>Choose 2 resources to receive from the bank:</p>
+        <div id="yop-resources" class="trade-resource-picker"></div>
+        <p id="yop-selection-display" class="trade-selection-display">Selected: none</p>
+        <div class="modal-actions">
+          <button id="yop-confirm" class="lobby-btn primary" disabled>Confirm</button>
+          <button id="yop-cancel" class="lobby-btn secondary">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ------------------------------------------------------------------ -->
+    <!-- Monopoly Modal                                                       -->
+    <!-- ------------------------------------------------------------------ -->
+    <div id="monopoly-modal" class="modal-overlay" style="display: none">
+      <div class="modal-card">
+        <h3>💰 Monopoly</h3>
+        <p>Choose a resource to take from all opponents:</p>
+        <div id="monopoly-resources" class="trade-resource-picker"></div>
+        <div class="modal-actions">
+          <button id="monopoly-confirm" class="lobby-btn primary" disabled>Confirm</button>
+          <button id="monopoly-cancel" class="lobby-btn secondary">Cancel</button>
+        </div>
+      </div>
+    </div>
   </div>
 {% endblock %}
 
