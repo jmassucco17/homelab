@@ -19,20 +19,16 @@
     <link
       rel="icon"
       type="image/png"
-      href="https://assets.jamesmassucco.com/icon/favicon-96x96.png"
+      href="https://assets.${DOMAIN}/icon/favicon-96x96.png"
       sizes="96x96"
     />
-    <link rel="shortcut icon" href="https://assets.jamesmassucco.com/icon/favicon.ico" />
-    <link rel="stylesheet" href="https://assets.jamesmassucco.com/styles/main.css?v=2.0" />
+    <link rel="shortcut icon" href="https://assets.${DOMAIN}/icon/favicon.ico" />
+    <link rel="stylesheet" href="https://assets.${DOMAIN}/styles/main.css?v=2.0" />
   </head>
   <body>
     <div id="theme-toggle-container"></div>
     <a href="/" class="site-home-link">
-      <img
-        src="https://assets.jamesmassucco.com/icon/favicon-96x96.png"
-        alt="Logo"
-        class="site-logo"
-      />
+      <img src="https://assets.${DOMAIN}/icon/favicon-96x96.png" alt="Logo" class="site-logo" />
       Home
     </a>
 
@@ -59,7 +55,7 @@
         so check back soon!
       </p>
       <div class="grid">
-        <a href="https://blog.jamesmassucco.com" class="card">
+        <a href="https://blog.${DOMAIN}" class="card">
           <h3>Tech Blog</h3>
           <p>Read about my journey of creating a home server.</p>
         </a>
@@ -67,15 +63,15 @@
           <h3>Travel Blog</h3>
           <p>Read about my world travels on sabbatical.</p>
         </a>
-        <a href="https://travel.jamesmassucco.com" class="card">
+        <a href="https://travel.${DOMAIN}" class="card">
           <h3>Travel Maps &amp; Photos</h3>
           <p>Interactive maps and photo galleries from my travels.</p>
         </a>
-        <a href="https://games.jamesmassucco.com" class="card">
+        <a href="https://games.${DOMAIN}" class="card">
           <h3>Games</h3>
           <p>Play Snake, Pong, and more browser-based games.</p>
         </a>
-        <a href="https://tools.jamesmassucco.com" class="card">
+        <a href="https://tools.${DOMAIN}" class="card">
           <h3>Tools</h3>
           <p>Useful tools for everyday life, including a movie picker.</p>
         </a>
@@ -150,7 +146,7 @@
 
     <footer>&copy; 2025 James Massucco. Built with love and Linux.</footer>
     <script type="module">
-      import { insertThemeToggle } from 'https://assets.jamesmassucco.com/scripts/theme-toggle.js?v=2.0'
+      import { insertThemeToggle } from 'https://assets.${DOMAIN}/scripts/theme-toggle.js?v=2.0'
       window.addEventListener('DOMContentLoaded', () => {
         insertThemeToggle() // Will look for #theme-toggle-container
       })

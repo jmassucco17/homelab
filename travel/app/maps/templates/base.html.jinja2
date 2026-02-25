@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Travel Maps{% endblock %}</title>
-    <link rel="stylesheet" href="https://assets.jamesmassucco.com/styles/main.css?v=2.0">
+    <link rel="stylesheet" href="https://assets.{{ domain }}/styles/main.css?v=2.0">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="/static/css/maps.css">
     {% block extra_css %}{% endblock %}
@@ -32,7 +32,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script type="module">
-      import { insertThemeToggle } from 'https://assets.jamesmassucco.com/scripts/theme-toggle.js?v=2.0'
+      import { insertThemeToggle } from 'https://assets.{{ domain }}/scripts/theme-toggle.js?v=2.0'
       window.addEventListener('DOMContentLoaded', () => {
         insertThemeToggle()
       })

@@ -1,6 +1,7 @@
 """FastAPI application for the blog site."""
 
 import logging
+import os
 import pathlib
 
 import fastapi
@@ -11,6 +12,8 @@ import fastapi.templating
 from . import blog
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
+
+DOMAIN = os.environ.get('DOMAIN', 'jamesmassucco.com')
 
 app = fastapi.FastAPI(title='Blog')
 
@@ -33,6 +36,7 @@ app.mount(
 
 templates = fastapi.templating.Jinja2Templates(directory=APP_DIR / 'templates')
 templates.env.filters['datefmt'] = lambda value, fmt='%B %d, %Y': value.strftime(fmt)  # type: ignore[assignment]
+templates.env.globals['domain'] = DOMAIN  # type: ignore[reportUnknownMemberType]
 
 
 @app.get('/', response_class=fastapi.responses.HTMLResponse)

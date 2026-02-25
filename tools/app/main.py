@@ -1,6 +1,7 @@
 """FastAPI application for the tools sub-site."""
 
 import logging
+import os
 import pathlib
 
 import fastapi
@@ -11,6 +12,8 @@ import fastapi.templating
 from .routers import movie_picker
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
+
+DOMAIN = os.environ.get('DOMAIN', 'jamesmassucco.com')
 
 app = fastapi.FastAPI(title='Tools')
 
@@ -32,6 +35,7 @@ app.mount(
 )
 
 templates = fastapi.templating.Jinja2Templates(directory=APP_DIR / 'templates')
+templates.env.globals['domain'] = DOMAIN  # type: ignore[reportUnknownMemberType]
 
 app.include_router(movie_picker.router)
 
