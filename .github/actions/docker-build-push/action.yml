@@ -25,6 +25,20 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Get current latest digest
+      id: current-digest
+      shell: bash
+      run: |
+        IMAGE="${{ inputs.image }}"
+        # Get the current digest of the 'latest' tag before building
+        CURRENT_DIGEST=$(docker manifest inspect "${IMAGE}:latest" 2>/dev/null | jq -r '.digest' || echo "")
+        echo "digest=${CURRENT_DIGEST}" >> "$GITHUB_OUTPUT"
+        if [ -n "$CURRENT_DIGEST" ]; then
+          echo "Current latest digest: ${CURRENT_DIGEST}"
+        else
+          echo "No existing latest tag found"
+        fi
+
     - name: Extract metadata
       id: meta
       uses: docker/metadata-action@v5
@@ -53,15 +67,15 @@ runs:
       run: |
         # Get the newly built digest
         NEW_DIGEST="${{ steps.build.outputs.digest }}"
+        CURRENT_DIGEST="${{ steps.current-digest.outputs.digest }}"
 
-        # Try to get the current digest of the 'latest' tag from registry
-        IMAGE="${{ inputs.image }}"
-        CURRENT_DIGEST=$(docker manifest inspect "${IMAGE}:latest" 2>/dev/null | jq -r '.manifests[] | select(.platform.architecture == "amd64") | .digest' || echo "")
+        echo "Previous digest: ${CURRENT_DIGEST:-none}"
+        echo "New digest: ${NEW_DIGEST}"
 
         if [ -z "$CURRENT_DIGEST" ] || [ "$NEW_DIGEST" != "$CURRENT_DIGEST" ]; then
           echo "changed=true" >> "$GITHUB_OUTPUT"
-          echo "Image changed or is new (current: ${CURRENT_DIGEST:-none}, new: $NEW_DIGEST)"
+          echo "Result: Image changed or is new"
         else
           echo "changed=false" >> "$GITHUB_OUTPUT"
-          echo "Image unchanged (digest: $NEW_DIGEST)"
+          echo "Result: Image unchanged"
         fi
