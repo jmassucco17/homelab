@@ -16,6 +16,7 @@ everything.
 
 from __future__ import annotations
 
+import hashlib
 import pathlib
 
 import fastapi
@@ -28,6 +29,18 @@ from ..catan.server import room_manager, ws_handler
 
 APP_DIR = pathlib.Path(__file__).resolve().parent.parent
 templates = fastapi.templating.Jinja2Templates(directory=APP_DIR / 'templates')
+
+
+def _compute_catan_version() -> str:
+    """Compute a short content hash of all Catan JS files for cache-busting."""
+    h = hashlib.sha256()
+    js_dir = APP_DIR / 'static' / 'catan'
+    for js_file in sorted(js_dir.glob('*.js')):
+        h.update(js_file.read_bytes())
+    return h.hexdigest()[:8]
+
+
+_CATAN_JS_VERSION = _compute_catan_version()
 
 router = fastapi.APIRouter()
 
@@ -63,13 +76,21 @@ class RoomStatusResponse(pydantic.BaseModel):
 @router.get('/catan', response_class=fastapi.responses.HTMLResponse)
 async def catan_lobby(request: fastapi.Request) -> fastapi.responses.HTMLResponse:
     """Render the Catan lobby/landing page."""
-    return templates.TemplateResponse(request=request, name='catan_lobby.html.jinja2')
+    return templates.TemplateResponse(
+        request=request,
+        name='catan_lobby.html.jinja2',
+        context={'catan_version': _CATAN_JS_VERSION},
+    )
 
 
 @router.get('/catan/game', response_class=fastapi.responses.HTMLResponse)
 async def catan_game(request: fastapi.Request) -> fastapi.responses.HTMLResponse:
     """Render the Catan in-game page (waiting room + board)."""
-    return templates.TemplateResponse(request=request, name='catan_game.html.jinja2')
+    return templates.TemplateResponse(
+        request=request,
+        name='catan_game.html.jinja2',
+        context={'catan_version': _CATAN_JS_VERSION},
+    )
 
 
 @router.post('/catan/rooms', response_model=RoomCreatedResponse)
