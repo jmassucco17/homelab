@@ -5,6 +5,7 @@ services:
     container_name: shared-assets
     labels:
       - 'traefik.enable=true'
+    command: ['nginx', '-g', 'daemon off;']
     healthcheck:
       test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1/']
       interval: 5s
