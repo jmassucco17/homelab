@@ -11,22 +11,22 @@ on:
     outputs:
       shared-assets-changed:
         description: 'Whether shared-assets image changed'
-        value: ${{ jobs.build-shared-assets.outputs.changed }}
+        value: ${{ jobs.summary.outputs.shared-assets-changed }}
       homepage-changed:
         description: 'Whether homepage image changed'
-        value: ${{ jobs.build-homepage.outputs.changed }}
+        value: ${{ jobs.summary.outputs.homepage-changed }}
       blog-changed:
         description: 'Whether blog image changed'
-        value: ${{ jobs.build-blog.outputs.changed }}
+        value: ${{ jobs.summary.outputs.blog-changed }}
       games-changed:
         description: 'Whether games image changed'
-        value: ${{ jobs.build-games.outputs.changed }}
+        value: ${{ jobs.summary.outputs.games-changed }}
       tools-changed:
         description: 'Whether tools image changed'
-        value: ${{ jobs.build-tools.outputs.changed }}
+        value: ${{ jobs.summary.outputs.tools-changed }}
       travel-changed:
         description: 'Whether travel image changed'
-        value: ${{ jobs.build-travel.outputs.changed }}
+        value: ${{ jobs.summary.outputs.travel-changed }}
 
 jobs:
   build-base:
@@ -49,132 +49,92 @@ jobs:
           dockerfile: python-base/Dockerfile
           cache-scope: python-base
 
-  build-shared-assets:
-    name: build shared-assets
-    runs-on: ubuntu-latest
-    outputs:
-      changed: ${{ steps.build.outputs.changed }}
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v6
-      - name: Setup Docker and login
-        uses: ./.github/actions/docker-setup
-      - name: Build and push shared-assets
-        id: build
-        uses: ./.github/actions/docker-build-push
-        with:
-          image: ghcr.io/jmassucco17/homelab/shared-assets
-          context: shared-assets
-          dockerfile: shared-assets/Dockerfile
-          cache-scope: shared-assets
-
-  build-homepage:
-    name: build homepage
-    runs-on: ubuntu-latest
-    outputs:
-      changed: ${{ steps.build.outputs.changed }}
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v6
-      - name: Setup Docker and login
-        uses: ./.github/actions/docker-setup
-      - name: Build and push homepage
-        id: build
-        uses: ./.github/actions/docker-build-push
-        with:
-          image: ghcr.io/jmassucco17/homelab/homepage
-          context: homepage
-          dockerfile: homepage/Dockerfile
-          cache-scope: homepage
-
-  build-blog:
-    name: build blog
+  build:
+    name: build ${{ matrix.service }}
     needs: build-base
     runs-on: ubuntu-latest
-    outputs:
-      changed: ${{ steps.build.outputs.changed }}
     permissions:
       contents: read
       packages: write
+    strategy:
+      matrix:
+        include:
+          - service: shared-assets
+            image: ghcr.io/jmassucco17/homelab/shared-assets
+            context: shared-assets
+            file: shared-assets/Dockerfile
+          - service: homepage
+            image: ghcr.io/jmassucco17/homelab/homepage
+            context: homepage
+            file: homepage/Dockerfile
+          - service: blog
+            image: ghcr.io/jmassucco17/homelab/blog
+            context: .
+            file: blog/Dockerfile
+          - service: games
+            image: ghcr.io/jmassucco17/homelab/games
+            context: .
+            file: games/Dockerfile
+          - service: tools
+            image: ghcr.io/jmassucco17/homelab/tools
+            context: .
+            file: tools/Dockerfile
+          - service: travel
+            image: ghcr.io/jmassucco17/homelab/travel
+            context: .
+            file: travel/Dockerfile
+
     steps:
       - uses: actions/checkout@v6
+
       - name: Setup Docker and login
         uses: ./.github/actions/docker-setup
-      - name: Build and push blog
+
+      - name: Build and push ${{ matrix.service }}
         id: build
         uses: ./.github/actions/docker-build-push
         with:
-          image: ghcr.io/jmassucco17/homelab/blog
-          context: .
-          dockerfile: blog/Dockerfile
-          cache-scope: blog
+          image: ${{ matrix.image }}
+          context: ${{ matrix.context }}
+          dockerfile: ${{ matrix.file }}
+          cache-scope: ${{ matrix.service }}
 
-  build-games:
-    name: build games
-    needs: build-base
+      - name: Save build result
+        run: |
+          mkdir -p /tmp/build-results
+          echo "${{ steps.build.outputs.changed }}" > "/tmp/build-results/${{ matrix.service }}-changed.txt"
+
+      - name: Upload build result
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-result-${{ matrix.service }}
+          path: /tmp/build-results/${{ matrix.service }}-changed.txt
+          retention-days: 1
+
+  summary:
+    name: Collect build results
+    needs: build
     runs-on: ubuntu-latest
     outputs:
-      changed: ${{ steps.build.outputs.changed }}
-    permissions:
-      contents: read
-      packages: write
+      shared-assets-changed: ${{ steps.collect.outputs.shared-assets-changed }}
+      homepage-changed: ${{ steps.collect.outputs.homepage-changed }}
+      blog-changed: ${{ steps.collect.outputs.blog-changed }}
+      games-changed: ${{ steps.collect.outputs.games-changed }}
+      tools-changed: ${{ steps.collect.outputs.tools-changed }}
+      travel-changed: ${{ steps.collect.outputs.travel-changed }}
     steps:
-      - uses: actions/checkout@v6
-      - name: Setup Docker and login
-        uses: ./.github/actions/docker-setup
-      - name: Build and push games
-        id: build
-        uses: ./.github/actions/docker-build-push
+      - name: Download all build results
+        uses: actions/download-artifact@v4
         with:
-          image: ghcr.io/jmassucco17/homelab/games
-          context: .
-          dockerfile: games/Dockerfile
-          cache-scope: games
+          pattern: build-result-*
+          path: /tmp/build-results
+          merge-multiple: true
 
-  build-tools:
-    name: build tools
-    needs: build-base
-    runs-on: ubuntu-latest
-    outputs:
-      changed: ${{ steps.build.outputs.changed }}
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v6
-      - name: Setup Docker and login
-        uses: ./.github/actions/docker-setup
-      - name: Build and push tools
-        id: build
-        uses: ./.github/actions/docker-build-push
-        with:
-          image: ghcr.io/jmassucco17/homelab/tools
-          context: .
-          dockerfile: tools/Dockerfile
-          cache-scope: tools
-
-  build-travel:
-    name: build travel
-    needs: build-base
-    runs-on: ubuntu-latest
-    outputs:
-      changed: ${{ steps.build.outputs.changed }}
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v6
-      - name: Setup Docker and login
-        uses: ./.github/actions/docker-setup
-      - name: Build and push travel
-        id: build
-        uses: ./.github/actions/docker-build-push
-        with:
-          image: ghcr.io/jmassucco17/homelab/travel
-          context: .
-          dockerfile: travel/Dockerfile
-          cache-scope: travel
+      - name: Collect changed flags
+        id: collect
+        run: |
+          for service in shared-assets homepage blog games tools travel; do
+            changed=$(cat "/tmp/build-results/${service}-changed.txt" 2>/dev/null || echo "true")
+            echo "${service}-changed=${changed}" >> "$GITHUB_OUTPUT"
+            echo "${service}: changed=${changed}"
+          done
