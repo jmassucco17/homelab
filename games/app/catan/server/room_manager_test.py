@@ -25,6 +25,28 @@ class TestRoomManager(unittest.TestCase):
         self.assertEqual(len(code), 4)
         self.assertTrue(code.isalnum())
 
+    def test_create_room_code_matches_alphanumeric_pattern(self) -> None:
+        """Room codes consist of uppercase letters and digits only (never lowercase).
+
+        This is a regression test: the join-form validator accepts ``[A-Z0-9]{4}``
+        so the server must never generate codes outside that set (e.g. lowercase
+        letters or punctuation that would silently break the join flow).
+        """
+        for _ in range(50):
+            code = self.mgr.create_room()
+            self.assertRegex(code, r'^[A-Z0-9]{4}$')
+
+    def test_room_with_digit_containing_code_is_retrievable(self) -> None:
+        """A room whose code contains a digit (e.g. '7ULH') can be stored and retrieved.
+
+        Regression test for the bug where the lobby join-form rejected codes
+        containing digits, making rooms with digit codes unreachable.
+        """
+        with unittest.mock.patch('random.choices', return_value=list('7ULH')):
+            code = self.mgr.create_room()
+        self.assertEqual(code, '7ULH')
+        self.assertIsNotNone(self.mgr.get_room('7ULH'))
+
     def test_create_room_stores_room(self) -> None:
         """Created room is retrievable by code."""
         code = self.mgr.create_room()
