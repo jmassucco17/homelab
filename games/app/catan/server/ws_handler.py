@@ -161,6 +161,8 @@ async def catan_ws(
         total_players=room.player_count,
     )
     await room_manager.room_manager.broadcast(room, joined_msg.model_dump_json())
+    # Persist the updated player list so reconnecting players survive restarts.
+    room_manager.room_manager.save_state()
 
     try:
         while True:
@@ -290,12 +292,14 @@ async def _handle_submit_action(
             await room_manager.room_manager.broadcast(
                 room, game_over_msg.model_dump_json()
             )
+            room_manager.room_manager.save_state()
             return
 
     state_update = ws_messages.GameStateUpdate(
         game_state=serialize_state_for_broadcast(new_state)
     )
     await room_manager.room_manager.broadcast(room, state_update.model_dump_json())
+    room_manager.room_manager.save_state()
 
     # Execute AI turns if the current player is an AI
     await execute_ai_turns_if_needed(room)
@@ -344,6 +348,7 @@ async def execute_ai_turns_if_needed(room: room_manager.GameRoom) -> None:
                 await room_manager.room_manager.broadcast(
                     room, game_over_msg.model_dump_json()
                 )
+                room_manager.room_manager.save_state()
             return
 
         # Broadcast the updated state
@@ -351,6 +356,7 @@ async def execute_ai_turns_if_needed(room: room_manager.GameRoom) -> None:
             game_state=serialize_state_for_broadcast(room.game_state)
         )
         await room_manager.room_manager.broadcast(room, state_update.model_dump_json())
+        room_manager.room_manager.save_state()
 
 
 async def _trigger_ai_trade_responses(

@@ -8,20 +8,35 @@ Disconnection handling
 ----------------------
 When a player's WebSocket closes, their slot is held indefinitely.  They
 may reconnect at any time using the same name and reclaim their seat.
+
+Persistence
+-----------
+Room state is persisted to a JSON file after every significant change so
+that active games survive server restarts.  The file path is configurable
+via the ``CATAN_STATE_FILE`` environment variable (default:
+``/data/catan_state.json``).
 """
 
 from __future__ import annotations
 
 import datetime
+import json
 import logging
+import os
+import pathlib
 import random
 import string
+from typing import Any
 
 import fastapi
 
 from ..ai import base
 from ..engine import trade, turn_manager
 from ..models import game_state as gs
+from ..models import serializers
+
+# Path for persisted room state.  Override via CATAN_STATE_FILE env var.
+_STATE_FILE = pathlib.Path(os.environ.get('CATAN_STATE_FILE', '/data/catan_state.json'))
 
 logger = logging.getLogger(__name__)
 
@@ -143,6 +158,7 @@ class RoomManager:
             if code not in self._rooms:
                 self._rooms[code] = GameRoom(code)
                 logger.info('[%s] Room created', code)
+                self.save_state()
                 return code
         raise RuntimeError('Could not generate a unique room code after 100 tries')
 
@@ -261,6 +277,7 @@ class RoomManager:
         ai_class = ai_classes.get(ai_type, easy.EasyAI)
         room.ai_instances[slot.player_index] = ai_class()
 
+        self.save_state()
         return slot
 
     # ------------------------------------------------------------------
@@ -343,8 +360,93 @@ class RoomManager:
         state = turn_manager.create_initial_game_state(names, colors, ai_types=ai_types)
         room.game_state = state
         logger.info('[%s] Game started with players: %s', room.room_code, names)
+        self.save_state()
         return state
+
+    # ------------------------------------------------------------------
+    # Persistence
+    # ------------------------------------------------------------------
+
+    def save_state(self) -> None:
+        """Persist all active rooms to disk as JSON.
+
+        Errors are swallowed so that a missing or read-only data directory
+        never crashes the game server.
+        """
+        data: dict[str, Any] = {}
+        for code, room in self._rooms.items():
+            data[code] = {
+                'room_code': code,
+                'created_at': room.created_at.isoformat(),
+                'players': [
+                    {
+                        'player_index': slot.player_index,
+                        'name': slot.name,
+                        'color': slot.color,
+                        'is_ai': slot.is_ai,
+                        'ai_type': slot.ai_type,
+                    }
+                    for slot in room.players
+                ],
+                'game_state': (
+                    serializers.serialize_model(room.game_state)
+                    if room.game_state is not None
+                    else None
+                ),
+            }
+        try:
+            _STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+            _STATE_FILE.write_text(json.dumps(data))
+        except Exception:  # noqa: BLE001
+            logger.warning('Failed to save room state to %s', _STATE_FILE)
+
+    def load_state(self) -> None:
+        """Restore rooms from a previously persisted JSON file.
+
+        Errors (missing file, corrupt JSON, unexpected structure) are swallowed
+        so that a bad state file never prevents the server from starting.
+        """
+        if not _STATE_FILE.exists():
+            return
+        try:
+            data: dict[str, Any] = json.loads(_STATE_FILE.read_text())
+            for code, room_data in data.items():
+                room = GameRoom(code)
+                room.created_at = datetime.datetime.fromisoformat(
+                    room_data['created_at']
+                )
+                for slot_data in room_data['players']:
+                    slot = PlayerSlot(
+                        player_index=slot_data['player_index'],
+                        name=slot_data['name'],
+                        color=slot_data['color'],
+                        websocket=None,
+                        is_ai=slot_data['is_ai'],
+                        ai_type=slot_data['ai_type'],
+                    )
+                    room.players.append(slot)
+                    if slot.is_ai and slot.ai_type is not None:
+                        from ..ai import easy, hard, medium
+
+                        ai_classes = {
+                            'easy': easy.EasyAI,
+                            'medium': medium.MediumAI,
+                            'hard': hard.HardAI,
+                        }
+                        ai_class = ai_classes.get(slot.ai_type, easy.EasyAI)
+                        room.ai_instances[slot.player_index] = ai_class()
+                if room_data.get('game_state') is not None:
+                    room.game_state = serializers.deserialize_game_state(
+                        room_data['game_state']
+                    )
+                self._rooms[code] = room
+                logger.info('[%s] Room restored from persisted state', code)
+        except Exception:  # noqa: BLE001
+            logger.warning(
+                'Failed to load room state from %s', _STATE_FILE, exc_info=True
+            )
 
 
 # Module-level singleton consumed by the HTTP and WebSocket routers.
 room_manager: RoomManager = RoomManager()
+room_manager.load_state()

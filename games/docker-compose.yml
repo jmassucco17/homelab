@@ -19,6 +19,8 @@ services:
       timeout: 1s
       retries: 3
       start_period: 5s
+    volumes:
+      - games_data:/data
     networks:
       - web
     restart: unless-stopped
@@ -26,3 +28,7 @@ services:
 networks:
   web:
     external: true
+
+volumes:
+  games_data:
+    name: games_data

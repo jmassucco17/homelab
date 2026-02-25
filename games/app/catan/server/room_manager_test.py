@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pathlib
+import tempfile
 import unittest
 import unittest.mock
 
@@ -388,6 +390,150 @@ class TestRoomManagerStartGame(unittest.TestCase):
         self.assertFalse(state.players[1].is_ai)
         self.assertTrue(state.players[2].is_ai)
         self.assertEqual(state.players[2].ai_type, 'hard')
+
+
+class TestRoomManagerPersistence(unittest.TestCase):
+    """Tests for RoomManager.save_state and load_state."""
+
+    def setUp(self) -> None:
+        self.tmp_dir = tempfile.TemporaryDirectory()
+        self.state_file = pathlib.Path(self.tmp_dir.name) / 'test_state.json'
+        # Patch the module-level _STATE_FILE used by all RoomManager instances.
+        self._patcher = unittest.mock.patch.object(
+            rm_module, '_STATE_FILE', self.state_file
+        )
+        self._patcher.start()
+        self.mgr = rm_module.RoomManager()
+
+    def tearDown(self) -> None:
+        self._patcher.stop()
+        self.tmp_dir.cleanup()
+
+    def test_save_state_creates_file(self) -> None:
+        """save_state writes a JSON file to disk."""
+        self.mgr.create_room()
+        self.assertTrue(self.state_file.exists())
+
+    def test_save_and_load_empty_rooms(self) -> None:
+        """An empty manager saves and loads correctly."""
+        self.mgr.save_state()
+        mgr2 = rm_module.RoomManager()
+        mgr2.load_state()
+        self.assertEqual(len(mgr2.rooms), 0)
+
+    def test_save_and_load_lobby_room(self) -> None:
+        """A room in lobby phase (no started game) round-trips correctly."""
+        code = self.mgr.create_room()
+        mgr2 = rm_module.RoomManager()
+        mgr2.load_state()
+        room = mgr2.get_room(code)
+        self.assertIsNotNone(room)
+        assert room is not None
+        self.assertEqual(room.phase, 'lobby')
+        self.assertEqual(room.player_count, 0)
+
+    def test_save_and_load_room_with_ai_player(self) -> None:
+        """A room with an AI player round-trips with the AI instance restored."""
+        code = self.mgr.create_room()
+        self.mgr.add_ai_player(code, 'medium')
+        mgr2 = rm_module.RoomManager()
+        mgr2.load_state()
+        room = mgr2.get_room(code)
+        self.assertIsNotNone(room)
+        assert room is not None
+        self.assertEqual(room.player_count, 1)
+        slot = room.players[0]
+        self.assertTrue(slot.is_ai)
+        self.assertEqual(slot.ai_type, 'medium')
+        self.assertIn(slot.player_index, room.ai_instances)
+
+    def test_save_and_load_room_with_human_player(self) -> None:
+        """A room with a human player round-trips; websocket is None after restore."""
+        code = self.mgr.create_room()
+        ws = unittest.mock.MagicMock(spec=fastapi.WebSocket)
+        self.mgr.join_room(code, 'Alice', ws)
+        self.mgr.save_state()
+        mgr2 = rm_module.RoomManager()
+        mgr2.load_state()
+        room = mgr2.get_room(code)
+        self.assertIsNotNone(room)
+        assert room is not None
+        self.assertEqual(room.player_count, 1)
+        slot = room.players[0]
+        self.assertEqual(slot.name, 'Alice')
+        self.assertFalse(slot.is_ai)
+        # WebSocket is transient — not persisted.
+        self.assertIsNone(slot.websocket)
+
+    def test_save_and_load_started_game(self) -> None:
+        """A started game's state is preserved across save/load."""
+        code = self.mgr.create_room()
+        for name in ('Alice', 'Bob'):
+            ws = unittest.mock.MagicMock(spec=fastapi.WebSocket)
+            self.mgr.join_room(code, name, ws)
+        room = self.mgr.get_room(code)
+        assert room is not None
+        self.mgr.start_game(room)
+        original_phase = room.phase
+        mgr2 = rm_module.RoomManager()
+        mgr2.load_state()
+        room2 = mgr2.get_room(code)
+        self.assertIsNotNone(room2)
+        assert room2 is not None
+        self.assertEqual(room2.phase, original_phase)
+        self.assertIsNotNone(room2.game_state)
+        self.assertEqual(len(room2.players), 2)
+
+    def test_load_state_no_file_is_noop(self) -> None:
+        """load_state does nothing when the state file doesn't exist."""
+        # File was never written.
+        self.mgr.load_state()
+        self.assertEqual(len(self.mgr.rooms), 0)
+
+    def test_load_state_corrupt_file_is_swallowed(self) -> None:
+        """load_state silently ignores a corrupt JSON file."""
+        self.state_file.parent.mkdir(parents=True, exist_ok=True)
+        self.state_file.write_text('not valid json {{{}')
+        mgr2 = rm_module.RoomManager()
+        mgr2.load_state()  # Should not raise
+        self.assertEqual(len(mgr2.rooms), 0)
+
+    def test_save_state_multiple_rooms(self) -> None:
+        """All rooms are saved and restored when there are multiple rooms."""
+        code1 = self.mgr.create_room()
+        code2 = self.mgr.create_room()
+        mgr2 = rm_module.RoomManager()
+        mgr2.load_state()
+        self.assertIsNotNone(mgr2.get_room(code1))
+        self.assertIsNotNone(mgr2.get_room(code2))
+
+    def test_save_state_preserves_player_names(self) -> None:
+        """Player names are preserved across save/load cycles."""
+        code = self.mgr.create_room()
+        ws = unittest.mock.MagicMock(spec=fastapi.WebSocket)
+        self.mgr.join_room(code, 'GamePlayer', ws)
+        self.mgr.save_state()
+        mgr2 = rm_module.RoomManager()
+        mgr2.load_state()
+        room = mgr2.get_room(code)
+        assert room is not None
+        names = [slot.name for slot in room.players]
+        self.assertIn('GamePlayer', names)
+
+    def test_load_state_allows_reconnect(self) -> None:
+        """After load, a human player can reconnect (join_room with same name)."""
+        code = self.mgr.create_room()
+        ws = unittest.mock.MagicMock(spec=fastapi.WebSocket)
+        self.mgr.join_room(code, 'Alice', ws)
+        self.mgr.save_state()
+        mgr2 = rm_module.RoomManager()
+        mgr2.load_state()
+        ws2 = unittest.mock.MagicMock(spec=fastapi.WebSocket)
+        slot = mgr2.join_room(code, 'Alice', ws2)
+        self.assertIsNotNone(slot)
+        assert slot is not None
+        self.assertEqual(slot.name, 'Alice')
+        self.assertIs(slot.websocket, ws2)
 
 
 if __name__ == '__main__':
