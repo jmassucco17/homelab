@@ -544,7 +544,9 @@
   background: var(--color-section-bg);
   border: 1px solid var(--color-card-border);
   border-radius: var(--radius-sm);
-  transition: transform 0.1s ease, border-color 0.1s ease;
+  transition:
+    transform 0.1s ease,
+    border-color 0.1s ease;
 }
 
 .resource-card.resource-change {
@@ -708,6 +710,27 @@
 
 .action-btn:hover {
   opacity: 0.85;
+}
+
+.steal-btn {
+  background: #c0392b;
+  color: #fff;
+}
+
+.discard-btn {
+  background: #e67e22;
+  color: #fff;
+}
+
+.action-hint {
+  font-size: 0.85rem;
+  color: var(--color-accent);
+  text-align: center;
+  margin: 0.25rem 0;
+  padding: 0.3rem;
+  background: var(--color-card-bg);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-accent);
 }
 
 .waiting-msg {
