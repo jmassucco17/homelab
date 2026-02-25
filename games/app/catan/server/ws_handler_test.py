@@ -9,10 +9,12 @@ import unittest.mock
 import fastapi.testclient
 
 from games.app import main
+from games.app.catan.engine import turn_manager
 from games.app.catan.models import actions as actions_module
 from games.app.catan.models import game_state as gs_module
 from games.app.catan.models import ws_messages
 from games.app.catan.server import room_manager as rm_module
+from games.app.catan.server import ws_handler
 
 
 def _fresh_client() -> tuple[fastapi.testclient.TestClient, rm_module.RoomManager]:
@@ -392,6 +394,153 @@ class TestCatanWebSocket(unittest.TestCase):
                 ws.receive_text()
                 # Verify AI turn execution was called
                 mock_ai_turns.assert_called_once()
+
+    # ------------------------------------------------------------------
+    # Logging
+    # ------------------------------------------------------------------
+
+    def test_connect_logs_player_info(self) -> None:
+        """Connecting logs the player name and room code at INFO level."""
+        code = self._create_room()
+        with self.assertLogs('games.app.catan.server.ws_handler', level='INFO') as cm:
+            with self.client.websocket_connect(f'/catan/ws/{code}/Alice'):
+                pass
+        joined_logs = [m for m in cm.output if 'Alice' in m and 'connected' in m]
+        self.assertTrue(joined_logs, 'Expected a connect log entry for Alice')
+
+    def test_disconnect_logs_player_info(self) -> None:
+        """Disconnecting logs the player name and room code at INFO level."""
+        code = self._create_room()
+        with self.assertLogs('games.app.catan.server.ws_handler', level='INFO') as cm:
+            with self.client.websocket_connect(f'/catan/ws/{code}/Alice'):
+                pass
+        disconnect_logs = [m for m in cm.output if 'Alice' in m and 'disconnected' in m]
+        self.assertTrue(disconnect_logs, 'Expected a disconnect log entry for Alice')
+
+    def test_invalid_message_logs_warning(self) -> None:
+        """Sending an invalid message is logged at WARNING level."""
+        code = self._create_room()
+        with self.assertLogs(
+            'games.app.catan.server.ws_handler', level='WARNING'
+        ) as cm:
+            with self.client.websocket_connect(f'/catan/ws/{code}/Alice') as ws:
+                ws.receive_text()
+                ws.send_text('not valid json {{{')
+                ws.receive_text()
+        warning_logs = [
+            m for m in cm.output if 'WARNING' in m and 'invalid message' in m
+        ]
+        self.assertTrue(warning_logs, 'Expected a warning log for invalid message')
+
+    def test_submit_action_logs_action_type(self) -> None:
+        """Submitting an action logs the action type and player at INFO level."""
+        code = self._create_room()
+        with self.client.websocket_connect(f'/catan/ws/{code}/Alice') as ws1:
+            ws1.receive_text()
+            with self.client.websocket_connect(f'/catan/ws/{code}/Bob') as ws2:
+                ws1.receive_text()
+                ws2.receive_text()
+                self.client.post(f'/catan/rooms/{code}/start')
+                ws1.receive_text()
+                ws1.receive_text()
+                ws2.receive_text()
+                ws2.receive_text()
+
+                with self.assertLogs(
+                    'games.app.catan.server.ws_handler', level='INFO'
+                ) as cm:
+                    ws1.send_text(
+                        json.dumps(
+                            {
+                                'message_type': 'submit_action',
+                                'action': {
+                                    'action_type': 'end_turn',
+                                    'player_index': 0,
+                                },
+                            }
+                        )
+                    )
+                    ws1.receive_text()
+
+                action_logs = [m for m in cm.output if 'end_turn' in m and 'Alice' in m]
+                self.assertTrue(
+                    action_logs, 'Expected an INFO log for end_turn action by Alice'
+                )
+
+
+class TestSerializeStateForBroadcast(unittest.TestCase):
+    """Unit tests for serialize_state_for_broadcast."""
+
+    def _make_move_robber_state(self) -> gs_module.GameState:
+        """Return a game state with pending_action == MOVE_ROBBER."""
+        base = turn_manager.create_initial_game_state(
+            ['Alice', 'Bob'], ['red', 'blue'], seed=42
+        )
+        new_turn = base.turn_state.model_copy(
+            update={'pending_action': gs_module.PendingActionType.MOVE_ROBBER}
+        )
+        return base.model_copy(
+            update={'phase': gs_module.GamePhase.MAIN, 'turn_state': new_turn}
+        )
+
+    def test_move_robber_includes_legal_tile_indices(self) -> None:
+        """legal_tile_indices is populated (excluding robber tile) for move_robber."""
+        state = self._make_move_robber_state()
+        data = ws_handler.serialize_state_for_broadcast(state)
+
+        robber_tile = state.board.robber_tile_index
+        tile_count = len(state.board.tiles)
+        self.assertIn('legal_tile_indices', data)
+        self.assertEqual(len(data['legal_tile_indices']), tile_count - 1)
+        self.assertNotIn(robber_tile, data['legal_tile_indices'])
+
+    def test_move_robber_clears_vertex_and_edge_highlights(self) -> None:
+        """legal_vertex_ids and legal_edge_ids are empty when pending is move_robber."""
+        state = self._make_move_robber_state()
+        data = ws_handler.serialize_state_for_broadcast(state)
+
+        self.assertEqual(data['legal_vertex_ids'], [])
+        self.assertEqual(data['legal_edge_ids'], [])
+
+    def test_setup_phase_includes_legal_vertex_ids(self) -> None:
+        """legal_vertex_ids is populated during the setup placement phase."""
+        state = turn_manager.create_initial_game_state(
+            ['Alice', 'Bob'], ['red', 'blue'], seed=42
+        )
+        self.assertEqual(
+            state.turn_state.pending_action,
+            gs_module.PendingActionType.PLACE_SETTLEMENT,
+        )
+        data = ws_handler.serialize_state_for_broadcast(state)
+
+        self.assertIn('legal_vertex_ids', data)
+        self.assertGreater(len(data['legal_vertex_ids']), 0)
+        self.assertEqual(data['legal_edge_ids'], [])
+        self.assertEqual(data['legal_tile_indices'], [])
+
+    def test_game_state_update_includes_legal_tile_indices(self) -> None:
+        """GameStateUpdate includes legal_tile_indices when pending is move_robber."""
+        client, mgr = _fresh_client()
+        code = client.post('/catan/rooms').json()['room_code']
+        with client.websocket_connect(f'/catan/ws/{code}/Alice') as ws1:
+            ws1.receive_text()
+            with client.websocket_connect(f'/catan/ws/{code}/Bob') as ws2:
+                ws1.receive_text()
+                ws2.receive_text()
+
+                client.post(f'/catan/rooms/{code}/start')
+                ws1.receive_text()  # GameStarted
+                update_msg = json.loads(ws1.receive_text())  # GameStateUpdate
+                ws2.receive_text()
+                ws2.receive_text()
+
+                self.assertEqual(
+                    update_msg['message_type'],
+                    ws_messages.ServerMessageType.GAME_STATE_UPDATE,
+                )
+                self.assertIn('legal_tile_indices', update_msg['game_state'])
+                self.assertIn('legal_vertex_ids', update_msg['game_state'])
+                self.assertIn('legal_edge_ids', update_msg['game_state'])
 
     # ------------------------------------------------------------------
     # AI trade responses

@@ -1,0 +1,11 @@
+# Production overrides: Traefik routing labels.
+# Merged with docker-compose.yml by scripts/start_service.sh (prod) and CI.
+services:
+  tools:
+    labels:
+      - 'traefik.http.routers.tools.rule=Host(`tools.jamesmassucco.com`)'
+      - 'traefik.http.routers.tools.entrypoints=websecure'
+      - 'traefik.http.routers.tools.tls=true'
+      - 'traefik.http.routers.tools.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.tools.middlewares=ratelimit'
+      - 'traefik.http.services.tools.loadbalancer.server.port=8000'

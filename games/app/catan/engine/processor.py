@@ -138,12 +138,19 @@ def _apply_place_settlement(
         if state.board.vertices[adj_id].building is not None:
             raise ValueError('Settlement violates the distance rule.')
 
+    p = state.players[action.player_index]
+
+    # During normal play, player must pay the settlement cost.
+    if state.phase not in _SETUP_PHASES:
+        if not p.resources.can_afford(player.SETTLEMENT_COST):
+            raise ValueError('Insufficient resources to build a settlement.')
+        p.resources = p.resources.subtract(player.SETTLEMENT_COST)
+
     vertex.building = board.Building(
         player_index=action.player_index,
         building_type=board.BuildingType.SETTLEMENT,
     )
 
-    p = state.players[action.player_index]
     p.build_inventory.settlements_remaining -= 1
     p.victory_points += 1
 
