@@ -118,6 +118,60 @@ function initLobby() {
       joinCodeInput.setSelectionRange(start, end)
     })
   }
+
+  // Poll for active games and populate the active-games section
+  loadActiveGames()
+  const pollInterval = setInterval(loadActiveGames, 5000)
+  window.addEventListener('beforeunload', () => clearInterval(pollInterval))
+}
+
+/** Fetch active rooms and render them in the active-games section. */
+async function loadActiveGames() {
+  const listEl = document.getElementById('active-games-list')
+  const emptyEl = document.getElementById('active-games-empty')
+  if (!listEl || !emptyEl) return
+
+  try {
+    const resp = await fetch('/catan/rooms')
+    if (!resp.ok) return
+    const rooms = await resp.json()
+
+    listEl.innerHTML = ''
+
+    if (rooms.length === 0) {
+      emptyEl.style.display = 'block'
+      return
+    }
+
+    emptyEl.style.display = 'none'
+    rooms.forEach((room) => {
+      const card = document.createElement('div')
+      card.className = 'active-game-card'
+
+      const playerNames = room.players.length > 0 ? room.players.join(', ') : 'No players yet'
+      const phaseLabel = room.phase === 'lobby' ? 'In Lobby' : `In Game (${room.phase})`
+
+      card.innerHTML = `
+        <div class="active-game-info">
+          <span class="active-game-code">${room.room_code}</span>
+          <span class="active-game-phase">${phaseLabel}</span>
+          <span class="active-game-players">👤 ${playerNames}</span>
+        </div>
+        <button class="lobby-btn observe-btn" data-room="${room.room_code}">👁 Observe</button>
+      `
+      listEl.appendChild(card)
+    })
+
+    // Wire up observe buttons
+    listEl.querySelectorAll('.observe-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const code = btn.dataset.room
+        window.location.href = `/catan/game?room=${code}&observe=true`
+      })
+    })
+  } catch {
+    // Silently ignore errors; the section will stay as-is
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -128,6 +182,7 @@ async function initGame() {
   const params = new URLSearchParams(window.location.search)
   const roomCode = params.get('room')
   const playerName = params.get('name') || 'Player'
+  const isObserver = params.get('observe') === 'true'
 
   if (!roomCode) {
     window.location.href = '/catan'
@@ -137,6 +192,16 @@ async function initGame() {
   // Show room code in waiting room header
   const rcEl = document.getElementById('room-code-display')
   if (rcEl) rcEl.textContent = roomCode
+
+  // In observer mode, hide the waiting-room action buttons (can't start/add AI)
+  if (isObserver) {
+    const waitingActions = document.querySelector('.waiting-room-actions')
+    if (waitingActions) waitingActions.style.display = 'none'
+    const waitingHint = document.querySelector('.waiting-hint')
+    if (waitingHint) waitingHint.textContent = 'You are observing this game.'
+    // If game already started, skip straight to game view
+    document.getElementById('waiting-room')?.classList.remove('hidden')
+  }
 
   // ---------------------------------------------------------------------------
   // Board renderer
@@ -166,11 +231,22 @@ async function initGame() {
   // ---------------------------------------------------------------------------
   let myPlayerIndex = null
 
+  // Observers connect to a separate read-only WS endpoint; they never get a
+  // player index and all action callbacks are no-ops.
+  const wsPath = isObserver ? `/catan/observe/${roomCode}` : null
+
   const wsClient = new CatanWSClient(roomCode, playerName, {
+    wsPath: wsPath,
     onGameStateUpdate: (gameState) => {
       // Initialise board on first state update
       if (!boardRenderer.board) {
         boardRenderer.setBoard(gameState.board)
+        // If observing a game already in progress, switch to the game view now
+        if (isObserver) {
+          document.getElementById('waiting-room')?.classList.add('hidden')
+          document.getElementById('game-area')?.classList.remove('hidden')
+          window.dispatchEvent(new Event('resize'))
+        }
       } else {
         boardRenderer.updateBoard(gameState.board)
       }

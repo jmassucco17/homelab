@@ -17,6 +17,7 @@ export class CatanWSClient {
    * @param {string} roomCode  4-character room code
    * @param {string} playerName  display name of the local player
    * @param {object} options
+   * @param {string}  [options.wsPath]  custom WebSocket path; defaults to the player endpoint
    * @param {(gameState: object) => void}  options.onGameStateUpdate
    * @param {(error: string) => void}      options.onErrorMessage
    * @param {(msg: object) => void}        options.onPlayerJoined
@@ -31,6 +32,7 @@ export class CatanWSClient {
   constructor(roomCode, playerName, options = {}) {
     this.roomCode = roomCode
     this.playerName = playerName
+    this._wsPath = options.wsPath || null
 
     /** @type {WebSocket|null} */
     this.ws = null
@@ -60,7 +62,10 @@ export class CatanWSClient {
     this._closed = false
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
     const host = window.location.host
-    const url = `${protocol}://${host}/catan/ws/${encodeURIComponent(this.roomCode)}/${encodeURIComponent(this.playerName)}`
+    const path =
+      this._wsPath ||
+      `/catan/ws/${encodeURIComponent(this.roomCode)}/${encodeURIComponent(this.playerName)}`
+    const url = `${protocol}://${host}${path}`
 
     this.ws = new WebSocket(url)
 

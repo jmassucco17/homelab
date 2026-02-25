@@ -25,7 +25,7 @@ import fastapi
 import pydantic
 
 from ..ai import driver
-from ..engine import processor, trade
+from ..engine import processor, rules, trade
 from ..models import actions, game_state, serializers, ws_messages
 from . import room_manager
 
@@ -33,10 +33,75 @@ logger = logging.getLogger(__name__)
 
 router = fastapi.APIRouter()
 
+
+def serialize_state_for_broadcast(state: game_state.GameState) -> dict:
+    """Serialize game state and augment with legal-action highlights.
+
+    Computes legal actions for the active player and adds ``legal_vertex_ids``,
+    ``legal_edge_ids``, and ``legal_tile_indices`` to the serialized dict so the
+    client can highlight valid placement positions on the board.
+    """
+    data = serializers.serialize_model(state)
+    active_player = state.turn_state.player_index
+    legal = rules.get_legal_actions(state, active_player)
+    data['legal_vertex_ids'] = [
+        a.vertex_id
+        for a in legal
+        if isinstance(a, (actions.PlaceSettlement, actions.PlaceCity))
+    ]
+    data['legal_edge_ids'] = [
+        a.edge_id for a in legal if isinstance(a, actions.PlaceRoad)
+    ]
+    data['legal_tile_indices'] = [
+        a.tile_index for a in legal if isinstance(a, actions.MoveRobber)
+    ]
+    return data
+
+
 # Pydantic v2 TypeAdapter for the discriminated-union ClientMessage type.
 _client_message_adapter: pydantic.TypeAdapter[ws_messages.ClientMessage] = (
     pydantic.TypeAdapter(ws_messages.ClientMessage)
 )
+
+
+@router.websocket('/catan/observe/{room_code}')
+async def catan_observe(
+    websocket: fastapi.WebSocket,
+    room_code: str,
+) -> None:
+    """WebSocket endpoint for observing a Catan game session.
+
+    Observers receive all server broadcasts (game state updates, player
+    events, etc.) but cannot send game actions.  If the game is already in
+    progress the current state is sent immediately on connect.
+    """
+    await websocket.accept()
+
+    room = room_manager.room_manager.get_room(room_code)
+    if room is None:
+        await websocket.send_text(
+            ws_messages.ErrorMessage(
+                error=f'Room {room_code!r} does not exist'
+            ).model_dump_json()
+        )
+        await websocket.close(code=1008)
+        return
+
+    room_manager.room_manager.add_observer(room_code, websocket)
+
+    # Send the current game state immediately if the game has already started.
+    if room.game_state is not None:
+        state_update = ws_messages.GameStateUpdate(
+            game_state=serializers.serialize_model(room.game_state)
+        )
+        await websocket.send_text(state_update.model_dump_json())
+
+    try:
+        while True:
+            # Observers only receive; drain any unexpected client messages.
+            await websocket.receive_text()
+    except fastapi.WebSocketDisconnect:
+        room_manager.room_manager.remove_observer(room_code, websocket)
 
 
 @router.websocket('/catan/ws/{room_code}/{player_name}')
@@ -227,7 +292,7 @@ async def _handle_submit_action(
             return
 
     state_update = ws_messages.GameStateUpdate(
-        game_state=serializers.serialize_model(new_state)
+        game_state=serialize_state_for_broadcast(new_state)
     )
     await room_manager.room_manager.broadcast(room, state_update.model_dump_json())
 
@@ -282,7 +347,7 @@ async def execute_ai_turns_if_needed(room: room_manager.GameRoom) -> None:
 
         # Broadcast the updated state
         state_update = ws_messages.GameStateUpdate(
-            game_state=serializers.serialize_model(room.game_state)
+            game_state=serialize_state_for_broadcast(room.game_state)
         )
         await room_manager.room_manager.broadcast(room, state_update.model_dump_json())
 
@@ -370,7 +435,7 @@ async def _handle_accept_trade(
 
     # Broadcast updated game state
     state_update = ws_messages.GameStateUpdate(
-        game_state=serializers.serialize_model(room.game_state)
+        game_state=serialize_state_for_broadcast(room.game_state)
     )
     await room_manager.room_manager.broadcast(room, state_update.model_dump_json())
 
