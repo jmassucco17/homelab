@@ -79,6 +79,22 @@ async def create_room() -> RoomCreatedResponse:
     return RoomCreatedResponse(room_code=code)
 
 
+@router.get('/catan/rooms', response_model=list[RoomStatusResponse])
+async def list_rooms() -> list[RoomStatusResponse]:
+    """Return a list of all active game rooms."""
+    result: list[RoomStatusResponse] = []
+    for code, room in room_manager.room_manager.rooms.items():
+        result.append(
+            RoomStatusResponse(
+                room_code=code,
+                player_count=room.player_count,
+                phase=room.phase,
+                players=[slot.name for slot in room.players],
+            )
+        )
+    return result
+
+
 @router.get('/catan/rooms/{room_code}', response_model=RoomStatusResponse)
 async def room_status(room_code: str) -> RoomStatusResponse:
     """Return the current status of a game room."""

@@ -306,5 +306,107 @@ class TestAddAIEndpoint(unittest.TestCase):
         self.assertIn('AI, easy', data['player_name'])
 
 
+class TestListRoomsEndpoint(unittest.TestCase):
+    """Tests for GET /catan/rooms."""
+
+    def setUp(self) -> None:
+        self.client, self.mgr = _fresh_client()
+
+    def test_list_rooms_empty(self) -> None:
+        """GET /catan/rooms returns an empty list when no rooms exist."""
+        resp = self.client.get('/catan/rooms')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json(), [])
+
+    def test_list_rooms_shows_created_room(self) -> None:
+        """GET /catan/rooms lists a newly created room."""
+        code = self.client.post('/catan/rooms').json()['room_code']
+        resp = self.client.get('/catan/rooms')
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]['room_code'], code)
+        self.assertEqual(data[0]['phase'], 'lobby')
+        self.assertEqual(data[0]['players'], [])
+
+    def test_list_rooms_shows_player_names(self) -> None:
+        """GET /catan/rooms lists player names for each room."""
+        code = self.client.post('/catan/rooms').json()['room_code']
+        with self.client.websocket_connect(f'/catan/ws/{code}/Alice') as ws:
+            ws.receive_text()  # drain PlayerJoined
+            resp = self.client.get('/catan/rooms')
+            rooms = resp.json()
+            self.assertEqual(len(rooms), 1)
+            self.assertIn('Alice', rooms[0]['players'])
+
+    def test_list_rooms_shows_multiple_rooms(self) -> None:
+        """GET /catan/rooms lists all active rooms."""
+        code1 = self.client.post('/catan/rooms').json()['room_code']
+        code2 = self.client.post('/catan/rooms').json()['room_code']
+        resp = self.client.get('/catan/rooms')
+        codes = {r['room_code'] for r in resp.json()}
+        self.assertIn(code1, codes)
+        self.assertIn(code2, codes)
+
+
+class TestObserverEndpoint(unittest.TestCase):
+    """Tests for the /catan/observe/{room_code} WebSocket endpoint."""
+
+    def setUp(self) -> None:
+        self.client, self.mgr = _fresh_client()
+
+    def test_observer_rejects_unknown_room(self) -> None:
+        """Observer WS receives an error message for an unknown room code."""
+        import json
+
+        with self.client.websocket_connect('/catan/observe/ZZZZ') as ws:
+            msg = json.loads(ws.receive_text())
+            self.assertEqual(msg['message_type'], 'error_message')
+            self.assertIn('ZZZZ', msg['error'])
+
+    def test_observer_connects_to_lobby_room(self) -> None:
+        """Observer can connect to a room that has not yet started."""
+        code = self.client.post('/catan/rooms').json()['room_code']
+        # Should not raise; no immediate message is expected (no game state yet)
+        with self.client.websocket_connect(f'/catan/observe/{code}'):
+            pass  # connection opens and closes cleanly
+
+    def test_observer_receives_player_joined(self) -> None:
+        """Observer receives PlayerJoined broadcasts."""
+        import json
+
+        code = self.client.post('/catan/rooms').json()['room_code']
+        with self.client.websocket_connect(f'/catan/observe/{code}') as obs:
+            # A player joins — observer should receive the broadcast
+            with self.client.websocket_connect(f'/catan/ws/{code}/Alice') as ws:
+                ws.receive_text()  # drain Alice's own PlayerJoined
+                msg = json.loads(obs.receive_text())
+                self.assertEqual(msg['message_type'], 'player_joined')
+                self.assertEqual(msg['player_name'], 'Alice')
+
+    def test_observer_receives_game_state_on_connect_after_start(self) -> None:
+        """Observer gets the current state immediately when joining a started game."""
+        import json
+
+        code = self.client.post('/catan/rooms').json()['room_code']
+        with self.client.websocket_connect(f'/catan/ws/{code}/Alice') as ws1:
+            ws1.receive_text()
+            with self.client.websocket_connect(f'/catan/ws/{code}/Bob') as ws2:
+                ws1.receive_text()
+                ws2.receive_text()
+                self.client.post(f'/catan/rooms/{code}/start')
+                # Drain GameStarted + GameStateUpdate for both players
+                ws1.receive_text()
+                ws1.receive_text()
+                ws2.receive_text()
+                ws2.receive_text()
+
+                # Observer connects after game started — should get state immediately
+                with self.client.websocket_connect(f'/catan/observe/{code}') as obs:
+                    msg = json.loads(obs.receive_text())
+                    self.assertEqual(msg['message_type'], 'game_state_update')
+                    self.assertIn('game_state', msg)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -82,6 +82,8 @@ class GameRoom:
         self.ai_instances: dict[int, base.CatanAI] = {}
         # Active trade offer (if any)
         self.pending_trade: trade.PendingTrade | None = None
+        # Observer WebSocket connections (read-only viewers)
+        self.observers: list[fastapi.WebSocket] = []
 
     # ------------------------------------------------------------------
     # Convenience properties
@@ -143,6 +145,11 @@ class RoomManager:
     def get_room(self, room_code: str) -> GameRoom | None:
         """Return the room with *room_code*, or ``None`` if not found."""
         return self._rooms.get(room_code)
+
+    @property
+    def rooms(self) -> dict[str, GameRoom]:
+        """Read-only view of all active rooms keyed by room code."""
+        return self._rooms
 
     # ------------------------------------------------------------------
     # Player join / disconnect / reconnect
@@ -236,8 +243,25 @@ class RoomManager:
     # Messaging helpers
     # ------------------------------------------------------------------
 
+    def add_observer(self, room_code: str, websocket: fastapi.WebSocket) -> bool:
+        """Register *websocket* as an observer of *room_code*.
+
+        Returns True on success, False if the room does not exist.
+        """
+        room = self._rooms.get(room_code)
+        if room is None:
+            return False
+        room.observers.append(websocket)
+        return True
+
+    def remove_observer(self, room_code: str, websocket: fastapi.WebSocket) -> None:
+        """Remove *websocket* from the observer list for *room_code*."""
+        room = self._rooms.get(room_code)
+        if room is not None and websocket in room.observers:
+            room.observers.remove(websocket)
+
     async def broadcast(self, room: GameRoom, message: str) -> None:
-        """Send *message* to every currently connected player in *room*.
+        """Send *message* to every currently connected player and observer in *room*.
 
         Individual send errors are swallowed so a single broken connection
         does not prevent the remaining players from receiving the message.
@@ -248,6 +272,11 @@ class RoomManager:
                     await slot.websocket.send_text(message)
                 except Exception:  # noqa: BLE001 — broken socket; player will reconnect
                     pass
+        for ws in list(room.observers):
+            try:
+                await ws.send_text(message)
+            except Exception:  # noqa: BLE001 — broken socket; observer will reconnect
+                pass
 
     async def send_to_player(
         self, room: GameRoom, player_index: int, message: str
