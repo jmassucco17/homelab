@@ -337,6 +337,9 @@ async function initGame() {
 
   boardRenderer.onTileClick = (tileIndex) => {
     if (myPlayerIndex === null || !ui.gameState) return
+    const gs = ui.gameState
+    if (gs.turn_state.player_index !== myPlayerIndex) return
+    if (gs.turn_state.pending_action !== 'move_robber') return
     wsClient.sendAction({
       action_type: 'move_robber',
       player_index: myPlayerIndex,
@@ -377,7 +380,7 @@ async function initGame() {
     })
 
     // Handle difficulty button clicks
-    aiModal.querySelectorAll('[data-difficulty]').forEach(btn => {
+    aiModal.querySelectorAll('[data-difficulty]').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const difficulty = btn.dataset.difficulty
         addAiBtn.disabled = true
