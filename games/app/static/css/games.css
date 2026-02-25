@@ -1024,6 +1024,200 @@
   flex-wrap: wrap;
 }
 
+/* Trade modals */
+.trade-modal-card {
+  min-width: 340px;
+  max-width: 480px;
+  text-align: left;
+  gap: 0.5rem;
+}
+
+.trade-modal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--color-card-border);
+}
+
+.trade-modal-section:first-of-type {
+  border-top: none;
+}
+
+.trade-modal-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-muted-text, #888);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.trade-resource-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.trade-res-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem 0.6rem;
+  min-width: 60px;
+  font-family: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  border: 2px solid var(--color-card-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card-bg);
+  color: var(--color-text);
+  transition:
+    border-color 0.12s ease,
+    background 0.12s ease;
+}
+
+.trade-res-btn .res-emoji {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.trade-res-btn .res-name {
+  margin-top: 0.2rem;
+  text-transform: capitalize;
+}
+
+.trade-res-btn .res-count {
+  font-size: 0.7rem;
+  color: var(--color-muted-text, #888);
+}
+
+.trade-res-btn:disabled,
+.trade-res-btn.unaffordable {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.trade-res-btn:hover:not(:disabled) {
+  border-color: var(--color-accent);
+}
+
+.trade-ratio-display {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--color-muted-text, #888);
+  margin: 0;
+}
+
+/* Player trade steppers */
+.trade-stepper-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.trade-stepper-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+}
+
+.trade-stepper-row .res-emoji {
+  font-size: 1.1rem;
+  width: 1.4rem;
+  text-align: center;
+}
+
+.trade-stepper-row .res-name {
+  flex: 1;
+  text-transform: capitalize;
+}
+
+.trade-stepper-row .res-hand {
+  font-size: 0.7rem;
+  color: var(--color-muted-text, #888);
+  min-width: 2rem;
+}
+
+.stepper-btn {
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card-bg);
+  color: var(--color-text);
+  transition: background 0.1s ease;
+}
+
+.stepper-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.stepper-btn:hover:not(:disabled) {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.stepper-value {
+  min-width: 1.4rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* Player target buttons */
+.trade-player-targets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.trade-target-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.7rem;
+  font-family: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+  border: 2px solid var(--color-card-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card-bg);
+  color: var(--color-text);
+  transition:
+    border-color 0.12s ease,
+    background 0.12s ease;
+}
+
+.trade-target-btn:hover {
+  border-color: var(--color-accent);
+}
+
+.trade-target-btn.selected {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 15%, var(--color-card-bg));
+}
+
+.player-dot-sm {
+  display: inline-block;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+}
+
+.trade-selection-display {
+  font-size: 0.8rem;
+  color: var(--color-text);
+  margin: 0;
+}
+
 /* Utility */
 .hidden {
   display: none !important;
