@@ -14,6 +14,14 @@ inputs:
     description: 'Cache scope name'
     required: true
 
+outputs:
+  digest:
+    description: 'Image digest (sha256:...)'
+    value: ${{ steps.build.outputs.digest }}
+  changed:
+    description: 'Whether the image content changed'
+    value: ${{ steps.check-change.outputs.changed }}
+
 runs:
   using: composite
   steps:
@@ -27,6 +35,7 @@ runs:
           type=raw,value=latest,enable={{is_default_branch}}
 
     - name: Build and push
+      id: build
       uses: docker/build-push-action@v6
       with:
         context: ${{ inputs.context }}
@@ -37,3 +46,22 @@ runs:
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha,scope=${{ inputs.cache-scope }}
         cache-to: type=gha,mode=max,scope=${{ inputs.cache-scope }}
+
+    - name: Check if image changed
+      id: check-change
+      shell: bash
+      run: |
+        # Get the newly built digest
+        NEW_DIGEST="${{ steps.build.outputs.digest }}"
+
+        # Try to get the current digest of the 'latest' tag from registry
+        IMAGE="${{ inputs.image }}"
+        CURRENT_DIGEST=$(docker manifest inspect "${IMAGE}:latest" 2>/dev/null | jq -r '.manifests[] | select(.platform.architecture == "amd64") | .digest' || echo "")
+
+        if [ -z "$CURRENT_DIGEST" ] || [ "$NEW_DIGEST" != "$CURRENT_DIGEST" ]; then
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "Image changed or is new (current: ${CURRENT_DIGEST:-none}, new: $NEW_DIGEST)"
+        else
+          echo "changed=false" >> "$GITHUB_OUTPUT"
+          echo "Image unchanged (digest: $NEW_DIGEST)"
+        fi

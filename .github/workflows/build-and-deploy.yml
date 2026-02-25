@@ -50,6 +50,10 @@ on:
         description: 'Deploy monitoring'
         type: boolean
         default: true
+      portainer:
+        description: 'Deploy portainer'
+        type: boolean
+        default: true
 
 jobs:
   # Determine environment based on trigger and inputs
@@ -96,3 +100,11 @@ jobs:
       games: ${{ inputs.games || true }}
       tools: ${{ inputs.tools || true }}
       monitoring: ${{ inputs.monitoring || true }}
+      portainer: ${{ inputs.portainer || true }}
+      # Pass image changed flags from build job
+      shared-assets-changed: ${{ needs.build.outputs.shared-assets-changed }}
+      homepage-changed: ${{ needs.build.outputs.homepage-changed }}
+      blog-changed: ${{ needs.build.outputs.blog-changed }}
+      games-changed: ${{ needs.build.outputs.games-changed }}
+      tools-changed: ${{ needs.build.outputs.tools-changed }}
+      travel-changed: ${{ needs.build.outputs.travel-changed }}

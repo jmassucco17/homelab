@@ -8,6 +8,25 @@ on:
         required: false
         type: string
         default: 'prod'
+    outputs:
+      shared-assets-changed:
+        description: 'Whether shared-assets image changed'
+        value: ${{ jobs.build-shared-assets.outputs.changed }}
+      homepage-changed:
+        description: 'Whether homepage image changed'
+        value: ${{ jobs.build-homepage.outputs.changed }}
+      blog-changed:
+        description: 'Whether blog image changed'
+        value: ${{ jobs.build-blog.outputs.changed }}
+      games-changed:
+        description: 'Whether games image changed'
+        value: ${{ jobs.build-games.outputs.changed }}
+      tools-changed:
+        description: 'Whether tools image changed'
+        value: ${{ jobs.build-tools.outputs.changed }}
+      travel-changed:
+        description: 'Whether travel image changed'
+        value: ${{ jobs.build-travel.outputs.changed }}
 
 jobs:
   build-base:
@@ -30,51 +49,132 @@ jobs:
           dockerfile: python-base/Dockerfile
           cache-scope: python-base
 
-  build:
-    name: build ${{ matrix.service }}
-    needs: build-base
+  build-shared-assets:
+    name: build shared-assets
     runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.build.outputs.changed }}
     permissions:
       contents: read
       packages: write
-    strategy:
-      matrix:
-        include:
-          - service: shared-assets
-            image: ghcr.io/jmassucco17/homelab/shared-assets
-            context: shared-assets
-            file: shared-assets/Dockerfile
-          - service: homepage
-            image: ghcr.io/jmassucco17/homelab/homepage
-            context: homepage
-            file: homepage/Dockerfile
-          - service: blog
-            image: ghcr.io/jmassucco17/homelab/blog
-            context: .
-            file: blog/Dockerfile
-          - service: games
-            image: ghcr.io/jmassucco17/homelab/games
-            context: .
-            file: games/Dockerfile
-          - service: tools
-            image: ghcr.io/jmassucco17/homelab/tools
-            context: .
-            file: tools/Dockerfile
-          - service: travel
-            image: ghcr.io/jmassucco17/homelab/travel
-            context: .
-            file: travel/Dockerfile
-
     steps:
       - uses: actions/checkout@v6
-
       - name: Setup Docker and login
         uses: ./.github/actions/docker-setup
-
-      - name: Build and push ${{ matrix.service }}
+      - name: Build and push shared-assets
+        id: build
         uses: ./.github/actions/docker-build-push
         with:
-          image: ${{ matrix.image }}
-          context: ${{ matrix.context }}
-          dockerfile: ${{ matrix.file }}
-          cache-scope: ${{ matrix.service }}
+          image: ghcr.io/jmassucco17/homelab/shared-assets
+          context: shared-assets
+          dockerfile: shared-assets/Dockerfile
+          cache-scope: shared-assets
+
+  build-homepage:
+    name: build homepage
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.build.outputs.changed }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup Docker and login
+        uses: ./.github/actions/docker-setup
+      - name: Build and push homepage
+        id: build
+        uses: ./.github/actions/docker-build-push
+        with:
+          image: ghcr.io/jmassucco17/homelab/homepage
+          context: homepage
+          dockerfile: homepage/Dockerfile
+          cache-scope: homepage
+
+  build-blog:
+    name: build blog
+    needs: build-base
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.build.outputs.changed }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup Docker and login
+        uses: ./.github/actions/docker-setup
+      - name: Build and push blog
+        id: build
+        uses: ./.github/actions/docker-build-push
+        with:
+          image: ghcr.io/jmassucco17/homelab/blog
+          context: .
+          dockerfile: blog/Dockerfile
+          cache-scope: blog
+
+  build-games:
+    name: build games
+    needs: build-base
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.build.outputs.changed }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup Docker and login
+        uses: ./.github/actions/docker-setup
+      - name: Build and push games
+        id: build
+        uses: ./.github/actions/docker-build-push
+        with:
+          image: ghcr.io/jmassucco17/homelab/games
+          context: .
+          dockerfile: games/Dockerfile
+          cache-scope: games
+
+  build-tools:
+    name: build tools
+    needs: build-base
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.build.outputs.changed }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup Docker and login
+        uses: ./.github/actions/docker-setup
+      - name: Build and push tools
+        id: build
+        uses: ./.github/actions/docker-build-push
+        with:
+          image: ghcr.io/jmassucco17/homelab/tools
+          context: .
+          dockerfile: tools/Dockerfile
+          cache-scope: tools
+
+  build-travel:
+    name: build travel
+    needs: build-base
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.build.outputs.changed }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup Docker and login
+        uses: ./.github/actions/docker-setup
+      - name: Build and push travel
+        id: build
+        uses: ./.github/actions/docker-build-push
+        with:
+          image: ghcr.io/jmassucco17/homelab/travel
+          context: .
+          dockerfile: travel/Dockerfile
+          cache-scope: travel

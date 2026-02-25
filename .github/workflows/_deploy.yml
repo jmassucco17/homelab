@@ -47,6 +47,30 @@ on:
         description: 'Deploy portainer'
         type: boolean
         default: true
+      shared-assets-changed:
+        description: 'Whether shared-assets image changed'
+        type: string
+        default: 'true'
+      homepage-changed:
+        description: 'Whether homepage image changed'
+        type: string
+        default: 'true'
+      blog-changed:
+        description: 'Whether blog image changed'
+        type: string
+        default: 'true'
+      games-changed:
+        description: 'Whether games image changed'
+        type: string
+        default: 'true'
+      tools-changed:
+        description: 'Whether tools image changed'
+        type: string
+        default: 'true'
+      travel-changed:
+        description: 'Whether travel image changed'
+        type: string
+        default: 'true'
 
 jobs:
   deploy:
@@ -162,10 +186,16 @@ jobs:
           DEPLOY_TRAVEL: ${{ inputs.travel }}
           DEPLOY_GAMES: ${{ inputs.games }}
           DEPLOY_TOOLS: ${{ inputs.tools }}
+          SHARED_ASSETS_CHANGED: ${{ inputs['shared-assets-changed'] }}
+          HOMEPAGE_CHANGED: ${{ inputs['homepage-changed'] }}
+          BLOG_CHANGED: ${{ inputs['blog-changed'] }}
+          GAMES_CHANGED: ${{ inputs['games-changed'] }}
+          TOOLS_CHANGED: ${{ inputs['tools-changed'] }}
+          TRAVEL_CHANGED: ${{ inputs['travel-changed'] }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             "${SERVER_USER}@${SERVER_HOST}" \
-            "ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' SEED_FROM_PROD='${SEED_FROM_PROD}' DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' DEPLOY_MONITORING='${DEPLOY_MONITORING}' DEPLOY_PORTAINER='${DEPLOY_PORTAINER}' DEPLOY_SHARED_ASSETS='${DEPLOY_SHARED_ASSETS}' DEPLOY_HOMEPAGE='${DEPLOY_HOMEPAGE}' DEPLOY_BLOG='${DEPLOY_BLOG}' DEPLOY_TRAVEL='${DEPLOY_TRAVEL}' DEPLOY_GAMES='${DEPLOY_GAMES}' DEPLOY_TOOLS='${DEPLOY_TOOLS}' bash -s" << 'REMOTE'
+            "ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' SEED_FROM_PROD='${SEED_FROM_PROD}' DEPLOY_NETWORKING='${DEPLOY_NETWORKING}' DEPLOY_MONITORING='${DEPLOY_MONITORING}' DEPLOY_PORTAINER='${DEPLOY_PORTAINER}' DEPLOY_SHARED_ASSETS='${DEPLOY_SHARED_ASSETS}' DEPLOY_HOMEPAGE='${DEPLOY_HOMEPAGE}' DEPLOY_BLOG='${DEPLOY_BLOG}' DEPLOY_TRAVEL='${DEPLOY_TRAVEL}' DEPLOY_GAMES='${DEPLOY_GAMES}' DEPLOY_TOOLS='${DEPLOY_TOOLS}' SHARED_ASSETS_CHANGED='${SHARED_ASSETS_CHANGED}' HOMEPAGE_CHANGED='${HOMEPAGE_CHANGED}' BLOG_CHANGED='${BLOG_CHANGED}' GAMES_CHANGED='${GAMES_CHANGED}' TOOLS_CHANGED='${TOOLS_CHANGED}' TRAVEL_CHANGED='${TRAVEL_CHANGED}' bash -s" << 'REMOTE'
           set -euo pipefail
           mkdir -p /opt/homelab
           cd /opt/homelab
@@ -186,11 +216,18 @@ jobs:
               sh -c "cp -a /src/. /dst/ && echo 'Seed complete.'"
           fi
 
-          # Deploy each service if its flag is true
+          # Deploy each service if its flag is true AND the image changed
           deploy_if_enabled() {
             local svc="$1"
-            local flag="$2"
-            if [ "$flag" = "true" ]; then
+            local enabled_flag="$2"
+            local changed_flag="${3:-true}"  # Default to true for services without change tracking (networking, monitoring, portainer)
+
+            if [ "$enabled_flag" = "true" ]; then
+              if [ "$changed_flag" = "false" ]; then
+                echo "--- Skipping $svc (image unchanged) ---"
+                return
+              fi
+
               if [ "${ENVIRONMENT}" = "staging" ]; then
                 echo "--- Starting staging $svc ---"
                 STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" \
@@ -200,23 +237,24 @@ jobs:
                 /opt/homelab/scripts/start_service.sh "$svc"
               fi
             else
-              echo "--- Skipping $svc ---"
+              echo "--- Skipping $svc (disabled) ---"
             fi
           }
 
           # Deploy services in dependency order
+          # networking, monitoring, portainer don't have build tracking yet (always deploy if enabled)
           deploy_if_enabled networking      "$DEPLOY_NETWORKING"
           # monitoring and portainer are prod-only (no staging counterpart)
           if [ "${ENVIRONMENT}" = "prod" ]; then
             deploy_if_enabled monitoring    "$DEPLOY_MONITORING"
             deploy_if_enabled portainer     "$DEPLOY_PORTAINER"
           fi
-          deploy_if_enabled shared-assets   "$DEPLOY_SHARED_ASSETS"
-          deploy_if_enabled homepage        "$DEPLOY_HOMEPAGE"
-          deploy_if_enabled blog            "$DEPLOY_BLOG"
-          deploy_if_enabled games           "$DEPLOY_GAMES"
-          deploy_if_enabled tools           "$DEPLOY_TOOLS"
-          deploy_if_enabled travel          "$DEPLOY_TRAVEL"
+          deploy_if_enabled shared-assets   "$DEPLOY_SHARED_ASSETS"   "$SHARED_ASSETS_CHANGED"
+          deploy_if_enabled homepage        "$DEPLOY_HOMEPAGE"        "$HOMEPAGE_CHANGED"
+          deploy_if_enabled blog            "$DEPLOY_BLOG"            "$BLOG_CHANGED"
+          deploy_if_enabled games           "$DEPLOY_GAMES"           "$GAMES_CHANGED"
+          deploy_if_enabled tools           "$DEPLOY_TOOLS"           "$TOOLS_CHANGED"
+          deploy_if_enabled travel          "$DEPLOY_TRAVEL"          "$TRAVEL_CHANGED"
 
           rm -f /tmp/homelab-deploy.tar.gz
           echo "Deployment complete."
