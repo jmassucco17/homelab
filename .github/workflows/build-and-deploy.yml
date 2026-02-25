@@ -104,8 +104,10 @@ jobs:
         # otherwise, use the input
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
+            echo "Environment determined from push event: prod"
             echo "environment=prod" >> "$GITHUB_OUTPUT"
           else
+            echo "Environment determined from workflow_dispatch input: ${{ inputs.environment }}"
             echo "environment=${{ inputs.environment }}" >> "$GITHUB_OUTPUT"
           fi
 
