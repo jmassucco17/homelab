@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import unittest
 from collections.abc import Generator
 
@@ -106,6 +107,38 @@ class TestTravelAppLifespan(unittest.TestCase):
                 self.assertEqual(response.status_code, 200)
         finally:
             main.app.dependency_overrides.clear()
+
+
+class TestHealthCheckFilter(unittest.TestCase):
+    """Tests for the health check logging filter."""
+
+    def test_health_path_filtered(self) -> None:
+        """Health check requests are suppressed by the filter."""
+        record = logging.LogRecord(
+            name='uvicorn.access',
+            level=logging.INFO,
+            pathname='',
+            lineno=0,
+            msg='%s - "%s %s HTTP/%s" %d',
+            args=('127.0.0.1', 'GET', '/health', '1.1', 200),
+            exc_info=None,
+        )
+        f = main.HealthCheckFilter()
+        self.assertFalse(f.filter(record))
+
+    def test_other_path_not_filtered(self) -> None:
+        """Non-health-check requests are not suppressed by the filter."""
+        record = logging.LogRecord(
+            name='uvicorn.access',
+            level=logging.INFO,
+            pathname='',
+            lineno=0,
+            msg='%s - "%s %s HTTP/%s" %d',
+            args=('127.0.0.1', 'GET', '/', '1.1', 200),
+            exc_info=None,
+        )
+        f = main.HealthCheckFilter()
+        self.assertTrue(f.filter(record))
 
 
 if __name__ == '__main__':
