@@ -46,6 +46,13 @@ class TestApp(unittest.TestCase):
         response = self.client.get('/static/nonexistent.js')
         self.assertEqual(response.status_code, 404)
 
+    def test_domain_variable_rendered_in_index(self) -> None:
+        """Test that the domain variable is rendered in the index page."""
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('jamesmassucco.com', response.text)
+        self.assertNotIn('{{ domain }}', response.text)
+
     def test_snake_route_registered(self) -> None:
         """Test that the snake router is registered in the app."""
         response = self.client.get('/snake')

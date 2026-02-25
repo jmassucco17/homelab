@@ -6,8 +6,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    # Copy files from temp directory (established by dockerfile) to live directory at container start
-    entrypoint: /bin/sh -c "cp -r /tmp/site/* /usr/share/nginx/html && nginx -g 'daemon off;'"
+    environment:
+      - DOMAIN=${DOMAIN:-jamesmassucco.com}
+    # Run envsubst to substitute DOMAIN, then copy files and start nginx
+    entrypoint: /bin/sh -c "mkdir -p /usr/share/nginx/html && envsubst '$$DOMAIN' < /tmp/site/index.html > /usr/share/nginx/html/index.html && nginx -g 'daemon off;'"
     labels:
       - 'traefik.enable=true'
     healthcheck:

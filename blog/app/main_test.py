@@ -63,6 +63,28 @@ class TestApp(unittest.TestCase):
         self.assertIn('<channel>', response.text)
         self.assertIn('<title>', response.text)
 
+    def test_domain_variable_rendered_in_index(self) -> None:
+        """Test that the domain variable is rendered in the index page."""
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+        # Default domain should appear, not the raw template variable
+        self.assertIn('jamesmassucco.com', response.text)
+        self.assertNotIn('{{ domain }}', response.text)
+
+    def test_domain_variable_rendered_in_post(self) -> None:
+        """Test that the domain variable is rendered in a post page."""
+        response = self.client.get('/posts/starting-a-homelab')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('jamesmassucco.com', response.text)
+        self.assertNotIn('{{ domain }}', response.text)
+
+    def test_domain_variable_rendered_in_rss(self) -> None:
+        """Test that the domain variable is rendered in the RSS feed."""
+        response = self.client.get('/rss.xml')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('jamesmassucco.com', response.text)
+        self.assertNotIn('{{ domain }}', response.text)
+
     def test_static_files_mounted(self) -> None:
         """Test that static files are accessible."""
         # The /assets route should be mounted

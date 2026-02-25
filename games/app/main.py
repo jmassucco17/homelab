@@ -1,6 +1,7 @@
 """FastAPI application for the games sub-site."""
 
 import logging
+import os
 import pathlib
 
 import fastapi
@@ -11,6 +12,8 @@ import fastapi.templating
 from .routers import catan, pong, snake
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
+
+DOMAIN = os.environ.get('DOMAIN', 'jamesmassucco.com')
 
 logging.basicConfig(level=logging.INFO)
 
@@ -34,6 +37,7 @@ app.mount(
 )
 
 templates = fastapi.templating.Jinja2Templates(directory=APP_DIR / 'templates')
+templates.env.globals['domain'] = DOMAIN  # type: ignore[reportUnknownMemberType]
 
 app.include_router(snake.router)
 app.include_router(pong.router)
