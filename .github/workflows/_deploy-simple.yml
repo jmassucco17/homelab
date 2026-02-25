@@ -1,0 +1,171 @@
+name: Deploy Simple Services (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Environment to deploy to (`prod` or `staging`)'
+        required: true
+        type: string
+      shared-assets:
+        description: 'Deploy shared-assets'
+        type: boolean
+        default: true
+      homepage:
+        description: 'Deploy homepage'
+        type: boolean
+        default: true
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      image-tag: ${{ steps.image-tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set image tag
+        id: image-tag
+        run: |
+          if [ "${{ inputs.environment }}" = "staging" ]; then
+            echo "tag=sha-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          tags: tag:github
+
+      - name: Set up SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
+
+      - name: Create deployment archive
+        run: |
+          grep -v '^#' .gitignore | grep -v '^$' > /tmp/exclude_list
+          printf '*.tar.gz\n*.tar\n' >> /tmp/exclude_list
+          tar --exclude-from=/tmp/exclude_list --exclude='.git' -cf /tmp/homelab-simple-deploy.tar .
+          gzip /tmp/homelab-simple-deploy.tar
+
+      - name: Upload archive to server
+        env:
+          SERVER_USER: ${{ vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+        run: |
+          scp -i ~/.ssh/deploy_key \
+            /tmp/homelab-simple-deploy.tar.gz \
+            "${SERVER_USER}@${SERVER_HOST}:/tmp/homelab-simple-deploy.tar.gz"
+
+      - name: Extract and prepare deployment on server
+        env:
+          SERVER_USER: ${{ vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            "${SERVER_USER}@${SERVER_HOST}" \
+            "bash -s" << 'REMOTE'
+          set -euo pipefail
+          mkdir -p /opt/homelab
+          cd /opt/homelab
+          echo "Extracting deployment archive..."
+          tar --overwrite -xzf /tmp/homelab-simple-deploy.tar.gz
+          REMOTE
+
+  # Deploy simple nginx-based services in parallel
+  deploy-shared-assets:
+    name: deploy shared-assets
+    needs: setup
+    if: inputs.shared-assets
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          tags: tag:github
+      - name: Set up SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
+      - name: Deploy shared-assets
+        env:
+          SERVER_USER: ${{ vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          STAGING_IMAGE_TAG: ${{ needs.setup.outputs.image-tag }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            "${SERVER_USER}@${SERVER_HOST}" \
+            "cd /opt/homelab && ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' bash -s" << 'REMOTE'
+          set -euo pipefail
+          if [ "${ENVIRONMENT}" = "staging" ]; then
+            echo "--- Starting staging shared-assets ---"
+            STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" /opt/homelab/scripts/start_service.sh shared-assets --staging
+          else
+            echo "--- Deploying shared-assets ---"
+            /opt/homelab/scripts/start_service.sh shared-assets
+          fi
+          REMOTE
+
+  deploy-homepage:
+    name: deploy homepage
+    needs: setup
+    if: inputs.homepage
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          tags: tag:github
+      - name: Set up SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
+      - name: Deploy homepage
+        env:
+          SERVER_USER: ${{ vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          STAGING_IMAGE_TAG: ${{ needs.setup.outputs.image-tag }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            "${SERVER_USER}@${SERVER_HOST}" \
+            "cd /opt/homelab && ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' bash -s" << 'REMOTE'
+          set -euo pipefail
+          if [ "${ENVIRONMENT}" = "staging" ]; then
+            echo "--- Starting staging homepage ---"
+            STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" /opt/homelab/scripts/start_service.sh homepage --staging
+          else
+            echo "--- Deploying homepage ---"
+            /opt/homelab/scripts/start_service.sh homepage
+          fi
+          REMOTE

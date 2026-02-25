@@ -1,4 +1,4 @@
-name: Deploy Custom Services (Reusable)
+name: Deploy Python Services (Reusable)
 
 on:
   workflow_call:
@@ -11,14 +11,6 @@ on:
         description: '[staging only] Seed data from production volume'
         type: boolean
         default: false
-      shared-assets:
-        description: 'Deploy shared-assets'
-        type: boolean
-        default: true
-      homepage:
-        description: 'Deploy homepage'
-        type: boolean
-        default: true
       blog:
         description: 'Deploy blog'
         type: boolean
@@ -129,93 +121,7 @@ jobs:
           fi
           REMOTE
 
-  # Deploy all custom-built services in parallel
-  deploy-shared-assets:
-    name: deploy shared-assets
-    needs: setup
-    if: inputs.shared-assets
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v4
-        with:
-          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
-          tags: tag:github
-      - name: Set up SSH key
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
-      - name: Deploy shared-assets
-        env:
-          SERVER_USER: ${{ vars.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          ENVIRONMENT: ${{ inputs.environment }}
-          STAGING_IMAGE_TAG: ${{ needs.setup.outputs.image-tag }}
-        run: |
-          ssh -i ~/.ssh/deploy_key \
-            "${SERVER_USER}@${SERVER_HOST}" \
-            "cd /opt/homelab && ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' bash -s" << 'REMOTE'
-          set -euo pipefail
-          if [ "${ENVIRONMENT}" = "staging" ]; then
-            echo "--- Starting staging shared-assets ---"
-            STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" /opt/homelab/scripts/start_service.sh shared-assets --staging
-          else
-            echo "--- Deploying shared-assets ---"
-            /opt/homelab/scripts/start_service.sh shared-assets
-          fi
-          REMOTE
-
-  deploy-homepage:
-    name: deploy homepage
-    needs: setup
-    if: inputs.homepage
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v4
-        with:
-          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
-          tags: tag:github
-      - name: Set up SSH key
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
-      - name: Deploy homepage
-        env:
-          SERVER_USER: ${{ vars.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          ENVIRONMENT: ${{ inputs.environment }}
-          STAGING_IMAGE_TAG: ${{ needs.setup.outputs.image-tag }}
-        run: |
-          ssh -i ~/.ssh/deploy_key \
-            "${SERVER_USER}@${SERVER_HOST}" \
-            "cd /opt/homelab && ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' bash -s" << 'REMOTE'
-          set -euo pipefail
-          if [ "${ENVIRONMENT}" = "staging" ]; then
-            echo "--- Starting staging homepage ---"
-            STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" /opt/homelab/scripts/start_service.sh homepage --staging
-          else
-            echo "--- Deploying homepage ---"
-            /opt/homelab/scripts/start_service.sh homepage
-          fi
-          REMOTE
-
+  # Deploy all Python-based services in parallel
   deploy-blog:
     name: deploy blog
     needs: setup

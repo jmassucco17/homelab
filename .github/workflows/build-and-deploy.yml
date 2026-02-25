@@ -109,6 +109,9 @@ jobs:
             echo "environment=${{ inputs.environment }}" >> "$GITHUB_OUTPUT"
           fi
 
+  # Build all custom images
+  # Python-base builds first, then simple services (homepage, shared-assets) in parallel
+  # with python services (blog, games, tools, travel) that depend on python-base
   build:
     needs: setup
     permissions:
@@ -125,7 +128,7 @@ jobs:
       tools: ${{ github.event_name == 'push' || inputs.tools }}
 
   # Deploy standard (off-the-shelf) services in parallel with build
-  # These don't require custom images, so they can start immediately
+  # These use Docker Hub images (nginx, grafana, etc.) and don't need any build
   deploy-standard:
     needs: setup
     permissions:
@@ -138,9 +141,22 @@ jobs:
       monitoring: ${{ (github.event_name == 'push' && needs.setup.outputs.monitoring_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.monitoring) }}
       portainer: ${{ (github.event_name == 'push' && needs.setup.outputs.portainer_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.portainer) }}
 
-  # Deploy custom services after build completes
-  # These require custom-built images from the build job
-  deploy-custom:
+  # Deploy simple nginx-based services after their builds complete
+  # These only depend on nginx base image (no python-base dependency)
+  deploy-simple:
+    needs: [setup, build]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/_deploy-simple.yml
+    secrets: inherit
+    with:
+      environment: ${{ needs.setup.outputs.environment }}
+      shared-assets: ${{ github.event_name == 'push' || inputs['shared-assets'] }}
+      homepage: ${{ github.event_name == 'push' || inputs.homepage }}
+
+  # Deploy Python-based services after build completes
+  # These depend on python-base image being built first
+  deploy-python:
     needs: [setup, build]
     permissions:
       contents: read
@@ -149,8 +165,6 @@ jobs:
     with:
       environment: ${{ needs.setup.outputs.environment }}
       seed_from_prod: ${{ github.event_name == 'workflow_dispatch' && inputs.seed_from_prod }}
-      shared-assets: ${{ github.event_name == 'push' || inputs['shared-assets'] }}
-      homepage: ${{ github.event_name == 'push' || inputs.homepage }}
       blog: ${{ github.event_name == 'push' || inputs.blog }}
       travel: ${{ github.event_name == 'push' || inputs.travel }}
       games: ${{ github.event_name == 'push' || inputs.games }}

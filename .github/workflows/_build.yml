@@ -58,11 +58,7 @@ jobs:
 
   build-shared-assets:
     name: build shared-assets
-    needs: build-base
-    if: |
-      !cancelled() &&
-      (needs.build-base.result == 'success' || needs.build-base.result == 'skipped') &&
-      inputs.shared-assets
+    if: inputs.shared-assets
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -81,11 +77,7 @@ jobs:
 
   build-homepage:
     name: build homepage
-    needs: build-base
-    if: |
-      !cancelled() &&
-      (needs.build-base.result == 'success' || needs.build-base.result == 'skipped') &&
-      inputs.homepage
+    if: inputs.homepage
     runs-on: ubuntu-latest
     permissions:
       contents: read
