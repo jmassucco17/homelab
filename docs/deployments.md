@@ -87,7 +87,9 @@ Deploy the current state of `main` to the production VPS. Images are pre-built b
    enabled service in dependency order:
    `networking → shared-assets → homepage → blog → games → tools → travel`
 6. `start_service.sh` pulls the pre-built image from GHCR and runs
-   `docker compose up -d --wait`.
+   `docker compose up -d --wait --remove-orphans`. Docker Compose only recreates
+   containers when the image digest or configuration has changed; unchanged
+   services are left running with zero downtime.
 
 ### Selective deployment
 

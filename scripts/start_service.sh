@@ -11,9 +11,9 @@
 # Services without docker-compose.prod.yml (e.g. networking) use only their
 # docker-compose.staging.yml as a standalone file.
 #
-# Build from source (--build): builds the image locally instead of pulling
-# from the registry. Useful for CI integration tests that must validate the
-# current working-tree code rather than a previously published image.
+# Build from source (--build): tears down existing containers, builds the
+# image locally, then starts fresh. Used by CI integration tests to validate
+# the current working-tree code rather than a previously published image.
 #
 # Usage: scripts/start_service.sh <service> [--staging] [--build]
 # Examples:
@@ -62,17 +62,16 @@ if [[ "$STAGING" == "true" ]]; then
     COMPOSE=(-p "${PROJ}" -f docker-compose.staging.yml)
   fi
 
-  echo "Shutting down staging containers..."
-  docker compose "${COMPOSE[@]}" down --remove-orphans
-
   if [[ "$BUILD" == "true" ]]; then
+    echo "Shutting down staging containers..."
+    docker compose "${COMPOSE[@]}" down --remove-orphans
     echo "Building staging containers from source..."
     docker compose "${COMPOSE[@]}" build
   else
-    echo "Pulling and starting staging containers (tag: ${STAGING_IMAGE_TAG:-latest})..."
+    echo "Pulling staging containers (tag: ${STAGING_IMAGE_TAG:-latest})..."
     STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG:-latest}" docker compose "${COMPOSE[@]}" pull
   fi
-  STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG:-latest}" docker compose "${COMPOSE[@]}" up -d --wait
+  STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG:-latest}" docker compose "${COMPOSE[@]}" up -d --wait --remove-orphans
 else
   if [[ -f "docker-compose.prod.yml" ]]; then
     COMPOSE=(-f docker-compose.yml -f docker-compose.prod.yml)
@@ -80,10 +79,9 @@ else
     COMPOSE=(-f docker-compose.yml)
   fi
 
-  echo "Shutting down containers..."
-  docker compose "${COMPOSE[@]}" down --remove-orphans
-
   if [[ "$BUILD" == "true" ]]; then
+    echo "Shutting down containers..."
+    docker compose "${COMPOSE[@]}" down --remove-orphans
     echo "Building images from source..."
     docker compose "${COMPOSE[@]}" build
   else
@@ -91,5 +89,5 @@ else
     docker compose "${COMPOSE[@]}" pull
   fi
   echo "Starting containers..."
-  docker compose "${COMPOSE[@]}" up -d --wait
+  docker compose "${COMPOSE[@]}" up -d --wait --remove-orphans
 fi
