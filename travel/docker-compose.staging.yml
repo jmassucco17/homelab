@@ -18,7 +18,7 @@ services:
       - traefik.http.routers.travel-admin-staging.rule=Host(`travel.staging.jamesmassucco.com`) && PathPrefix(`/photos/admin`)
       - traefik.http.routers.travel-admin-staging.entrypoints=websecure
       - traefik.http.routers.travel-admin-staging.tls.certresolver=cloudflare
-      - traefik.http.routers.travel-admin-staging.middlewares=oauth-auth-staging,ratelimit
+      - traefik.http.routers.travel-admin-staging.middlewares=staging-oauth-auth,ratelimit
       - traefik.http.routers.travel-admin-staging.priority=100
 
       # Public routes — no authentication required
