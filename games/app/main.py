@@ -15,9 +15,8 @@ APP_DIR = pathlib.Path(__file__).resolve().parent
 
 logging.basicConfig(level=logging.INFO)
 
-# Enable debug-level audit logging for the Catan engine when CATAN_DEBUG is set.
-if os.getenv('CATAN_DEBUG', '').lower() in ('1', 'true', 'yes'):
-    logging.getLogger('games.app.catan').setLevel(logging.DEBUG)
+# Enable debug-level audit logging for the Catan engine
+logging.getLogger('games.app.catan').setLevel(logging.DEBUG)
 
 app = fastapi.FastAPI(title='Games')
 
