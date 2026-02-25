@@ -284,13 +284,13 @@ class TestRoomManagerAddAI(unittest.TestCase):
         self.assertEqual(room.player_count, 3)
 
     def test_add_ai_player_name_format(self) -> None:
-        """AI player name follows the format '<name> (AI, <difficulty>)'."""
+        """AI player name follows the format '<name> (bot)'."""
         slot = self.mgr.add_ai_player(self.code, 'hard')
         assert slot is not None
-        # Name should end with (AI, hard)
-        self.assertTrue(slot.name.endswith('(AI, hard)'))
+        # Name should end with (bot)
+        self.assertTrue(slot.name.endswith('(bot)'))
         # Name should start with valid elements
-        name_part = slot.name.replace(' (AI, hard)', '')
+        name_part = slot.name.replace(' (bot)', '')
         words = name_part.split()
         valid_elements = {'Joe', 'John', 'Jicky'}
         for word in words:
@@ -303,7 +303,7 @@ class TestRoomManagerAddAI(unittest.TestCase):
         slots = [self.mgr.add_ai_player(self.code, 'easy') for _ in range(3)]
         for slot in slots:
             assert slot is not None
-            self.assertTrue(slot.name.endswith('(AI, easy)'))
+            self.assertTrue(slot.name.endswith('(bot)'))
             self.assertIsInstance(slot.name, str)
 
 
