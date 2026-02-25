@@ -5,17 +5,8 @@ services:
     build:
       context: ..
       dockerfile: tools/Dockerfile
-    volumes:
-      - ./app:/app/app
     labels:
-      # Use traefik to provide HTTP endpoint
       - 'traefik.enable=true'
-      - 'traefik.http.routers.tools.rule=Host(`tools.jamesmassucco.com`)'
-      - 'traefik.http.routers.tools.entrypoints=websecure'
-      - 'traefik.http.routers.tools.tls=true'
-      - 'traefik.http.routers.tools.tls.certresolver=cloudflare'
-      - 'traefik.http.routers.tools.middlewares=ratelimit'
-      - 'traefik.http.services.tools.loadbalancer.server.port=8000'
     environment:
       - TMDB_API_KEY=${TMDB_API_KEY:-}
     healthcheck:

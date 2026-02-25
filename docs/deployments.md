@@ -161,6 +161,7 @@ Staging and production share the same set of repository secrets. See
 | `blog.staging.jamesmassucco.com`   | blog                 |
 | `travel.staging.jamesmassucco.com` | travel               |
 | `games.staging.jamesmassucco.com`  | games                |
+| `tools.staging.jamesmassucco.com`  | tools                |
 | `assets.staging.jamesmassucco.com` | shared-assets        |
 | `oauth.staging.jamesmassucco.com`  | staging OAuth2-proxy |
 
