@@ -13,6 +13,7 @@ may reconnect at any time using the same name and reclaim their seat.
 from __future__ import annotations
 
 import datetime
+import logging
 import random
 import string
 
@@ -21,6 +22,8 @@ import fastapi
 from ..ai import base
 from ..engine import trade, turn_manager
 from ..models import game_state as gs
+
+logger = logging.getLogger(__name__)
 
 # Player colours assigned in join order (index 0–3).
 _PLAYER_COLORS: list[str] = ['red', 'blue', 'white', 'orange']
@@ -139,6 +142,7 @@ class RoomManager:
             code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
             if code not in self._rooms:
                 self._rooms[code] = GameRoom(code)
+                logger.info('[%s] Room created', code)
                 return code
         raise RuntimeError('Could not generate a unique room code after 100 tries')
 
@@ -176,6 +180,12 @@ class RoomManager:
                 return None
             # Player already has a seat — reattach their WebSocket.
             existing.websocket = websocket
+            logger.info(
+                '[%s] Player %r reconnected as index %d',
+                room_code,
+                player_name,
+                existing.player_index,
+            )
             return existing
 
         if not room.can_join():
@@ -189,6 +199,12 @@ class RoomManager:
             websocket=websocket,
         )
         room.players.append(slot)
+        logger.info(
+            '[%s] Player %r joined as index %d',
+            room_code,
+            player_name,
+            slot.player_index,
+        )
         return slot
 
     def disconnect_player(self, room_code: str, player_name: str) -> None:
@@ -199,6 +215,7 @@ class RoomManager:
         slot = room.get_player_by_name(player_name)
         if slot is not None:
             slot.websocket = None
+            logger.info('[%s] Player %r slot released', room_code, player_name)
 
     def add_ai_player(self, room_code: str, ai_type: str = 'easy') -> PlayerSlot | None:
         """Add an AI player to a room.
@@ -225,6 +242,13 @@ class RoomManager:
             ai_type=ai_type,
         )
         room.players.append(slot)
+        logger.info(
+            '[%s] AI player %r (%s) added as index %d',
+            room_code,
+            ai_name,
+            ai_type,
+            slot.player_index,
+        )
 
         # Create and store the AI instance
         from ..ai import easy, hard, medium
@@ -271,7 +295,12 @@ class RoomManager:
                 try:
                     await slot.websocket.send_text(message)
                 except Exception:  # noqa: BLE001 — broken socket; player will reconnect
-                    pass
+                    logger.warning(
+                        '[%s] Failed to send to player %r (index %d)',
+                        room.room_code,
+                        slot.name,
+                        slot.player_index,
+                    )
         for ws in list(room.observers):
             try:
                 await ws.send_text(message)
@@ -290,7 +319,12 @@ class RoomManager:
             try:
                 await slot.websocket.send_text(message)
             except Exception:  # noqa: BLE001 — broken socket; player will reconnect
-                pass
+                logger.warning(
+                    '[%s] Failed to send to player %r (index %d)',
+                    room.room_code,
+                    slot.name,
+                    slot.player_index,
+                )
 
     # ------------------------------------------------------------------
     # Game initialisation
@@ -308,6 +342,7 @@ class RoomManager:
         ai_types = [slot.ai_type for slot in room.players]
         state = turn_manager.create_initial_game_state(names, colors, ai_types=ai_types)
         room.game_state = state
+        logger.info('[%s] Game started with players: %s', room.room_code, names)
         return state
 
 

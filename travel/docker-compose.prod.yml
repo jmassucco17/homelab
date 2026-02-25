@@ -2,8 +2,6 @@
 # Merged with docker-compose.yml by scripts/start_service.sh (prod) and CI.
 services:
   travel:
-    ports:
-      - '8000:8000'
     volumes:
       - data-volume:/data
     labels:

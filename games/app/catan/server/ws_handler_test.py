@@ -393,6 +393,78 @@ class TestCatanWebSocket(unittest.TestCase):
                 # Verify AI turn execution was called
                 mock_ai_turns.assert_called_once()
 
+    # ------------------------------------------------------------------
+    # Logging
+    # ------------------------------------------------------------------
+
+    def test_connect_logs_player_info(self) -> None:
+        """Connecting logs the player name and room code at INFO level."""
+        code = self._create_room()
+        with self.assertLogs('games.app.catan.server.ws_handler', level='INFO') as cm:
+            with self.client.websocket_connect(f'/catan/ws/{code}/Alice'):
+                pass
+        joined_logs = [m for m in cm.output if 'Alice' in m and 'connected' in m]
+        self.assertTrue(joined_logs, 'Expected a connect log entry for Alice')
+
+    def test_disconnect_logs_player_info(self) -> None:
+        """Disconnecting logs the player name and room code at INFO level."""
+        code = self._create_room()
+        with self.assertLogs('games.app.catan.server.ws_handler', level='INFO') as cm:
+            with self.client.websocket_connect(f'/catan/ws/{code}/Alice'):
+                pass
+        disconnect_logs = [m for m in cm.output if 'Alice' in m and 'disconnected' in m]
+        self.assertTrue(disconnect_logs, 'Expected a disconnect log entry for Alice')
+
+    def test_invalid_message_logs_warning(self) -> None:
+        """Sending an invalid message is logged at WARNING level."""
+        code = self._create_room()
+        with self.assertLogs(
+            'games.app.catan.server.ws_handler', level='WARNING'
+        ) as cm:
+            with self.client.websocket_connect(f'/catan/ws/{code}/Alice') as ws:
+                ws.receive_text()
+                ws.send_text('not valid json {{{')
+                ws.receive_text()
+        warning_logs = [
+            m for m in cm.output if 'WARNING' in m and 'invalid message' in m
+        ]
+        self.assertTrue(warning_logs, 'Expected a warning log for invalid message')
+
+    def test_submit_action_logs_action_type(self) -> None:
+        """Submitting an action logs the action type and player at INFO level."""
+        code = self._create_room()
+        with self.client.websocket_connect(f'/catan/ws/{code}/Alice') as ws1:
+            ws1.receive_text()
+            with self.client.websocket_connect(f'/catan/ws/{code}/Bob') as ws2:
+                ws1.receive_text()
+                ws2.receive_text()
+                self.client.post(f'/catan/rooms/{code}/start')
+                ws1.receive_text()
+                ws1.receive_text()
+                ws2.receive_text()
+                ws2.receive_text()
+
+                with self.assertLogs(
+                    'games.app.catan.server.ws_handler', level='INFO'
+                ) as cm:
+                    ws1.send_text(
+                        json.dumps(
+                            {
+                                'message_type': 'submit_action',
+                                'action': {
+                                    'action_type': 'end_turn',
+                                    'player_index': 0,
+                                },
+                            }
+                        )
+                    )
+                    ws1.receive_text()
+
+                action_logs = [m for m in cm.output if 'end_turn' in m and 'Alice' in m]
+                self.assertTrue(
+                    action_logs, 'Expected an INFO log for end_turn action by Alice'
+                )
+
 
 if __name__ == '__main__':
     unittest.main()
