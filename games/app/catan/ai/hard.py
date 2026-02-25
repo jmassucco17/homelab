@@ -16,6 +16,7 @@ Applies more sophisticated heuristics:
 from __future__ import annotations
 
 from ..engine import rules
+from ..engine import trade as trade_module
 from ..models import actions, board, game_state, player
 from . import base
 
@@ -548,3 +549,53 @@ class HardAI(base.CatanAI):
 
         # --- Main build/trade phase ---
         return _choose_main_action(state, player_index, legal_actions)
+
+    def respond_to_trade(
+        self,
+        state: game_state.GameState,
+        player_index: int,
+        pending_trade: trade_module.PendingTrade,
+    ) -> actions.AcceptTrade | actions.RejectTrade:
+        """Accept a trade if it is strategically beneficial.
+
+        Accepts when the AI holds all requested resources and the post-trade
+        resource set unlocks a build action.  Rejects otherwise.
+        """
+        p = state.players[player_index]
+        # Must have all the resources being requested from us.
+        if not p.resources.can_afford(pending_trade.requesting):
+            return actions.RejectTrade(
+                player_index=player_index, trade_id=pending_trade.trade_id
+            )
+
+        # Simulate the post-trade resource set.
+        simulated: dict[str, int] = {
+            'wood': p.resources.wood,
+            'brick': p.resources.brick,
+            'wheat': p.resources.wheat,
+            'sheep': p.resources.sheep,
+            'ore': p.resources.ore,
+        }
+        for res_name, amount in pending_trade.requesting.items():
+            simulated[res_name] -= amount
+        for res_name, amount in pending_trade.offering.items():
+            simulated[res_name] += amount
+
+        inv = p.build_inventory
+        build_costs: list[dict[str, int]] = []
+        if inv.roads_remaining > 0:
+            build_costs.append(player.ROAD_COST)
+        if inv.settlements_remaining > 0:
+            build_costs.append(player.SETTLEMENT_COST)
+        if inv.cities_remaining > 0:
+            build_costs.append(player.CITY_COST)
+        build_costs.append(player.DEV_CARD_COST)
+
+        sim_res = player.Resources(**simulated)
+        if any(sim_res.can_afford(cost) for cost in build_costs):
+            return actions.AcceptTrade(
+                player_index=player_index, trade_id=pending_trade.trade_id
+            )
+        return actions.RejectTrade(
+            player_index=player_index, trade_id=pending_trade.trade_id
+        )
