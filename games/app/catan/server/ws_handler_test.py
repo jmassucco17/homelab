@@ -467,10 +467,6 @@ class TestCatanWebSocket(unittest.TestCase):
                     action_logs, 'Expected an INFO log for end_turn action by Alice'
                 )
 
-
-class TestSerializeStateForBroadcast(unittest.TestCase):
-    """Unit tests for serialize_state_for_broadcast."""
-
     def _make_move_robber_state(self) -> gs_module.GameState:
         """Return a game state with pending_action == MOVE_ROBBER."""
         base = turn_manager.create_initial_game_state(
@@ -520,7 +516,7 @@ class TestSerializeStateForBroadcast(unittest.TestCase):
 
     def test_game_state_update_includes_legal_tile_indices(self) -> None:
         """GameStateUpdate includes legal_tile_indices when pending is move_robber."""
-        client, mgr = _fresh_client()
+        client, _ = _fresh_client()
         code = client.post('/catan/rooms').json()['room_code']
         with client.websocket_connect(f'/catan/ws/{code}/Alice') as ws1:
             ws1.receive_text()
