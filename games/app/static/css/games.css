@@ -272,6 +272,72 @@
   }
 }
 
+/* Active games section (spans full width below create/join cards) */
+.catan-active-games {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.catan-active-games h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.active-games-empty {
+  color: var(--color-muted-text, #888);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.active-games-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.active-game-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-sm);
+  flex-wrap: wrap;
+}
+
+.active-game-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.active-game-code {
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.active-game-phase {
+  font-size: 0.8rem;
+  color: var(--color-muted-text, #888);
+  flex-shrink: 0;
+}
+
+.active-game-players {
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .catan-lobby-card,
 .catan-rules-card {
   background: var(--color-card-bg);
@@ -544,7 +610,9 @@
   background: var(--color-section-bg);
   border: 1px solid var(--color-card-border);
   border-radius: var(--radius-sm);
-  transition: transform 0.1s ease, border-color 0.1s ease;
+  transition:
+    transform 0.1s ease,
+    border-color 0.1s ease;
 }
 
 .resource-card.resource-change {
@@ -708,6 +776,27 @@
 
 .action-btn:hover {
   opacity: 0.85;
+}
+
+.steal-btn {
+  background: #c0392b;
+  color: #fff;
+}
+
+.discard-btn {
+  background: #e67e22;
+  color: #fff;
+}
+
+.action-hint {
+  font-size: 0.85rem;
+  color: var(--color-accent);
+  text-align: center;
+  margin: 0.25rem 0;
+  padding: 0.3rem;
+  background: var(--color-card-bg);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-accent);
 }
 
 .waiting-msg {

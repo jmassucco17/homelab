@@ -1,0 +1,27 @@
+services:
+  portainer:
+    image: portainer/portainer-ce:2.33.7
+    container_name: portainer
+    command:
+      - --http-enabled
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - portainer_data:/data
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.portainer.rule=Host(`portainer.jamesmassucco.com`)'
+      - 'traefik.http.routers.portainer.entrypoints=websecure'
+      - 'traefik.http.routers.portainer.tls=true'
+      - 'traefik.http.routers.portainer.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.portainer.middlewares=oauth-auth,ratelimit'
+      - 'traefik.http.services.portainer.loadbalancer.server.port=9000'
+    networks:
+      - web
+    restart: unless-stopped
+
+volumes:
+  portainer_data:
+
+networks:
+  web:
+    external: true

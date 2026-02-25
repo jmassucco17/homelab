@@ -79,3 +79,12 @@ updates:
     groups:
       docker-images:
         patterns: ['*']
+
+  - package-ecosystem: 'docker'
+    directory: '/portainer'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    groups:
+      docker-images:
+        patterns: ['*']

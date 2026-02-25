@@ -23,7 +23,7 @@ import fastapi.responses
 import fastapi.templating
 import pydantic
 
-from ..catan.models import serializers, ws_messages
+from ..catan.models import ws_messages
 from ..catan.server import room_manager, ws_handler
 
 APP_DIR = pathlib.Path(__file__).resolve().parent.parent
@@ -77,6 +77,22 @@ async def create_room() -> RoomCreatedResponse:
     """Create a new game room and return its 4-character code."""
     code = room_manager.room_manager.create_room()
     return RoomCreatedResponse(room_code=code)
+
+
+@router.get('/catan/rooms', response_model=list[RoomStatusResponse])
+async def list_rooms() -> list[RoomStatusResponse]:
+    """Return a list of all active game rooms."""
+    result: list[RoomStatusResponse] = []
+    for code, room in room_manager.room_manager.rooms.items():
+        result.append(
+            RoomStatusResponse(
+                room_code=code,
+                player_count=room.player_count,
+                phase=room.phase,
+                players=[slot.name for slot in room.players],
+            )
+        )
+    return result
 
 
 @router.get('/catan/rooms/{room_code}', response_model=RoomStatusResponse)
@@ -177,7 +193,7 @@ async def start_game(
     await room_manager.room_manager.broadcast(room, started_msg.model_dump_json())
 
     state_update = ws_messages.GameStateUpdate(
-        game_state=serializers.serialize_model(game_state)
+        game_state=ws_handler.serialize_state_for_broadcast(game_state)
     )
     await room_manager.room_manager.broadcast(room, state_update.model_dump_json())
 

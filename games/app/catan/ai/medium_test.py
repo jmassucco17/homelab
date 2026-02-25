@@ -6,6 +6,7 @@ import unittest
 
 from games.app.catan.ai import medium
 from games.app.catan.engine import processor, rules, turn_manager
+from games.app.catan.engine import trade as trade_module
 from games.app.catan.models import actions, board, game_state, player
 
 
@@ -222,6 +223,73 @@ class TestMediumHelpers(unittest.TestCase):
         )
         result = medium.trade_unlocks_build(state, 0, trade)
         self.assertTrue(result)
+
+
+class TestMediumAIRespondToTrade(unittest.TestCase):
+    """Tests for MediumAI.respond_to_trade."""
+
+    def setUp(self) -> None:
+        """Initialise AI and a 2-player game in the main phase."""
+        self.ai = medium.MediumAI()
+        state = _make_state()
+        state.phase = game_state.GamePhase.MAIN
+        state.turn_state = game_state.TurnState(
+            player_index=0,
+            pending_action=game_state.PendingActionType.BUILD_OR_TRADE,
+        )
+        self.state = state
+
+    def _make_pending_trade(
+        self,
+        offering: dict[str, int] | None = None,
+        requesting: dict[str, int] | None = None,
+    ) -> trade_module.PendingTrade:
+        return trade_module.PendingTrade(
+            trade_id='test-trade-id',
+            offering_player=0,
+            offering=offering or {'wood': 1},
+            requesting=requesting or {'ore': 1},
+            target_player=None,
+        )
+
+    def test_rejects_when_missing_requested_resource(self) -> None:
+        """MediumAI rejects a trade if it lacks the requested resources."""
+        self.state.players[1].resources = player.Resources()  # no ore
+        pending = self._make_pending_trade(requesting={'ore': 1})
+        response = self.ai.respond_to_trade(self.state, 1, pending)
+        self.assertIsInstance(response, actions.RejectTrade)
+
+    def test_accepts_when_trade_unlocks_build(self) -> None:
+        """MediumAI accepts a trade that enables a build action."""
+        # Player 1 has ore to give but needs wood+brick for a road.
+        # After receiving 1 wood, they can afford a road (wood=1, brick=1).
+        self.state.players[1].resources = player.Resources(ore=2, brick=1)
+        # Offer: player 0 gives wood, requests ore.
+        pending = self._make_pending_trade(offering={'wood': 1}, requesting={'ore': 1})
+        response = self.ai.respond_to_trade(self.state, 1, pending)
+        self.assertIsInstance(response, actions.AcceptTrade)
+
+    def test_rejects_when_trade_does_not_unlock_build(self) -> None:
+        """MediumAI rejects a trade that doesn't help unlock any build."""
+        # Player 1 has ore but receiving sheep doesn't unlock any build.
+        self.state.players[1].resources = player.Resources(ore=1)
+        pending = self._make_pending_trade(offering={'sheep': 1}, requesting={'ore': 1})
+        response = self.ai.respond_to_trade(self.state, 1, pending)
+        self.assertIsInstance(response, actions.RejectTrade)
+
+    def test_response_has_correct_player_index(self) -> None:
+        """respond_to_trade sets the correct player_index."""
+        self.state.players[1].resources = player.Resources(ore=2, brick=1)
+        pending = self._make_pending_trade(offering={'wood': 1}, requesting={'ore': 1})
+        response = self.ai.respond_to_trade(self.state, 1, pending)
+        self.assertEqual(response.player_index, 1)
+
+    def test_response_has_correct_trade_id(self) -> None:
+        """respond_to_trade carries the same trade_id as the pending trade."""
+        self.state.players[1].resources = player.Resources(ore=1)
+        pending = self._make_pending_trade()
+        response = self.ai.respond_to_trade(self.state, 1, pending)
+        self.assertEqual(response.trade_id, 'test-trade-id')
 
 
 if __name__ == '__main__':

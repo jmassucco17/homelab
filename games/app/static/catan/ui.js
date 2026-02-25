@@ -206,7 +206,10 @@ export class CatanUI {
 
     // Show how many new (unplayable) dev cards were bought this turn
     const newTotal = Object.values(newDevCards).reduce((a, b) => a + b, 0)
-    const newHtml = newTotal > 0 ? `<p class="new-dev-note">🆕 ${newTotal} new card(s) playable next turn</p>` : ''
+    const newHtml =
+      newTotal > 0
+        ? `<p class="new-dev-note">🆕 ${newTotal} new card(s) playable next turn</p>`
+        : ''
 
     el.innerHTML = `<h3>Your Hand</h3>
       <div class="resource-cards">${resHtml}</div>
@@ -268,13 +271,30 @@ export class CatanUI {
     if (!el || !this.gameState) return
     el.innerHTML = ''
 
+    const pending = this.gameState.turn_state.pending_action
+
+    // Discard is special: any player with >7 cards must discard regardless of whose turn it is.
+    if (
+      pending === 'discard_resources' &&
+      this.gameState.turn_state.discard_player_indices.includes(this.myPlayerIndex)
+    ) {
+      const player = this.gameState.players[this.myPlayerIndex]
+      const total = this._resourceTotal(player.resources)
+      const mustDiscard = Math.floor(total / 2)
+      const btn = document.createElement('button')
+      btn.className = 'action-btn discard-btn'
+      btn.textContent = `🗑️ Discard ${mustDiscard} card(s)`
+      btn.addEventListener('click', () => this._showDiscardDialog(mustDiscard))
+      el.appendChild(btn)
+      return
+    }
+
     const isMyTurn = this.gameState.turn_state.player_index === this.myPlayerIndex
     if (!isMyTurn) {
       el.innerHTML = '<p class="waiting-msg">⏳ Waiting for other player…</p>'
       return
     }
 
-    const pending = this.gameState.turn_state.pending_action
     const hasRolled = this.gameState.turn_state.has_rolled
 
     if (pending === 'roll_dice') {
@@ -309,6 +329,50 @@ export class CatanUI {
       playerTradeBtn.textContent = '🤝 Propose Trade'
       playerTradeBtn.addEventListener('click', () => this._showPlayerTradeDialog())
       el.appendChild(playerTradeBtn)
+    }
+
+    if (pending === 'move_robber') {
+      const hint = document.createElement('p')
+      hint.className = 'action-hint'
+      hint.textContent = '🦹 Click a highlighted tile to place the robber.'
+      el.appendChild(hint)
+    }
+
+    if (pending === 'steal_resource') {
+      const candidates = this._getStealCandidates()
+      if (candidates.length === 1) {
+        const target = this.gameState.players[candidates[0]]
+        const btn = document.createElement('button')
+        btn.className = 'action-btn steal-btn'
+        btn.textContent = `🦹 Steal from ${escapeHtml(target.name)}`
+        btn.addEventListener('click', () =>
+          this.onAction({
+            action_type: 'steal_resource',
+            player_index: this.myPlayerIndex,
+            target_player_index: candidates[0],
+          }),
+        )
+        el.appendChild(btn)
+      } else if (candidates.length > 1) {
+        const hint = document.createElement('p')
+        hint.className = 'action-hint'
+        hint.textContent = '🦹 Choose a player to steal from:'
+        el.appendChild(hint)
+        candidates.forEach((candidateIdx) => {
+          const target = this.gameState.players[candidateIdx]
+          const btn = document.createElement('button')
+          btn.className = 'action-btn steal-btn'
+          btn.textContent = `Steal from ${escapeHtml(target.name)} (🃏 ${this._resourceTotal(target.resources)})`
+          btn.addEventListener('click', () =>
+            this.onAction({
+              action_type: 'steal_resource',
+              player_index: this.myPlayerIndex,
+              target_player_index: candidateIdx,
+            }),
+          )
+          el.appendChild(btn)
+        })
+      }
     }
   }
 
@@ -546,6 +610,51 @@ export class CatanUI {
   // -------------------------------------------------------------------------
   // Helpers
   // -------------------------------------------------------------------------
+
+  /**
+   * Return the player indices who are adjacent to the robber tile and have resources.
+   * @returns {number[]}
+   */
+  _getStealCandidates() {
+    if (!this.gameState || this.myPlayerIndex === null) return []
+    const robberTile = this.gameState.board.robber_tile_index
+    const candidates = new Set()
+    for (const vertex of this.gameState.board.vertices) {
+      if (!vertex.adjacent_tile_indices.includes(robberTile)) continue
+      if (!vertex.building) continue
+      const idx = vertex.building.player_index
+      if (idx === this.myPlayerIndex) continue
+      if (this._resourceTotal(this.gameState.players[idx].resources) > 0) {
+        candidates.add(idx)
+      }
+    }
+    return [...candidates].sort((a, b) => a - b)
+  }
+
+  /**
+   * Show a prompt asking the player to choose resources to discard.
+   * @param {number} mustDiscard  exact number of cards to discard
+   */
+  _showDiscardDialog(mustDiscard) {
+    const input = prompt(
+      `You must discard ${mustDiscard} resource(s).\n` +
+        'Format: resource:amount, resource:amount\n' +
+        'Example: wood:2, brick:1\n\n' +
+        'Options: wood, brick, wheat, sheep, ore',
+    )
+    if (!input) return
+    const resources = this._parseResourceDict(input)
+    if (!resources) {
+      this.showToast('Invalid format. Use "resource:amount, resource:amount"', 'error')
+      return
+    }
+    const total = Object.values(resources).reduce((a, b) => a + b, 0)
+    if (total !== mustDiscard) {
+      this.showToast(`You must discard exactly ${mustDiscard} card(s).`, 'error')
+      return
+    }
+    this.onAction({ action_type: 'discard_resources', player_index: this.myPlayerIndex, resources })
+  }
 
   _resourceTotal(resources) {
     return Object.values(resources || {}).reduce((a, b) => a + b, 0)
