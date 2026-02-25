@@ -63,6 +63,7 @@ jobs:
       environment: ${{ steps.determine-env.outputs.environment }}
       networking_changed: ${{ steps.check-changes.outputs.networking }}
       portainer_changed: ${{ steps.check-changes.outputs.portainer }}
+      monitoring_changed: ${{ steps.check-changes.outputs.monitoring }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -73,16 +74,26 @@ jobs:
         id: check-changes
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
-            for module in networking portainer; do
-              if git diff --name-only HEAD^ HEAD | grep -q "^${module}/"; then
+            echo "=== Checking for module changes ==="
+            for module in networking portainer monitoring; do
+              changed_files=$(git diff --name-only HEAD^ HEAD | grep "^${module}/" || true)
+              if [ -n "$changed_files" ]; then
+                echo "✓ ${module}: CHANGED"
+                echo "  Files:"
+                while IFS= read -r file; do
+                  echo "    - $file"
+                done <<< "$changed_files"
                 echo "${module}=true" >> "$GITHUB_OUTPUT"
               else
+                echo "✗ ${module}: no changes"
                 echo "${module}=false" >> "$GITHUB_OUTPUT"
               fi
             done
           else
+            echo "=== Manual workflow trigger - all modules enabled ==="
             # For manual triggers, respect the input
-            for module in networking portainer; do
+            for module in networking portainer monitoring; do
+              echo "✓ ${module}: enabled (manual trigger)"
               echo "${module}=true" >> "$GITHUB_OUTPUT"
             done
           fi
@@ -129,5 +140,5 @@ jobs:
       travel: ${{ github.event_name == 'push' || inputs.travel }}
       games: ${{ github.event_name == 'push' || inputs.games }}
       tools: ${{ github.event_name == 'push' || inputs.tools }}
-      monitoring: ${{ github.event_name == 'push' || inputs.monitoring }}
+      monitoring: ${{ (github.event_name == 'push' && needs.setup.outputs.monitoring_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.monitoring) }}
       portainer: ${{ (github.event_name == 'push' && needs.setup.outputs.portainer_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.portainer) }}
