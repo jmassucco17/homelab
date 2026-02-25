@@ -61,7 +61,27 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       environment: ${{ steps.determine-env.outputs.environment }}
+      portainer_changed: ${{ steps.check-changes.outputs.portainer }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check for portainer changes
+        id: check-changes
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            if git diff --name-only HEAD^ HEAD | grep -q "^portainer/"; then
+              echo "portainer=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "portainer=false" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            # For manual triggers, respect the input
+            echo "portainer=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Determine environment
         id: determine-env
         # If the workflow is triggered by a push (to main), it's prod;
@@ -105,4 +125,4 @@ jobs:
       games: ${{ github.event_name == 'push' || inputs.games }}
       tools: ${{ github.event_name == 'push' || inputs.tools }}
       monitoring: ${{ github.event_name == 'push' || inputs.monitoring }}
-      portainer: ${{ github.event_name == 'push' || inputs.portainer }}
+      portainer: ${{ (github.event_name == 'push' && needs.setup.outputs.portainer_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.portainer) }}
