@@ -17,6 +17,7 @@ everything.
 from __future__ import annotations
 
 import hashlib
+import logging
 import pathlib
 
 import fastapi
@@ -222,3 +223,17 @@ async def start_game(
     background_tasks.add_task(ws_handler.execute_ai_turns_if_needed, room)
 
     return {'status': 'started'}
+
+
+@router.post('/catan/debug/log-level')
+async def set_catan_log_level(enable: bool = True) -> dict[str, str]:
+    """Toggle debug-level audit logging for the Catan engine at runtime.
+
+    Set ``enable=true`` to switch the Catan logger to DEBUG (shows dice, resource
+    distribution, road lengths, etc.).  Set ``enable=false`` to return to INFO.
+    This takes effect immediately without requiring a restart, making it suitable
+    for diagnosing issues on a live deployment.
+    """
+    level = logging.DEBUG if enable else logging.INFO
+    logging.getLogger('games.app.catan').setLevel(level)
+    return {'log_level': logging.getLevelName(level)}
