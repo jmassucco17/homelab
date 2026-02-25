@@ -77,6 +77,12 @@ jobs:
     uses: ./.github/workflows/_build.yml
     with:
       environment: ${{ needs.setup.outputs.environment }}
+      shared-assets: ${{ inputs['shared-assets'] || true }}
+      homepage: ${{ inputs.homepage || true }}
+      blog: ${{ inputs.blog || true }}
+      travel: ${{ inputs.travel || true }}
+      games: ${{ inputs.games || true }}
+      tools: ${{ inputs.tools || true }}
 
   deploy:
     needs: [setup, build]

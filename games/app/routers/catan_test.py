@@ -118,7 +118,7 @@ class TestCatanRouter(unittest.TestCase):
         self.assertNotIn('{{ domain }}', resp.text)
 
     def test_catan_game_renders_domain(self) -> None:
-        """Test the catan game page renders the domain variable from shared templates."""
+        """Test rendering the domain variable from shared templates."""
         resp = self.client.get('/catan/game')
         self.assertEqual(resp.status_code, 200)
         self.assertIn('jamesmassucco.com', resp.text)
