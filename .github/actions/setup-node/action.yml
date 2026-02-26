@@ -1,0 +1,14 @@
+name: Setup Node
+description: Sets up Node.js with npm caching and installs dependencies
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        cache: 'npm'
+
+    - name: Install npm dependencies
+      shell: bash
+      run: npm ci
