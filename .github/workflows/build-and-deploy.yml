@@ -67,6 +67,10 @@ jobs:
       monitoring_changed: ${{ steps.check-changes.outputs.monitoring }}
       homepage_changed: ${{ steps.check-changes.outputs.homepage }}
       shared-assets_changed: ${{ steps.check-changes.outputs.shared-assets }}
+      blog_changed: ${{ steps.check-changes.outputs.blog }}
+      travel_changed: ${{ steps.check-changes.outputs.travel }}
+      games_changed: ${{ steps.check-changes.outputs.games }}
+      tools_changed: ${{ steps.check-changes.outputs.tools }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -114,10 +118,25 @@ jobs:
                 echo "${module}=false" >> "$GITHUB_OUTPUT"
               fi
             done
+            python_base_changed=$(git diff --name-only HEAD^ HEAD \
+              | grep -E "^(requirements\.txt|python-base/)" || true)
+            if [ -n "$python_base_changed" ]; then
+              echo "✓ python-base / requirements.txt: CHANGED (affects all Python apps)"
+            fi
+            for module in blog travel games tools; do
+              app_changed=$(git diff --name-only HEAD^ HEAD | grep "^${module}/" || true)
+              if [ -n "$app_changed" ] || [ -n "$python_base_changed" ]; then
+                echo "✓ ${module}: CHANGED"
+                echo "${module}=true" >> "$GITHUB_OUTPUT"
+              else
+                echo "✗ ${module}: no changes"
+                echo "${module}=false" >> "$GITHUB_OUTPUT"
+              fi
+            done
           else
             echo "=== Manual workflow trigger - all modules enabled ==="
             # For manual triggers, respect the input
-            for module in networking portainer monitoring homepage shared-assets; do
+            for module in networking portainer monitoring homepage shared-assets blog travel games tools; do
               echo "✓ ${module}: enabled (manual trigger)"
               echo "${module}=true" >> "$GITHUB_OUTPUT"
             done
@@ -156,10 +175,10 @@ jobs:
     uses: ./.github/workflows/_build-python.yml
     with:
       environment: ${{ needs.setup.outputs.environment }}
-      blog: ${{ github.event_name == 'push' || inputs.blog }}
-      travel: ${{ github.event_name == 'push' || inputs.travel }}
-      games: ${{ github.event_name == 'push' || inputs.games }}
-      tools: ${{ github.event_name == 'push' || inputs.tools }}
+      blog: ${{ (github.event_name == 'push' && needs.setup.outputs.blog_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.blog) }}
+      travel: ${{ (github.event_name == 'push' && needs.setup.outputs.travel_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.travel) }}
+      games: ${{ (github.event_name == 'push' && needs.setup.outputs.games_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.games) }}
+      tools: ${{ (github.event_name == 'push' && needs.setup.outputs.tools_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.tools) }}
 
   # Deploy off-the-shelf (OTS) services in parallel with build
   # These use Docker Hub images (nginx, grafana, etc.) and don't need any build
@@ -200,7 +219,7 @@ jobs:
     with:
       environment: ${{ needs.setup.outputs.environment }}
       staging_image_tag: ${{ needs.setup.outputs.image_tag }}
-      blog: ${{ github.event_name == 'push' || inputs.blog }}
-      travel: ${{ github.event_name == 'push' || inputs.travel }}
-      games: ${{ github.event_name == 'push' || inputs.games }}
-      tools: ${{ github.event_name == 'push' || inputs.tools }}
+      blog: ${{ (github.event_name == 'push' && needs.setup.outputs.blog_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.blog) }}
+      travel: ${{ (github.event_name == 'push' && needs.setup.outputs.travel_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.travel) }}
+      games: ${{ (github.event_name == 'push' && needs.setup.outputs.games_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.games) }}
+      tools: ${{ (github.event_name == 'push' && needs.setup.outputs.tools_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.tools) }}
