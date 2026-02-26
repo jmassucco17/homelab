@@ -131,7 +131,7 @@ jobs:
     secrets: inherit
     with:
       environment: ${{ needs.setup.outputs.environment }}
-      seed_from_prod: ${{ inputs.seed_from_prod }}
+      seed_from_prod: ${{ github.event_name == 'workflow_dispatch' && inputs.seed_from_prod || false }}
 
   # Build simple (nginx-based) services
   build-simple:
