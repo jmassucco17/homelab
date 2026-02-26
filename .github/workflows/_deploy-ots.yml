@@ -29,41 +29,25 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Tailscale
+        uses: ./.github/actions/setup-tailscale
         with:
           oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
-          tags: tag:github
-
-      - name: Set up SSH key
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
-
-      - name: Deploy networking
-        env:
-          SERVER_USER: ${{ vars.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          ENVIRONMENT: ${{ inputs.environment }}
-        run: |
-          ssh -i ~/.ssh/deploy_key \
-            "${SERVER_USER}@${SERVER_HOST}" \
-            "cd /opt/homelab && ENVIRONMENT='${ENVIRONMENT}' bash -s" << 'REMOTE'
-          set -euo pipefail
-          if [ "${ENVIRONMENT}" = "staging" ]; then
-            echo "--- Starting staging networking ---"
-            /opt/homelab/scripts/start_service.sh networking --staging
-          else
-            echo "--- Deploying networking ---"
-            /opt/homelab/scripts/start_service.sh networking
-          fi
-          REMOTE
+      - name: Setup SSH
+        uses: ./.github/actions/setup-ssh
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          server-ssh-host-key: ${{ secrets.SERVER_SSH_HOST_KEY }}
+      - name: Deploy
+        uses: ./.github/actions/deploy-service
+        with:
+          service-name: networking
+          server-user: ${{ vars.SERVER_USER }}
+          server-host: ${{ secrets.SERVER_HOST }}
+          environment: ${{ inputs.environment }}
 
   deploy-monitoring:
     name: deploy monitoring
@@ -74,35 +58,25 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Tailscale
+        uses: ./.github/actions/setup-tailscale
         with:
           oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
-          tags: tag:github
-
-      - name: Set up SSH key
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
-
-      - name: Deploy monitoring
-        env:
-          SERVER_USER: ${{ vars.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-        run: |
-          ssh -i ~/.ssh/deploy_key \
-            "${SERVER_USER}@${SERVER_HOST}" \
-            "cd /opt/homelab && bash -s" << 'REMOTE'
-          set -euo pipefail
-          echo "--- Deploying monitoring ---"
-          /opt/homelab/scripts/start_service.sh monitoring
-          REMOTE
+      - name: Setup SSH
+        uses: ./.github/actions/setup-ssh
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          server-ssh-host-key: ${{ secrets.SERVER_SSH_HOST_KEY }}
+      - name: Deploy
+        uses: ./.github/actions/deploy-service
+        with:
+          service-name: monitoring
+          server-user: ${{ vars.SERVER_USER }}
+          server-host: ${{ secrets.SERVER_HOST }}
+          environment: prod
 
   deploy-portainer:
     name: deploy portainer
@@ -113,32 +87,22 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Tailscale
+        uses: ./.github/actions/setup-tailscale
         with:
           oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
-          tags: tag:github
-
-      - name: Set up SSH key
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
-
-      - name: Deploy portainer
-        env:
-          SERVER_USER: ${{ vars.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-        run: |
-          ssh -i ~/.ssh/deploy_key \
-            "${SERVER_USER}@${SERVER_HOST}" \
-            "cd /opt/homelab && bash -s" << 'REMOTE'
-          set -euo pipefail
-          echo "--- Deploying portainer ---"
-          /opt/homelab/scripts/start_service.sh portainer
-          REMOTE
+      - name: Setup SSH
+        uses: ./.github/actions/setup-ssh
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          server-ssh-host-key: ${{ secrets.SERVER_SSH_HOST_KEY }}
+      - name: Deploy
+        uses: ./.github/actions/deploy-service
+        with:
+          service-name: portainer
+          server-user: ${{ vars.SERVER_USER }}
+          server-host: ${{ secrets.SERVER_HOST }}
+          environment: prod

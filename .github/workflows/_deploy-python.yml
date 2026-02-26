@@ -36,40 +36,26 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Tailscale
+        uses: ./.github/actions/setup-tailscale
         with:
           oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
-          tags: tag:github
-      - name: Set up SSH key
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
-      - name: Deploy blog
-        env:
-          SERVER_USER: ${{ vars.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          ENVIRONMENT: ${{ inputs.environment }}
-          STAGING_IMAGE_TAG: ${{ inputs.staging_image_tag }}
-        run: |
-          ssh -i ~/.ssh/deploy_key \
-            "${SERVER_USER}@${SERVER_HOST}" \
-            "cd /opt/homelab && ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' bash -s" << 'REMOTE'
-          set -euo pipefail
-          if [ "${ENVIRONMENT}" = "staging" ]; then
-            echo "--- Starting staging blog ---"
-            STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" /opt/homelab/scripts/start_service.sh blog --staging
-          else
-            echo "--- Deploying blog ---"
-            /opt/homelab/scripts/start_service.sh blog
-          fi
-          REMOTE
+      - name: Setup SSH
+        uses: ./.github/actions/setup-ssh
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          server-ssh-host-key: ${{ secrets.SERVER_SSH_HOST_KEY }}
+      - name: Deploy
+        uses: ./.github/actions/deploy-service
+        with:
+          service-name: blog
+          server-user: ${{ vars.SERVER_USER }}
+          server-host: ${{ secrets.SERVER_HOST }}
+          environment: ${{ inputs.environment }}
+          staging-image-tag: ${{ inputs.staging_image_tag }}
 
   deploy-games:
     name: deploy games
@@ -78,40 +64,26 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Tailscale
+        uses: ./.github/actions/setup-tailscale
         with:
           oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
-          tags: tag:github
-      - name: Set up SSH key
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
-      - name: Deploy games
-        env:
-          SERVER_USER: ${{ vars.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          ENVIRONMENT: ${{ inputs.environment }}
-          STAGING_IMAGE_TAG: ${{ inputs.staging_image_tag }}
-        run: |
-          ssh -i ~/.ssh/deploy_key \
-            "${SERVER_USER}@${SERVER_HOST}" \
-            "cd /opt/homelab && ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' bash -s" << 'REMOTE'
-          set -euo pipefail
-          if [ "${ENVIRONMENT}" = "staging" ]; then
-            echo "--- Starting staging games ---"
-            STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" /opt/homelab/scripts/start_service.sh games --staging
-          else
-            echo "--- Deploying games ---"
-            /opt/homelab/scripts/start_service.sh games
-          fi
-          REMOTE
+      - name: Setup SSH
+        uses: ./.github/actions/setup-ssh
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          server-ssh-host-key: ${{ secrets.SERVER_SSH_HOST_KEY }}
+      - name: Deploy
+        uses: ./.github/actions/deploy-service
+        with:
+          service-name: games
+          server-user: ${{ vars.SERVER_USER }}
+          server-host: ${{ secrets.SERVER_HOST }}
+          environment: ${{ inputs.environment }}
+          staging-image-tag: ${{ inputs.staging_image_tag }}
 
   deploy-tools:
     name: deploy tools
@@ -120,40 +92,26 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Tailscale
+        uses: ./.github/actions/setup-tailscale
         with:
           oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
-          tags: tag:github
-      - name: Set up SSH key
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
-      - name: Deploy tools
-        env:
-          SERVER_USER: ${{ vars.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          ENVIRONMENT: ${{ inputs.environment }}
-          STAGING_IMAGE_TAG: ${{ inputs.staging_image_tag }}
-        run: |
-          ssh -i ~/.ssh/deploy_key \
-            "${SERVER_USER}@${SERVER_HOST}" \
-            "cd /opt/homelab && ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' bash -s" << 'REMOTE'
-          set -euo pipefail
-          if [ "${ENVIRONMENT}" = "staging" ]; then
-            echo "--- Starting staging tools ---"
-            STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" /opt/homelab/scripts/start_service.sh tools --staging
-          else
-            echo "--- Deploying tools ---"
-            /opt/homelab/scripts/start_service.sh tools
-          fi
-          REMOTE
+      - name: Setup SSH
+        uses: ./.github/actions/setup-ssh
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          server-ssh-host-key: ${{ secrets.SERVER_SSH_HOST_KEY }}
+      - name: Deploy
+        uses: ./.github/actions/deploy-service
+        with:
+          service-name: tools
+          server-user: ${{ vars.SERVER_USER }}
+          server-host: ${{ secrets.SERVER_HOST }}
+          environment: ${{ inputs.environment }}
+          staging-image-tag: ${{ inputs.staging_image_tag }}
 
   deploy-travel:
     name: deploy travel
@@ -162,37 +120,23 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Tailscale
+        uses: ./.github/actions/setup-tailscale
         with:
           oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
-          tags: tag:github
-      - name: Set up SSH key
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
-      - name: Deploy travel
-        env:
-          SERVER_USER: ${{ vars.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          ENVIRONMENT: ${{ inputs.environment }}
-          STAGING_IMAGE_TAG: ${{ inputs.staging_image_tag }}
-        run: |
-          ssh -i ~/.ssh/deploy_key \
-            "${SERVER_USER}@${SERVER_HOST}" \
-            "cd /opt/homelab && ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' bash -s" << 'REMOTE'
-          set -euo pipefail
-          if [ "${ENVIRONMENT}" = "staging" ]; then
-            echo "--- Starting staging travel ---"
-            STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" /opt/homelab/scripts/start_service.sh travel --staging
-          else
-            echo "--- Deploying travel ---"
-            /opt/homelab/scripts/start_service.sh travel
-          fi
-          REMOTE
+      - name: Setup SSH
+        uses: ./.github/actions/setup-ssh
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          server-ssh-host-key: ${{ secrets.SERVER_SSH_HOST_KEY }}
+      - name: Deploy
+        uses: ./.github/actions/deploy-service
+        with:
+          service-name: travel
+          server-user: ${{ vars.SERVER_USER }}
+          server-host: ${{ secrets.SERVER_HOST }}
+          environment: ${{ inputs.environment }}
+          staging-image-tag: ${{ inputs.staging_image_tag }}

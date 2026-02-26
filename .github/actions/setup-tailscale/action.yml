@@ -1,0 +1,20 @@
+name: Setup Tailscale
+description: Connect to Tailscale network for deployment
+
+inputs:
+  oauth-client-id:
+    description: 'Tailscale OAuth client ID'
+    required: true
+  oauth-secret:
+    description: 'Tailscale OAuth secret'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Connect to Tailscale
+      uses: tailscale/github-action@v4
+      with:
+        oauth-client-id: ${{ inputs.oauth-client-id }}
+        oauth-secret: ${{ inputs.oauth-secret }}
+        tags: tag:github
