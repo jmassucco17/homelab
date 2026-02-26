@@ -144,7 +144,7 @@ jobs:
     uses: ./.github/workflows/_build-simple.yml
     with:
       environment: ${{ needs.setup.outputs.environment }}
-      shared-assets: ${{ (github.event_name == 'push' && needs.setup.outputs.shared_assets_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs['shared-assets']) }}
+      shared-assets: ${{ (github.event_name == 'push' && needs.setup.outputs.shared-assets_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs['shared-assets']) }}
       homepage: ${{ (github.event_name == 'push' && needs.setup.outputs.homepage_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.homepage) }}
 
   # Build Python images
