@@ -7,6 +7,9 @@ on:
         description: 'Environment to deploy to (`prod` or `staging`)'
         required: true
         type: string
+      staging_image_tag:
+        description: '[staging only] Image tag to deploy'
+        type: string
       shared-assets:
         description: 'Deploy shared-assets'
         type: boolean
@@ -45,7 +48,7 @@ jobs:
           SERVER_USER: ${{ vars.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
-          STAGING_IMAGE_TAG: ${{ needs.setup.outputs.image-tag }}
+          STAGING_IMAGE_TAG: ${{ inputs.staging_image_tag }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             "${SERVER_USER}@${SERVER_HOST}" \
@@ -87,7 +90,7 @@ jobs:
           SERVER_USER: ${{ vars.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
-          STAGING_IMAGE_TAG: ${{ needs.setup.outputs.image-tag }}
+          STAGING_IMAGE_TAG: ${{ inputs.staging_image_tag }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             "${SERVER_USER}@${SERVER_HOST}" \
