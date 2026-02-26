@@ -18,11 +18,11 @@
     <link
       rel="icon"
       type="image/png"
-      href="https://assets.{{ domain }}/icon/favicon-96x96.png"
+      href="https://assets{{ domain }}/icon/favicon-96x96.png"
       sizes="96x96"
     />
-    <link rel="shortcut icon" href="https://assets.{{ domain }}/icon/favicon.ico" />
-    <link rel="stylesheet" href="https://assets.{{ domain }}/styles/main.css?v=2.0" />
+    <link rel="shortcut icon" href="https://assets{{ domain }}/icon/favicon.ico" />
+    <link rel="stylesheet" href="https://assets{{ domain }}/styles/main.css?v=2.0" />
     <link rel="stylesheet" href="/assets/styles/blog-post.css?v=2.0" />
     <link
       rel="stylesheet"
@@ -37,7 +37,7 @@
     <div id="theme-toggle-container"></div>
     <a href="/" class="site-home-link">
       <img
-        src="https://assets.{{ domain }}/icon/favicon-96x96.png"
+        src="https://assets{{ domain }}/icon/favicon-96x96.png"
         alt="Blog Home"
         class="site-logo"
       />
@@ -54,7 +54,7 @@
 
     <footer>&copy; 2025 James Massucco. Built with love and Linux.</footer>
     <script type="module">
-      import { insertThemeToggle } from 'https://assets.{{ domain }}/scripts/theme-toggle.js?v=2.0'
+      import { insertThemeToggle } from 'https://assets{{ domain }}/scripts/theme-toggle.js?v=2.0'
       window.addEventListener('DOMContentLoaded', () => {
         insertThemeToggle() // Will look for #theme-toggle-container
       })

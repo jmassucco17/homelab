@@ -47,7 +47,7 @@ The following values are not sensitive and are stored as plain
 
 ## Staging OAuth redirect URI
 
-The staging OAuth proxy needs `https://oauth.staging.jamesmassucco.com/oauth2/callback`
+The staging OAuth proxy needs `https://oauth-staging.jamesmassucco.com/oauth2/callback`
 added to the Google OAuth app's **Authorized Redirect URIs** (Google Cloud Console →
 Credentials → the OAuth 2.0 Client ID → Edit).
 
