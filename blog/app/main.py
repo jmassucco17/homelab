@@ -14,7 +14,7 @@ from . import blog
 APP_DIR = pathlib.Path(__file__).resolve().parent
 
 DOMAIN = os.environ.get('DOMAIN', '.jamesmassucco.com')
-HOME_URL = 'https://' + DOMAIN[1:] if DOMAIN.startswith('.') else 'https://homepage' + DOMAIN
+HOME_URL = 'https://' + DOMAIN[1:]
 
 app = fastapi.FastAPI(title='Blog')
 

@@ -156,7 +156,7 @@ services:
         games.jamesmassucco.com,
         portainer.jamesmassucco.com,
         tools.jamesmassucco.com,
-        homepage-staging.jamesmassucco.com,
+        staging.jamesmassucco.com,
         blog-staging.jamesmassucco.com,
         travel-staging.jamesmassucco.com,
         games-staging.jamesmassucco.com,

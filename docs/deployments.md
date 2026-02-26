@@ -157,7 +157,7 @@ Staging and production share the same set of repository secrets. See
 
 | URL                                     | Service              |
 | --------------------------------------- | -------------------- |
-| `homepage-staging.jamesmassucco.com`    | homepage             |
+| `staging.jamesmassucco.com`    | homepage             |
 | `blog-staging.jamesmassucco.com`        | blog                 |
 | `travel-staging.jamesmassucco.com`      | travel               |
 | `games-staging.jamesmassucco.com`       | games                |
