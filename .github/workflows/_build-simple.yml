@@ -1,0 +1,57 @@
+name: Build Simple Images (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Environment to build for (prod or staging)'
+        required: false
+        type: string
+        default: 'prod'
+      shared-assets:
+        description: 'Build shared-assets'
+        type: boolean
+        default: true
+      homepage:
+        description: 'Build homepage'
+        type: boolean
+        default: true
+
+jobs:
+  build-shared-assets:
+    name: build shared-assets
+    if: inputs.shared-assets
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup Docker and login
+        uses: ./.github/actions/docker-setup
+      - name: Build and push shared-assets
+        uses: ./.github/actions/docker-build-push
+        with:
+          image: ghcr.io/jmassucco17/homelab/shared-assets
+          context: shared-assets
+          dockerfile: shared-assets/Dockerfile
+          cache-scope: shared-assets
+
+  build-homepage:
+    name: build homepage
+    if: inputs.homepage
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup Docker and login
+        uses: ./.github/actions/docker-setup
+      - name: Build and push homepage
+        uses: ./.github/actions/docker-build-push
+        with:
+          image: ghcr.io/jmassucco17/homelab/homepage
+          context: homepage
+          dockerfile: homepage/Dockerfile
+          cache-scope: homepage

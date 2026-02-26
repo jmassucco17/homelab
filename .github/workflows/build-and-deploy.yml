@@ -111,19 +111,27 @@ jobs:
             echo "environment=${{ inputs.environment }}" >> "$GITHUB_OUTPUT"
           fi
 
-  # Build all custom images
-  # Python-base builds first, then simple services (homepage, shared-assets) in parallel
-  # with python services (blog, games, tools, travel) that depend on python-base
-  build:
+  # Build simple (nginx-based) services
+  build-simple:
     needs: setup
     permissions:
       contents: read
       packages: write
-    uses: ./.github/workflows/_build.yml
+    uses: ./.github/workflows/_build-simple.yml
     with:
       environment: ${{ needs.setup.outputs.environment }}
       shared-assets: ${{ github.event_name == 'push' || inputs['shared-assets'] }}
       homepage: ${{ github.event_name == 'push' || inputs.homepage }}
+
+  # Build Python images
+  build-python:
+    needs: setup
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/_build-python.yml
+    with:
+      environment: ${{ needs.setup.outputs.environment }}
       blog: ${{ github.event_name == 'push' || inputs.blog }}
       travel: ${{ github.event_name == 'push' || inputs.travel }}
       games: ${{ github.event_name == 'push' || inputs.games }}
@@ -146,7 +154,7 @@ jobs:
   # Deploy simple nginx-based services after their builds complete
   # These only depend on nginx base image (no python-base dependency)
   deploy-simple:
-    needs: [setup, build]
+    needs: [setup, build-simple]
     permissions:
       contents: read
     uses: ./.github/workflows/_deploy-simple.yml
@@ -159,7 +167,7 @@ jobs:
   # Deploy Python-based services after build completes
   # These depend on python-base image being built first
   deploy-python:
-    needs: [setup, build]
+    needs: [setup, build-python]
     permissions:
       contents: read
     uses: ./.github/workflows/_deploy-python.yml
