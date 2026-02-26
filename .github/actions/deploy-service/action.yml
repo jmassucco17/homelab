@@ -1,0 +1,44 @@
+name: Deploy Service
+description: Deploy a service to the server via SSH
+
+inputs:
+  service-name:
+    description: 'Name of the service to deploy'
+    required: true
+  server-user:
+    description: 'SSH user for server access'
+    required: true
+  server-host:
+    description: 'Server hostname'
+    required: true
+  environment:
+    description: 'Environment to deploy to (prod or staging)'
+    required: true
+  staging-image-tag:
+    description: 'Image tag to deploy for staging'
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - name: Deploy ${{ inputs.service-name }}
+      shell: bash
+      env:
+        SERVER_USER: ${{ inputs.server-user }}
+        SERVER_HOST: ${{ inputs.server-host }}
+        ENVIRONMENT: ${{ inputs.environment }}
+        STAGING_IMAGE_TAG: ${{ inputs.staging-image-tag }}
+        SERVICE_NAME: ${{ inputs.service-name }}
+      run: |
+        ssh -i ~/.ssh/deploy_key \
+          "${SERVER_USER}@${SERVER_HOST}" \
+          "cd /opt/homelab && ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' SERVICE_NAME='${SERVICE_NAME}' bash -s" << 'REMOTE'
+        set -euo pipefail
+        if [ "${ENVIRONMENT}" = "staging" ]; then
+          echo "--- Starting staging ${SERVICE_NAME} ---"
+          STAGING_IMAGE_TAG="${STAGING_IMAGE_TAG}" /opt/homelab/scripts/start_service.sh ${SERVICE_NAME} --staging
+        else
+          echo "--- Deploying ${SERVICE_NAME} ---"
+          /opt/homelab/scripts/start_service.sh ${SERVICE_NAME}
+        fi
+        REMOTE

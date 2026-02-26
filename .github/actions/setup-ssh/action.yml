@@ -1,0 +1,24 @@
+name: Setup SSH Key
+description: Configure SSH key and known hosts for server access
+
+inputs:
+  ssh-private-key:
+    description: 'SSH private key for server access'
+    required: true
+  server-ssh-host-key:
+    description: 'Server SSH host key'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Set up SSH key
+      shell: bash
+      env:
+        SSH_PRIVATE_KEY: ${{ inputs.ssh-private-key }}
+        SERVER_SSH_HOST_KEY: ${{ inputs.server-ssh-host-key }}
+      run: |
+        mkdir -p ~/.ssh
+        printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+        chmod 600 ~/.ssh/deploy_key
+        printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
