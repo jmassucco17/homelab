@@ -21,13 +21,20 @@ on:
         default: true
 
 jobs:
-  # Deploy all in parallel
-  deploy-networking:
-    name: deploy networking
-    if: inputs.networking
+  # Deploy all in parallel using matrix strategy
+  deploy:
+    name: deploy ${{ matrix.service }}
+    if: |
+      (matrix.service == 'networking' && inputs.networking) ||
+      (matrix.service == 'monitoring' && inputs.environment == 'prod' && inputs.monitoring) ||
+      (matrix.service == 'portainer' && inputs.environment == 'prod' && inputs.portainer)
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    strategy:
+      matrix:
+        service: [networking, monitoring, portainer]
+      fail-fast: false
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -44,65 +51,7 @@ jobs:
       - name: Deploy
         uses: ./.github/actions/deploy-service
         with:
-          service-name: networking
+          service-name: ${{ matrix.service }}
           server-user: ${{ vars.SERVER_USER }}
           server-host: ${{ secrets.SERVER_HOST }}
           environment: ${{ inputs.environment }}
-
-  deploy-monitoring:
-    name: deploy monitoring
-    if: |
-      inputs.environment == 'prod' &&
-      inputs.monitoring
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Setup Tailscale
-        uses: ./.github/actions/setup-tailscale
-        with:
-          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
-      - name: Setup SSH
-        uses: ./.github/actions/setup-ssh
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-          server-ssh-host-key: ${{ secrets.SERVER_SSH_HOST_KEY }}
-      - name: Deploy
-        uses: ./.github/actions/deploy-service
-        with:
-          service-name: monitoring
-          server-user: ${{ vars.SERVER_USER }}
-          server-host: ${{ secrets.SERVER_HOST }}
-          environment: prod
-
-  deploy-portainer:
-    name: deploy portainer
-    if: |
-      inputs.environment == 'prod' &&
-      inputs.portainer
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Setup Tailscale
-        uses: ./.github/actions/setup-tailscale
-        with:
-          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
-      - name: Setup SSH
-        uses: ./.github/actions/setup-ssh
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-          server-ssh-host-key: ${{ secrets.SERVER_SSH_HOST_KEY }}
-      - name: Deploy
-        uses: ./.github/actions/deploy-service
-        with:
-          service-name: portainer
-          server-user: ${{ vars.SERVER_USER }}
-          server-host: ${{ secrets.SERVER_HOST }}
-          environment: prod
