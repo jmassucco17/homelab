@@ -16,7 +16,7 @@ APP_DIR = pathlib.Path(__file__).resolve().parent
 
 router = fastapi.APIRouter()
 templates = fastapi.templating.Jinja2Templates(directory=APP_DIR / 'templates')
-templates.env.globals['domain'] = os.environ.get('DOMAIN', 'jamesmassucco.com')  # type: ignore[reportUnknownMemberType]
+templates.env.globals['domain'] = os.environ.get('DOMAIN', '.jamesmassucco.com')  # type: ignore[reportUnknownMemberType]
 
 
 class MapCreate(pydantic.BaseModel):

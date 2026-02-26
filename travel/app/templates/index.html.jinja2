@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Travel - Home</title>
-    <link rel="stylesheet" href="https://assets.{{ domain }}/styles/main.css?v=2.0">
+    <link rel="stylesheet" href="https://assets{{ domain }}/styles/main.css?v=2.0">
     <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
     <div id="theme-toggle-container"></div>
-    <a href="https://{{ domain }}" class="site-home-link">
+    <a href="{{ home_url }}" class="site-home-link">
         <img
-            src="https://assets.{{ domain }}/icon/favicon-96x96.png"
+            src="https://assets{{ domain }}/icon/favicon-96x96.png"
             alt="Home"
             class="site-logo"
         />
@@ -43,7 +43,7 @@
     </div>
 
     <script type="module">
-      import { insertThemeToggle } from 'https://assets.{{ domain }}/scripts/theme-toggle.js?v=2.0'
+      import { insertThemeToggle } from 'https://assets{{ domain }}/scripts/theme-toggle.js?v=2.0'
       window.addEventListener('DOMContentLoaded', () => {
         insertThemeToggle()
       })

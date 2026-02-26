@@ -13,7 +13,8 @@ from .routers import movie_picker
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
 
-DOMAIN = os.environ.get('DOMAIN', 'jamesmassucco.com')
+DOMAIN = os.environ.get('DOMAIN', '.jamesmassucco.com')
+HOME_URL = 'https://' + DOMAIN[1:]
 
 app = fastapi.FastAPI(title='Tools')
 
@@ -36,6 +37,7 @@ app.mount(
 
 templates = fastapi.templating.Jinja2Templates(directory=APP_DIR / 'templates')
 templates.env.globals['domain'] = DOMAIN  # type: ignore[reportUnknownMemberType]
+templates.env.globals['home_url'] = HOME_URL  # type: ignore[reportUnknownMemberType]
 
 app.include_router(movie_picker.router)
 

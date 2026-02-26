@@ -14,7 +14,7 @@ class TestTemplatesModule(unittest.TestCase):
         self.assertIn('domain', tmpl.templates.env.globals)  # type: ignore[reportUnknownMemberType,reportUnknownArgumentType]
 
     def test_domain_defaults_to_jamesmassucco(self) -> None:
-        """Test that the domain defaults to jamesmassucco.com when DOMAIN is not set."""
+        """Test that the domain defaults to .jamesmassucco.com."""
         # Reload the module without DOMAIN set
         import importlib
 
@@ -23,7 +23,7 @@ class TestTemplatesModule(unittest.TestCase):
             import games.app.templates
 
             importlib.reload(games.app.templates)
-            self.assertEqual(games.app.templates.DOMAIN, 'jamesmassucco.com')
+            self.assertEqual(games.app.templates.DOMAIN, '.jamesmassucco.com')
         finally:
             if env_backup is not None:
                 os.environ['DOMAIN'] = env_backup
@@ -32,12 +32,12 @@ class TestTemplatesModule(unittest.TestCase):
         """Test that the domain is read from the DOMAIN environment variable."""
         import importlib
 
-        os.environ['DOMAIN'] = 'staging.example.com'
+        os.environ['DOMAIN'] = '-staging.example.com'
         try:
             import games.app.templates
 
             importlib.reload(games.app.templates)
-            self.assertEqual(games.app.templates.DOMAIN, 'staging.example.com')
+            self.assertEqual(games.app.templates.DOMAIN, '-staging.example.com')
         finally:
             del os.environ['DOMAIN']
 

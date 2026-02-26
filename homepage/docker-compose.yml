@@ -7,7 +7,7 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      - DOMAIN=${DOMAIN:-jamesmassucco.com}
+      - DOMAIN=${DOMAIN:-.jamesmassucco.com}
     # Run envsubst to substitute DOMAIN, then copy files and start nginx
     entrypoint: /bin/sh -c "mkdir -p /usr/share/nginx/html && envsubst '$$DOMAIN' < /tmp/site/index.html > /usr/share/nginx/html/index.html && nginx -g 'daemon off;'"
     labels:
