@@ -7,7 +7,9 @@ import fastapi.templating
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
 
-DOMAIN = os.environ.get('DOMAIN', 'jamesmassucco.com')
+DOMAIN = os.environ.get('DOMAIN', '.jamesmassucco.com')
+HOME_URL = 'https://' + DOMAIN[1:] if DOMAIN.startswith('.') else 'https://homepage' + DOMAIN
 
 templates = fastapi.templating.Jinja2Templates(directory=APP_DIR / 'templates')
 templates.env.globals['domain'] = DOMAIN  # type: ignore[reportUnknownMemberType]
+templates.env.globals['home_url'] = HOME_URL  # type: ignore[reportUnknownMemberType]

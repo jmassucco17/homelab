@@ -6,7 +6,7 @@ services:
     container_name: staging-games
     image: ghcr.io/jmassucco17/homelab/games:${STAGING_IMAGE_TAG:-latest}
     environment:
-      - DOMAIN=jamesmassucco.com
+      - DOMAIN=-staging.jamesmassucco.com
     labels:
       - 'traefik.http.routers.games-staging.rule=Host(`games-staging.jamesmassucco.com`)'
       - 'traefik.http.routers.games-staging.entrypoints=websecure'

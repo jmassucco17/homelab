@@ -6,7 +6,7 @@ services:
     container_name: staging-blog
     image: ghcr.io/jmassucco17/homelab/blog:${STAGING_IMAGE_TAG:-latest}
     environment:
-      - DOMAIN=jamesmassucco.com
+      - DOMAIN=-staging.jamesmassucco.com
     labels:
       - 'traefik.http.routers.blog-staging.rule=Host(`blog-staging.jamesmassucco.com`)'
       - 'traefik.http.routers.blog-staging.entrypoints=websecure'

@@ -5,7 +5,7 @@ services:
     container_name: staging-shared-assets
     image: ghcr.io/jmassucco17/homelab/shared-assets:${STAGING_IMAGE_TAG:-latest}
     environment:
-      - DOMAIN=jamesmassucco.com
+      - DOMAIN=-staging.jamesmassucco.com
     labels:
       - 'traefik.http.routers.shared-assets-staging.rule=Host(`assets-staging.jamesmassucco.com`)'
       - 'traefik.http.routers.shared-assets-staging.entrypoints=websecure'

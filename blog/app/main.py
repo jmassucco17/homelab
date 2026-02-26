@@ -13,7 +13,8 @@ from . import blog
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
 
-DOMAIN = os.environ.get('DOMAIN', 'jamesmassucco.com')
+DOMAIN = os.environ.get('DOMAIN', '.jamesmassucco.com')
+HOME_URL = 'https://' + DOMAIN[1:] if DOMAIN.startswith('.') else 'https://homepage' + DOMAIN
 
 app = fastapi.FastAPI(title='Blog')
 
@@ -37,6 +38,7 @@ app.mount(
 templates = fastapi.templating.Jinja2Templates(directory=APP_DIR / 'templates')
 templates.env.filters['datefmt'] = lambda value, fmt='%B %d, %Y': value.strftime(fmt)  # type: ignore[assignment]
 templates.env.globals['domain'] = DOMAIN  # type: ignore[reportUnknownMemberType]
+templates.env.globals['home_url'] = HOME_URL  # type: ignore[reportUnknownMemberType]
 
 
 @app.get('/', response_class=fastapi.responses.HTMLResponse)

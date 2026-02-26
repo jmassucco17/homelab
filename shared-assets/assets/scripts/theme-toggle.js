@@ -22,7 +22,7 @@ export function insertThemeToggle(containerId = 'theme-toggle-container') {
 
   const setTheme = (theme) => {
     document.documentElement.setAttribute('data-theme', theme)
-    document.cookie = `theme=${theme}; path=/; domain=.$DOMAIN; SameSite=Lax`
+    document.cookie = `theme=${theme}; path=/; domain=.jamesmassucco.com; SameSite=Lax`
     toggleButton.textContent = theme === 'dark' ? '🌙' : '☀️'
   }
 

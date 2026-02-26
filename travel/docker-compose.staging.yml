@@ -10,7 +10,7 @@ services:
     container_name: staging-travel
     image: ghcr.io/jmassucco17/homelab/travel:${STAGING_IMAGE_TAG:-latest}
     environment:
-      - DOMAIN=jamesmassucco.com
+      - DOMAIN=-staging.jamesmassucco.com
     volumes:
       - staging-travel-data:/data
     labels:
