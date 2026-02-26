@@ -28,7 +28,6 @@ jobs:
   # Deploy all Python-based services in parallel
   deploy-blog:
     name: deploy blog
-    needs: setup
     if: inputs.blog
     runs-on: ubuntu-latest
     permissions:
@@ -71,7 +70,6 @@ jobs:
 
   deploy-games:
     name: deploy games
-    needs: setup
     if: inputs.games
     runs-on: ubuntu-latest
     permissions:
@@ -114,7 +112,6 @@ jobs:
 
   deploy-tools:
     name: deploy tools
-    needs: setup
     if: inputs.tools
     runs-on: ubuntu-latest
     permissions:
@@ -157,7 +154,6 @@ jobs:
 
   deploy-travel:
     name: deploy travel
-    needs: setup
     if: inputs.travel
     runs-on: ubuntu-latest
     permissions:

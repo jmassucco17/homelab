@@ -20,7 +20,6 @@ jobs:
   # Deploy simple nginx-based services in parallel
   deploy-shared-assets:
     name: deploy shared-assets
-    needs: setup
     if: inputs.shared-assets
     runs-on: ubuntu-latest
     permissions:
@@ -63,7 +62,6 @@ jobs:
 
   deploy-homepage:
     name: deploy homepage
-    needs: setup
     if: inputs.homepage
     runs-on: ubuntu-latest
     permissions:

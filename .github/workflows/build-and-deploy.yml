@@ -185,7 +185,6 @@ jobs:
     secrets: inherit
     with:
       environment: ${{ needs.setup.outputs.environment }}
-      seed_from_prod: ${{ github.event_name == 'workflow_dispatch' && inputs.seed_from_prod }}
       blog: ${{ github.event_name == 'push' || inputs.blog }}
       travel: ${{ github.event_name == 'push' || inputs.travel }}
       games: ${{ github.event_name == 'push' || inputs.games }}

@@ -24,7 +24,6 @@ jobs:
   # Deploy all in parallel
   deploy-networking:
     name: deploy networking
-    needs: setup
     if: inputs.networking
     runs-on: ubuntu-latest
     permissions:
@@ -68,7 +67,6 @@ jobs:
 
   deploy-monitoring:
     name: deploy monitoring
-    needs: setup
     if: |
       inputs.environment == 'prod' &&
       inputs.monitoring
@@ -108,7 +106,6 @@ jobs:
 
   deploy-portainer:
     name: deploy portainer
-    needs: setup
     if: |
       inputs.environment == 'prod' &&
       inputs.portainer
