@@ -1,4 +1,4 @@
-name: Deploy Python Services (Reusable)
+name: Prepare Server (Reusable)
 
 on:
   workflow_call:
@@ -17,26 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    outputs:
-      image-tag: ${{ steps.image-tag.outputs.tag }}
     steps:
       - uses: actions/checkout@v6
-
-      - name: Set image tag
-        id: image-tag
-        run: |
-          if [ "${{ inputs.environment }}" = "staging" ]; then
-            echo "tag=sha-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
-          else
-            echo "tag=latest" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v4
-        with:
-          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
-          tags: tag:github
 
       - name: Write networking/.env
         env:
@@ -81,16 +63,6 @@ jobs:
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
         run: printf 'TMDB_API_KEY=%s\n' "$TMDB_API_KEY" > tools/.env
 
-      - name: Set up SSH key
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
-
       - name: Create deployment archive
         run: |
           grep -v '^#' .gitignore | grep -v '^$' > /tmp/exclude_list
@@ -102,6 +74,23 @@ jobs:
             tar --append -f /tmp/homelab-deploy.tar networking/.env
           fi
           gzip /tmp/homelab-deploy.tar
+
+      - name: Set up SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_SSH_HOST_KEY: ${{ secrets.SERVER_SSH_HOST_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SERVER_SSH_HOST_KEY" >> ~/.ssh/known_hosts
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          tags: tag:github
 
       - name: Upload archive to server
         env:
@@ -118,11 +107,10 @@ jobs:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
           SEED_FROM_PROD: ${{ inputs.seed_from_prod }}
-          STAGING_IMAGE_TAG: ${{ steps.image-tag.outputs.tag }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             "${SERVER_USER}@${SERVER_HOST}" \
-            "ENVIRONMENT='${ENVIRONMENT}' SEED_FROM_PROD='${SEED_FROM_PROD}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' bash -s" << 'REMOTE'
+            "ENVIRONMENT='${ENVIRONMENT}' SEED_FROM_PROD='${SEED_FROM_PROD}' bash -s" << 'REMOTE'
           set -euo pipefail
           mkdir -p /opt/homelab
           cd /opt/homelab
