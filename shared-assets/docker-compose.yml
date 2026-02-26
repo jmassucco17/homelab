@@ -3,6 +3,10 @@ services:
     build: .
     image: ghcr.io/jmassucco17/homelab/shared-assets:latest
     container_name: shared-assets
+    environment:
+      - DOMAIN=${DOMAIN:-jamesmassucco.com}
+    # Substitute DOMAIN in theme-toggle.js, then start nginx
+    entrypoint: /bin/sh -c "envsubst '$$DOMAIN' < /usr/share/nginx/html/scripts/theme-toggle.js > /tmp/theme-toggle.js && mv /tmp/theme-toggle.js /usr/share/nginx/html/scripts/theme-toggle.js && nginx -g 'daemon off;'"
     labels:
       - 'traefik.enable=true'
     healthcheck:

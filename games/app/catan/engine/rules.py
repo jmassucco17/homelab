@@ -6,7 +6,11 @@ and victory conditions.
 
 from __future__ import annotations
 
+import logging
+
 from ..models import actions, board, game_state, player
+
+logger = logging.getLogger(__name__)
 
 _SETUP_PHASES = (
     game_state.GamePhase.SETUP_FORWARD,
@@ -56,6 +60,7 @@ def calculate_longest_road(board: board.Board, player_index: int) -> int:
         length = _dfs_road(board, player_index, start_edge.edge_id, visited)
         if length > max_length:
             max_length = length
+    logger.debug('[calc_longest_road] player=%d result=%d', player_index, max_length)
     return max_length
 
 

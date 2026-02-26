@@ -1,12 +1,12 @@
 # Staging networking: adds OAuth2-proxy for *.staging.jamesmassucco.com.
-# The oauth-auth-staging forwardAuth middleware is defined on this container's
+# The staging-oauth-auth forwardAuth middleware is defined on this container's
 # labels so any staging service can reference it without touching prod networking.
 #
 # Usage: scripts/start_service.sh networking --staging
 services:
-  oauth2-proxy-staging:
+  staging-oauth2-proxy:
     image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
-    container_name: oauth2-proxy-staging
+    container_name: staging-oauth2-proxy
     environment:
       OAUTH2_PROXY_PROVIDER: google
       OAUTH2_PROXY_CLIENT_ID: ${GOOGLE_OAUTH2_CLIENT_ID}
@@ -31,14 +31,14 @@ services:
     labels:
       - traefik.enable=true
       # Route oauth.staging.jamesmassucco.com to this container
-      - traefik.http.routers.oauth-staging.rule=Host(`oauth.staging.jamesmassucco.com`)
-      - traefik.http.routers.oauth-staging.entrypoints=websecure
-      - traefik.http.routers.oauth-staging.tls.certresolver=cloudflare
-      - traefik.http.services.oauth-staging.loadbalancer.server.port=4180
-      # Define oauth-auth-staging middleware — referenced by staging service routers
-      - traefik.http.middlewares.oauth-auth-staging.forwardauth.address=https://oauth.staging.jamesmassucco.com/
-      - traefik.http.middlewares.oauth-auth-staging.forwardauth.trustForwardHeader=true
-      - traefik.http.middlewares.oauth-auth-staging.forwardauth.authResponseHeaders=X-Auth-Request-User,X-Auth-Request-Email
+      - traefik.http.routers.staging-oauth.rule=Host(`oauth.staging.jamesmassucco.com`)
+      - traefik.http.routers.staging-oauth.entrypoints=websecure
+      - traefik.http.routers.staging-oauth.tls.certresolver=cloudflare
+      - traefik.http.services.staging-oauth.loadbalancer.server.port=4180
+      # Define staging-oauth-auth middleware — referenced by staging service routers
+      - traefik.http.middlewares.staging-oauth-auth.forwardauth.address=https://oauth.staging.jamesmassucco.com/
+      - traefik.http.middlewares.staging-oauth-auth.forwardauth.trustForwardHeader=true
+      - traefik.http.middlewares.staging-oauth-auth.forwardauth.authResponseHeaders=X-Auth-Request-User,X-Auth-Request-Email
     env_file:
       - .env
     restart: unless-stopped
