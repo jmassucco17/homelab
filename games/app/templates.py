@@ -2,12 +2,8 @@
 
 import pathlib
 
-import fastapi.templating
-
-import common.settings
+import common.templates
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
 
-templates = fastapi.templating.Jinja2Templates(directory=APP_DIR / 'templates')
-templates.env.globals['domain'] = common.settings.DOMAIN  # type: ignore[reportUnknownMemberType]
-templates.env.globals['home_url'] = common.settings.HOME_URL  # type: ignore[reportUnknownMemberType]
+templates = common.templates.make_templates(APP_DIR / 'templates')

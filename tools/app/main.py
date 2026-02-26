@@ -5,18 +5,15 @@ import pathlib
 import fastapi
 import fastapi.responses
 import fastapi.staticfiles
-import fastapi.templating
 
-import common.log
-import common.settings
+import common.app
+import common.templates
 
 from .routers import movie_picker
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
 
-app = fastapi.FastAPI(title='Tools')
-
-common.log.configure_logging()
+app = common.app.create_app('Tools')
 
 app.mount(
     '/static',
@@ -24,9 +21,7 @@ app.mount(
     name='static',
 )
 
-templates = fastapi.templating.Jinja2Templates(directory=APP_DIR / 'templates')
-templates.env.globals['domain'] = common.settings.DOMAIN  # type: ignore[reportUnknownMemberType]
-templates.env.globals['home_url'] = common.settings.HOME_URL  # type: ignore[reportUnknownMemberType]
+templates = common.templates.make_templates(APP_DIR / 'templates')
 
 app.include_router(movie_picker.router)
 
@@ -35,9 +30,3 @@ app.include_router(movie_picker.router)
 async def index(request: fastapi.Request) -> fastapi.responses.HTMLResponse:
     """Render the tools landing page."""
     return templates.TemplateResponse(request=request, name='index.html')
-
-
-@app.api_route('/health', methods=['GET', 'HEAD'])
-async def health() -> dict[str, str]:
-    """Health check endpoint."""
-    return {'status': 'healthy'}

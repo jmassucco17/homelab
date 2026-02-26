@@ -7,7 +7,7 @@ import fastapi
 import fastapi.responses
 import fastapi.staticfiles
 
-import common.log
+import common.app
 
 from . import templates as tmpl
 from .routers import catan, pong, snake
@@ -19,9 +19,7 @@ logging.basicConfig(level=logging.INFO)
 # Enable debug-level audit logging for the Catan engine
 logging.getLogger('games.app.catan').setLevel(logging.DEBUG)
 
-app = fastapi.FastAPI(title='Games')
-
-common.log.configure_logging()
+app = common.app.create_app('Games')
 
 app.mount(
     '/static',
@@ -40,9 +38,3 @@ app.include_router(catan.router)
 async def index(request: fastapi.Request) -> fastapi.responses.HTMLResponse:
     """Render the games landing page."""
     return templates.TemplateResponse(request=request, name='index.html.jinja2')
-
-
-@app.api_route('/health', methods=['GET', 'HEAD'])
-async def health() -> dict[str, str]:
-    """Health check endpoint."""
-    return {'status': 'healthy'}
