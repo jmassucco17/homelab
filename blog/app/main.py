@@ -1,7 +1,5 @@
 """FastAPI application for the blog site."""
 
-import logging
-import os
 import pathlib
 
 import fastapi
@@ -9,25 +7,16 @@ import fastapi.responses
 import fastapi.staticfiles
 import fastapi.templating
 
+import common.log
+import common.settings
+
 from . import blog
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
 
-DOMAIN = os.environ.get('DOMAIN', '.jamesmassucco.com')
-HOME_URL = 'https://' + DOMAIN[1:]
-
 app = fastapi.FastAPI(title='Blog')
 
-
-class HealthCheckFilter(logging.Filter):
-    """Filter out health check requests from uvicorn access logs."""
-
-    def filter(self, record: logging.LogRecord) -> bool:
-        """Return False to suppress health check log entries."""
-        return '/health' not in record.getMessage()
-
-
-logging.getLogger('uvicorn.access').addFilter(HealthCheckFilter())
+common.log.configure_logging()
 
 app.mount(
     '/assets',
@@ -37,8 +26,8 @@ app.mount(
 
 templates = fastapi.templating.Jinja2Templates(directory=APP_DIR / 'templates')
 templates.env.filters['datefmt'] = lambda value, fmt='%B %d, %Y': value.strftime(fmt)  # type: ignore[assignment]
-templates.env.globals['domain'] = DOMAIN  # type: ignore[reportUnknownMemberType]
-templates.env.globals['home_url'] = HOME_URL  # type: ignore[reportUnknownMemberType]
+templates.env.globals['domain'] = common.settings.DOMAIN  # type: ignore[reportUnknownMemberType]
+templates.env.globals['home_url'] = common.settings.HOME_URL  # type: ignore[reportUnknownMemberType]
 
 
 @app.get('/', response_class=fastapi.responses.HTMLResponse)

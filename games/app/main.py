@@ -7,6 +7,8 @@ import fastapi
 import fastapi.responses
 import fastapi.staticfiles
 
+import common.log
+
 from . import templates as tmpl
 from .routers import catan, pong, snake
 
@@ -19,16 +21,7 @@ logging.getLogger('games.app.catan').setLevel(logging.DEBUG)
 
 app = fastapi.FastAPI(title='Games')
 
-
-class HealthCheckFilter(logging.Filter):
-    """Filter out health check requests from uvicorn access logs."""
-
-    def filter(self, record: logging.LogRecord) -> bool:
-        """Return False to suppress health check log entries."""
-        return '/health' not in record.getMessage()
-
-
-logging.getLogger('uvicorn.access').addFilter(HealthCheckFilter())
+common.log.configure_logging()
 
 app.mount(
     '/static',

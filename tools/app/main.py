@@ -1,7 +1,5 @@
 """FastAPI application for the tools sub-site."""
 
-import logging
-import os
 import pathlib
 
 import fastapi
@@ -9,25 +7,16 @@ import fastapi.responses
 import fastapi.staticfiles
 import fastapi.templating
 
+import common.log
+import common.settings
+
 from .routers import movie_picker
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
 
-DOMAIN = os.environ.get('DOMAIN', '.jamesmassucco.com')
-HOME_URL = 'https://' + DOMAIN[1:]
-
 app = fastapi.FastAPI(title='Tools')
 
-
-class HealthCheckFilter(logging.Filter):
-    """Filter out health check requests from uvicorn access logs."""
-
-    def filter(self, record: logging.LogRecord) -> bool:
-        """Return False to suppress health check log entries."""
-        return '/health' not in record.getMessage()
-
-
-logging.getLogger('uvicorn.access').addFilter(HealthCheckFilter())
+common.log.configure_logging()
 
 app.mount(
     '/static',
@@ -36,8 +25,8 @@ app.mount(
 )
 
 templates = fastapi.templating.Jinja2Templates(directory=APP_DIR / 'templates')
-templates.env.globals['domain'] = DOMAIN  # type: ignore[reportUnknownMemberType]
-templates.env.globals['home_url'] = HOME_URL  # type: ignore[reportUnknownMemberType]
+templates.env.globals['domain'] = common.settings.DOMAIN  # type: ignore[reportUnknownMemberType]
+templates.env.globals['home_url'] = common.settings.HOME_URL  # type: ignore[reportUnknownMemberType]
 
 app.include_router(movie_picker.router)
 
