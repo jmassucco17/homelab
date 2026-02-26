@@ -71,6 +71,7 @@ jobs:
       travel_changed: ${{ steps.check-changes.outputs.travel }}
       games_changed: ${{ steps.check-changes.outputs.games }}
       tools_changed: ${{ steps.check-changes.outputs.tools }}
+      any_changes: ${{ steps.check-changes.outputs.any_changes }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -104,6 +105,7 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
             echo "=== Checking for module changes ==="
+            any_changes=false
             for module in networking portainer monitoring homepage shared-assets; do
               changed_files=$(git diff --name-only HEAD^ HEAD | grep "^${module}/" || true)
               if [ -n "$changed_files" ]; then
@@ -113,6 +115,7 @@ jobs:
                   echo "    - $file"
                 done <<< "$changed_files"
                 echo "${module}=true" >> "$GITHUB_OUTPUT"
+                any_changes=true
               else
                 echo "✗ ${module}: no changes"
                 echo "${module}=false" >> "$GITHUB_OUTPUT"
@@ -128,11 +131,13 @@ jobs:
               if [ -n "$app_changed" ] || [ -n "$python_base_changed" ]; then
                 echo "✓ ${module}: CHANGED"
                 echo "${module}=true" >> "$GITHUB_OUTPUT"
+                any_changes=true
               else
                 echo "✗ ${module}: no changes"
                 echo "${module}=false" >> "$GITHUB_OUTPUT"
               fi
             done
+            echo "any_changes=${any_changes}" >> "$GITHUB_OUTPUT"
           else
             echo "=== Manual workflow trigger - all modules enabled ==="
             # For manual triggers, respect the input
@@ -140,12 +145,14 @@ jobs:
               echo "✓ ${module}: enabled (manual trigger)"
               echo "${module}=true" >> "$GITHUB_OUTPUT"
             done
+            echo "any_changes=true" >> "$GITHUB_OUTPUT"
           fi
 
   # Prepare server by uploading archive containing the docker-compose files,
   # deployment scripts, and secrets as .env files
   prep-server:
     needs: setup
+    if: needs.setup.outputs.any_changes == 'true'
     permissions:
       contents: read
     uses: ./.github/workflows/_prep-server.yml
