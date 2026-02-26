@@ -1,7 +1,6 @@
 """Unit tests for common/app.py."""
 
 import contextlib
-import importlib
 import logging
 import os
 import pathlib
@@ -13,57 +12,6 @@ import fastapi
 import fastapi.testclient
 
 import common.app
-
-# ---------------------------------------------------------------------------
-# Settings
-# ---------------------------------------------------------------------------
-
-
-class TestSettings(unittest.TestCase):
-    """Tests for shared application settings."""
-
-    def test_domain_defaults_to_jamesmassucco(self) -> None:
-        """DOMAIN defaults to .jamesmassucco.com when DOMAIN env var is not set."""
-        env_backup = os.environ.pop('DOMAIN', None)
-        try:
-            importlib.reload(common.app)
-            self.assertEqual(common.app.DOMAIN, '.jamesmassucco.com')
-        finally:
-            if env_backup is not None:
-                os.environ['DOMAIN'] = env_backup
-            importlib.reload(common.app)
-
-    def test_domain_reads_from_env(self) -> None:
-        """DOMAIN is read from the DOMAIN environment variable."""
-        os.environ['DOMAIN'] = '-staging.example.com'
-        try:
-            importlib.reload(common.app)
-            self.assertEqual(common.app.DOMAIN, '-staging.example.com')
-        finally:
-            del os.environ['DOMAIN']
-            importlib.reload(common.app)
-
-    def test_home_url_strips_leading_dot(self) -> None:
-        """HOME_URL is constructed from DOMAIN by stripping the leading dot."""
-        env_backup = os.environ.pop('DOMAIN', None)
-        try:
-            importlib.reload(common.app)
-            self.assertEqual(common.app.HOME_URL, 'https://jamesmassucco.com')
-        finally:
-            if env_backup is not None:
-                os.environ['DOMAIN'] = env_backup
-            importlib.reload(common.app)
-
-    def test_home_url_reflects_custom_domain(self) -> None:
-        """HOME_URL reflects a custom DOMAIN environment variable."""
-        os.environ['DOMAIN'] = '-staging.example.com'
-        try:
-            importlib.reload(common.app)
-            self.assertEqual(common.app.HOME_URL, 'https://staging.example.com')
-        finally:
-            del os.environ['DOMAIN']
-            importlib.reload(common.app)
-
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -130,19 +78,20 @@ class TestMakeTemplates(unittest.TestCase):
         self.tmpdir = tempfile.mkdtemp()
 
     def test_domain_global_set(self) -> None:
-        """make_templates sets the domain global from common.app.DOMAIN."""
+        """make_templates sets the domain global from the DOMAIN env var."""
         templates = common.app.make_templates(self.tmpdir)
         self.assertEqual(
             templates.env.globals['domain'],  # type: ignore[reportUnknownMemberType]
-            common.app.DOMAIN,
+            os.environ.get('DOMAIN', '.jamesmassucco.com'),
         )
 
     def test_home_url_global_set(self) -> None:
-        """make_templates sets the home_url global from common.app.HOME_URL."""
+        """make_templates sets the home_url global derived from the DOMAIN env var."""
         templates = common.app.make_templates(self.tmpdir)
+        domain = os.environ.get('DOMAIN', '.jamesmassucco.com')
         self.assertEqual(
             templates.env.globals['home_url'],  # type: ignore[reportUnknownMemberType]
-            common.app.HOME_URL,
+            'https://' + domain[1:],
         )
 
     def test_accepts_pathlib_path(self) -> None:
@@ -154,6 +103,48 @@ class TestMakeTemplates(unittest.TestCase):
         """make_templates accepts a string directory path."""
         templates = common.app.make_templates(self.tmpdir)
         self.assertIn('home_url', templates.env.globals)  # type: ignore[reportUnknownMemberType,reportUnknownArgumentType]
+
+    def test_domain_defaults_to_jamesmassucco(self) -> None:
+        """domain global defaults to .jamesmassucco.com when DOMAIN env var is unset."""
+        env_backup = os.environ.pop('DOMAIN', None)
+        try:
+            templates = common.app.make_templates(self.tmpdir)
+            self.assertEqual(templates.env.globals['domain'], '.jamesmassucco.com')  # type: ignore[reportUnknownMemberType]
+        finally:
+            if env_backup is not None:
+                os.environ['DOMAIN'] = env_backup
+
+    def test_domain_reads_from_env(self) -> None:
+        """domain global is read from the DOMAIN environment variable."""
+        os.environ['DOMAIN'] = '-staging.example.com'
+        try:
+            templates = common.app.make_templates(self.tmpdir)
+            self.assertEqual(templates.env.globals['domain'], '-staging.example.com')  # type: ignore[reportUnknownMemberType]
+        finally:
+            del os.environ['DOMAIN']
+
+    def test_home_url_strips_leading_dot(self) -> None:
+        """home_url global strips the leading dot from DOMAIN."""
+        env_backup = os.environ.pop('DOMAIN', None)
+        try:
+            templates = common.app.make_templates(self.tmpdir)
+            self.assertEqual(
+                templates.env.globals['home_url'], 'https://jamesmassucco.com'
+            )  # type: ignore[reportUnknownMemberType]
+        finally:
+            if env_backup is not None:
+                os.environ['DOMAIN'] = env_backup
+
+    def test_home_url_reflects_custom_domain(self) -> None:
+        """home_url global reflects a custom DOMAIN environment variable."""
+        os.environ['DOMAIN'] = '-staging.example.com'
+        try:
+            templates = common.app.make_templates(self.tmpdir)
+            self.assertEqual(
+                templates.env.globals['home_url'], 'https://staging.example.com'
+            )  # type: ignore[reportUnknownMemberType]
+        finally:
+            del os.environ['DOMAIN']
 
 
 # ---------------------------------------------------------------------------

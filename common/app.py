@@ -9,13 +9,6 @@ import fastapi
 import fastapi.templating
 
 # ---------------------------------------------------------------------------
-# Settings
-# ---------------------------------------------------------------------------
-
-DOMAIN: str = os.environ.get('DOMAIN', '.jamesmassucco.com')
-HOME_URL: str = 'https://' + DOMAIN[1:]
-
-# ---------------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------------
 
@@ -55,9 +48,10 @@ def make_templates(
     directory: pathlib.Path | str,
 ) -> fastapi.templating.Jinja2Templates:
     """Create a Jinja2Templates instance with domain and home_url globals pre-set."""
+    domain = os.environ.get('DOMAIN', '.jamesmassucco.com')
     templates = fastapi.templating.Jinja2Templates(directory=str(directory))
-    templates.env.globals['domain'] = DOMAIN  # type: ignore[reportUnknownMemberType]
-    templates.env.globals['home_url'] = HOME_URL  # type: ignore[reportUnknownMemberType]
+    templates.env.globals['domain'] = domain  # type: ignore[reportUnknownMemberType]
+    templates.env.globals['home_url'] = 'https://' + domain[1:]  # type: ignore[reportUnknownMemberType]
     return templates
 
 
