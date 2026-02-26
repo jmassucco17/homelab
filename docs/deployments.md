@@ -201,7 +201,7 @@ Before staging is usable for the first time, complete these manual steps:
 2. Add `https://oauth.staging.jamesmassucco.com/oauth2/callback` to the Google OAuth
    app's Authorized Redirect URIs.
 3. Ensure all repository secrets from [`docs/secrets.md`](secrets.md) are configured.
-4. Deploy staging networking once to start `oauth2-proxy-staging`:
+4. Deploy staging networking once to start `staging-oauth2-proxy`:
    ```
    build-and-deploy.yml → environment=staging, networking=true, all others=false
    ```

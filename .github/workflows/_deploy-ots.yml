@@ -1,0 +1,102 @@
+name: Deploy Off-The-Shelf (OTS) Services (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Environment to deploy to (`prod` or `staging`)'
+        required: true
+        type: string
+      networking:
+        description: 'Deploy networking'
+        type: boolean
+        default: true
+      monitoring:
+        description: 'Deploy monitoring'
+        type: boolean
+        default: true
+      portainer:
+        description: 'Deploy portainer'
+        type: boolean
+        default: true
+
+jobs:
+  # Deploy all in parallel
+  deploy-networking:
+    if: inputs.networking
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Tailscale
+        uses: ./.github/actions/setup-tailscale
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+      - name: Setup SSH
+        uses: ./.github/actions/setup-ssh
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          server-ssh-host-key: ${{ secrets.SERVER_SSH_HOST_KEY }}
+      - name: Deploy networking
+        uses: ./.github/actions/deploy-service
+        with:
+          service-name: networking
+          server-user: ${{ vars.SERVER_USER }}
+          server-host: ${{ secrets.SERVER_HOST }}
+          environment: ${{ inputs.environment }}
+
+  deploy-monitoring:
+    if: |
+      inputs.environment == 'prod' &&
+      inputs.monitoring
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Tailscale
+        uses: ./.github/actions/setup-tailscale
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+      - name: Setup SSH
+        uses: ./.github/actions/setup-ssh
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          server-ssh-host-key: ${{ secrets.SERVER_SSH_HOST_KEY }}
+      - name: Deploy monitoring
+        uses: ./.github/actions/deploy-service
+        with:
+          service-name: monitoring
+          server-user: ${{ vars.SERVER_USER }}
+          server-host: ${{ secrets.SERVER_HOST }}
+          environment: prod
+
+  deploy-portainer:
+    if: |
+      inputs.environment == 'prod' &&
+      inputs.portainer
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Tailscale
+        uses: ./.github/actions/setup-tailscale
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+      - name: Setup SSH
+        uses: ./.github/actions/setup-ssh
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          server-ssh-host-key: ${{ secrets.SERVER_SSH_HOST_KEY }}
+      - name: Deploy portainer
+        uses: ./.github/actions/deploy-service
+        with:
+          service-name: portainer
+          server-user: ${{ vars.SERVER_USER }}
+          server-host: ${{ secrets.SERVER_HOST }}
+          environment: prod

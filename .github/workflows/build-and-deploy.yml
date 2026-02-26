@@ -61,21 +61,46 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       environment: ${{ steps.determine-env.outputs.environment }}
+      image_tag: ${{ steps.image-tag.outputs.tag }}
       networking_changed: ${{ steps.check-changes.outputs.networking }}
       portainer_changed: ${{ steps.check-changes.outputs.portainer }}
       monitoring_changed: ${{ steps.check-changes.outputs.monitoring }}
+      homepage_changed: ${{ steps.check-changes.outputs.homepage }}
+      shared-assets_changed: ${{ steps.check-changes.outputs.shared-assets }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
+      - name: Determine environment
+        id: determine-env
+        # If the workflow is triggered by a push (to main), it's prod;
+        # otherwise, use the input
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "Environment determined from push event: prod"
+            echo "environment=prod" >> "$GITHUB_OUTPUT"
+          else
+            echo "Environment determined from workflow_dispatch input: ${{ inputs.environment }}"
+            echo "environment=${{ inputs.environment }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set image tag
+        id: image-tag
+        run: |
+          if [ "${{ steps.determine-env.outputs.environment }}" = "staging" ]; then
+            echo "tag=sha-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Check for changes
         id: check-changes
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
             echo "=== Checking for module changes ==="
-            for module in networking portainer monitoring; do
+            for module in networking portainer monitoring homepage shared-assets; do
               changed_files=$(git diff --name-only HEAD^ HEAD | grep "^${module}/" || true)
               if [ -n "$changed_files" ]; then
                 echo "✓ ${module}: CHANGED"
@@ -92,53 +117,90 @@ jobs:
           else
             echo "=== Manual workflow trigger - all modules enabled ==="
             # For manual triggers, respect the input
-            for module in networking portainer monitoring; do
+            for module in networking portainer monitoring homepage shared-assets; do
               echo "✓ ${module}: enabled (manual trigger)"
               echo "${module}=true" >> "$GITHUB_OUTPUT"
             done
           fi
 
-      - name: Determine environment
-        id: determine-env
-        # If the workflow is triggered by a push (to main), it's prod;
-        # otherwise, use the input
-        run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
-            echo "environment=prod" >> "$GITHUB_OUTPUT"
-          else
-            echo "environment=${{ inputs.environment }}" >> "$GITHUB_OUTPUT"
-          fi
+  # Prepare server by uploading archive containing the docker-compose files,
+  # deployment scripts, and secrets as .env files
+  prep-server:
+    needs: setup
+    permissions:
+      contents: read
+    uses: ./.github/workflows/_prep-server.yml
+    secrets: inherit
+    with:
+      environment: ${{ needs.setup.outputs.environment }}
+      seed_from_prod: ${{ github.event_name == 'workflow_dispatch' && inputs.seed_from_prod || false }}
 
-  build:
+  # Build simple (nginx-based) services
+  build-simple:
     needs: setup
     permissions:
       contents: read
       packages: write
-    uses: ./.github/workflows/_build.yml
+    uses: ./.github/workflows/_build-simple.yml
     with:
       environment: ${{ needs.setup.outputs.environment }}
-      shared-assets: ${{ github.event_name == 'push' || inputs['shared-assets'] }}
-      homepage: ${{ github.event_name == 'push' || inputs.homepage }}
+      shared-assets: ${{ (github.event_name == 'push' && needs.setup.outputs.shared-assets_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs['shared-assets']) }}
+      homepage: ${{ (github.event_name == 'push' && needs.setup.outputs.homepage_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.homepage) }}
+
+  # Build Python images
+  build-python:
+    needs: setup
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/_build-python.yml
+    with:
+      environment: ${{ needs.setup.outputs.environment }}
       blog: ${{ github.event_name == 'push' || inputs.blog }}
       travel: ${{ github.event_name == 'push' || inputs.travel }}
       games: ${{ github.event_name == 'push' || inputs.games }}
       tools: ${{ github.event_name == 'push' || inputs.tools }}
 
-  deploy:
-    needs: [setup, build]
+  # Deploy off-the-shelf (OTS) services in parallel with build
+  # These use Docker Hub images (nginx, grafana, etc.) and don't need any build
+  deploy-ots:
+    needs: [setup, prep-server]
     permissions:
       contents: read
-    uses: ./.github/workflows/_deploy.yml
+    uses: ./.github/workflows/_deploy-ots.yml
     secrets: inherit
     with:
       environment: ${{ needs.setup.outputs.environment }}
-      seed_from_prod: ${{ github.event_name == 'workflow_dispatch' && inputs.seed_from_prod }}
       networking: ${{ (github.event_name == 'push' && needs.setup.outputs.networking_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.networking) }}
+      monitoring: ${{ (github.event_name == 'push' && needs.setup.outputs.monitoring_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.monitoring) }}
+      portainer: ${{ (github.event_name == 'push' && needs.setup.outputs.portainer_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.portainer) }}
+
+  # Deploy simple nginx-based services after their builds complete
+  # These only depend on nginx base image (no python-base dependency)
+  deploy-simple:
+    needs: [setup, prep-server, build-simple]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/_deploy-simple.yml
+    secrets: inherit
+    with:
+      environment: ${{ needs.setup.outputs.environment }}
+      staging_image_tag: ${{ needs.setup.outputs.image_tag }}
       shared-assets: ${{ github.event_name == 'push' || inputs['shared-assets'] }}
       homepage: ${{ github.event_name == 'push' || inputs.homepage }}
+
+  # Deploy Python-based services after build completes
+  # These depend on python-base image being built first
+  deploy-python:
+    needs: [setup, prep-server, build-python]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/_deploy-python.yml
+    secrets: inherit
+    with:
+      environment: ${{ needs.setup.outputs.environment }}
+      staging_image_tag: ${{ needs.setup.outputs.image_tag }}
       blog: ${{ github.event_name == 'push' || inputs.blog }}
       travel: ${{ github.event_name == 'push' || inputs.travel }}
       games: ${{ github.event_name == 'push' || inputs.games }}
       tools: ${{ github.event_name == 'push' || inputs.tools }}
-      monitoring: ${{ (github.event_name == 'push' && needs.setup.outputs.monitoring_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.monitoring) }}
-      portainer: ${{ (github.event_name == 'push' && needs.setup.outputs.portainer_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.portainer) }}
