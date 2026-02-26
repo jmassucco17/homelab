@@ -14,7 +14,7 @@ class TestTemplatesModule(unittest.TestCase):
         self.assertIn('domain', tmpl.templates.env.globals)  # type: ignore[reportUnknownMemberType,reportUnknownArgumentType]
 
     def test_domain_defaults_to_jamesmassucco(self) -> None:
-        """Test that the domain defaults to .jamesmassucco.com when DOMAIN is not set."""
+        """Test that the domain defaults to .jamesmassucco.com."""
         # Reload the module without DOMAIN set
         import importlib
 
