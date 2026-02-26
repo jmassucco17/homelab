@@ -1,4 +1,4 @@
-name: Deploy Standard Services (Reusable)
+name: Deploy Off-The-Shelf (OTS) Services (Reusable)
 
 on:
   workflow_call:
@@ -123,7 +123,7 @@ jobs:
           docker network create internal_metrics 2>/dev/null || true
           REMOTE
 
-  # Deploy networking first (required dependency)
+  # Deploy all in parallel
   deploy-networking:
     name: deploy networking
     needs: setup
@@ -168,15 +168,12 @@ jobs:
           fi
           REMOTE
 
-  # Deploy prod-only services (monitoring, portainer) in parallel after networking
   deploy-monitoring:
     name: deploy monitoring
-    needs: [setup, deploy-networking]
+    needs: setup
     if: |
-      !cancelled() &&
       inputs.environment == 'prod' &&
-      inputs.monitoring &&
-      (needs.deploy-networking.result == 'success' || needs.deploy-networking.result == 'skipped')
+      inputs.monitoring
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -213,12 +210,10 @@ jobs:
 
   deploy-portainer:
     name: deploy portainer
-    needs: [setup, deploy-networking]
+    needs: setup
     if: |
-      !cancelled() &&
       inputs.environment == 'prod' &&
-      inputs.portainer &&
-      (needs.deploy-networking.result == 'success' || needs.deploy-networking.result == 'skipped')
+      inputs.portainer
     runs-on: ubuntu-latest
     permissions:
       contents: read

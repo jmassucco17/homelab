@@ -129,13 +129,13 @@ jobs:
       games: ${{ github.event_name == 'push' || inputs.games }}
       tools: ${{ github.event_name == 'push' || inputs.tools }}
 
-  # Deploy standard (off-the-shelf) services in parallel with build
+  # Deploy off-the-shelf (OTS) services in parallel with build
   # These use Docker Hub images (nginx, grafana, etc.) and don't need any build
-  deploy-standard:
+  deploy-ots:
     needs: setup
     permissions:
       contents: read
-    uses: ./.github/workflows/_deploy-standard.yml
+    uses: ./.github/workflows/_deploy-ots.yml
     secrets: inherit
     with:
       environment: ${{ needs.setup.outputs.environment }}
@@ -162,7 +162,7 @@ jobs:
     needs: [setup, build]
     permissions:
       contents: read
-    uses: ./.github/workflows/_deploy.yml
+    uses: ./.github/workflows/_deploy-python.yml
     secrets: inherit
     with:
       environment: ${{ needs.setup.outputs.environment }}
