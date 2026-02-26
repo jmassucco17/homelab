@@ -32,7 +32,7 @@ runs:
       run: |
         ssh -i ~/.ssh/deploy_key \
           "${SERVER_USER}@${SERVER_HOST}" \
-          "cd /opt/homelab && ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' bash -s" << 'REMOTE'
+          "cd /opt/homelab && ENVIRONMENT='${ENVIRONMENT}' STAGING_IMAGE_TAG='${STAGING_IMAGE_TAG}' SERVICE_NAME='${SERVICE_NAME}' bash -s" << 'REMOTE'
         set -euo pipefail
         if [ "${ENVIRONMENT}" = "staging" ]; then
           echo "--- Starting staging ${SERVICE_NAME} ---"

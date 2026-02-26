@@ -162,7 +162,7 @@ jobs:
   # Deploy off-the-shelf (OTS) services in parallel with build
   # These use Docker Hub images (nginx, grafana, etc.) and don't need any build
   deploy-ots:
-    needs: [setup, prep-server]
+    needs: prep-server
     permissions:
       contents: read
     uses: ./.github/workflows/_deploy-ots.yml
@@ -176,7 +176,7 @@ jobs:
   # Deploy simple nginx-based services after their builds complete
   # These only depend on nginx base image (no python-base dependency)
   deploy-simple:
-    needs: [setup, prep-server, build-simple]
+    needs: [prep-server, build-simple]
     permissions:
       contents: read
     uses: ./.github/workflows/_deploy-simple.yml
@@ -190,7 +190,7 @@ jobs:
   # Deploy Python-based services after build completes
   # These depend on python-base image being built first
   deploy-python:
-    needs: [setup, prep-server, build-python]
+    needs: [prep-server, build-python]
     permissions:
       contents: read
     uses: ./.github/workflows/_deploy-python.yml
