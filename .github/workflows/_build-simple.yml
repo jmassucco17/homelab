@@ -19,7 +19,6 @@ on:
 
 jobs:
   build-shared-assets:
-    name: build shared-assets
     if: inputs.shared-assets
     runs-on: ubuntu-latest
     permissions:
@@ -38,7 +37,6 @@ jobs:
           cache-scope: shared-assets
 
   build-homepage:
-    name: build homepage
     if: inputs.homepage
     runs-on: ubuntu-latest
     permissions:

@@ -23,14 +23,12 @@ on:
 jobs:
   # Deploy all in parallel
   deploy-networking:
-    name: deploy networking
     if: inputs.networking
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       - name: Setup Tailscale
         uses: ./.github/actions/setup-tailscale
         with:
@@ -41,7 +39,7 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
           server-ssh-host-key: ${{ secrets.SERVER_SSH_HOST_KEY }}
-      - name: Deploy
+      - name: Deploy networking
         uses: ./.github/actions/deploy-service
         with:
           service-name: networking
@@ -50,7 +48,6 @@ jobs:
           environment: ${{ inputs.environment }}
 
   deploy-monitoring:
-    name: deploy monitoring
     if: |
       inputs.environment == 'prod' &&
       inputs.monitoring
@@ -58,8 +55,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       - name: Setup Tailscale
         uses: ./.github/actions/setup-tailscale
         with:
@@ -70,7 +66,7 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
           server-ssh-host-key: ${{ secrets.SERVER_SSH_HOST_KEY }}
-      - name: Deploy
+      - name: Deploy monitoring
         uses: ./.github/actions/deploy-service
         with:
           service-name: monitoring
@@ -79,7 +75,6 @@ jobs:
           environment: prod
 
   deploy-portainer:
-    name: deploy portainer
     if: |
       inputs.environment == 'prod' &&
       inputs.portainer
@@ -87,8 +82,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       - name: Setup Tailscale
         uses: ./.github/actions/setup-tailscale
         with:
@@ -99,7 +93,7 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
           server-ssh-host-key: ${{ secrets.SERVER_SSH_HOST_KEY }}
-      - name: Deploy
+      - name: Deploy portainer
         uses: ./.github/actions/deploy-service
         with:
           service-name: portainer

@@ -30,14 +30,12 @@ on:
 jobs:
   # Deploy all Python-based services in parallel
   deploy-blog:
-    name: deploy blog
     if: inputs.blog
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       - name: Setup Tailscale
         uses: ./.github/actions/setup-tailscale
         with:
@@ -58,14 +56,12 @@ jobs:
           staging-image-tag: ${{ inputs.staging_image_tag }}
 
   deploy-games:
-    name: deploy games
     if: inputs.games
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       - name: Setup Tailscale
         uses: ./.github/actions/setup-tailscale
         with:
@@ -86,14 +82,12 @@ jobs:
           staging-image-tag: ${{ inputs.staging_image_tag }}
 
   deploy-tools:
-    name: deploy tools
     if: inputs.tools
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       - name: Setup Tailscale
         uses: ./.github/actions/setup-tailscale
         with:
@@ -114,14 +108,12 @@ jobs:
           staging-image-tag: ${{ inputs.staging_image_tag }}
 
   deploy-travel:
-    name: deploy travel
     if: inputs.travel
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       - name: Setup Tailscale
         uses: ./.github/actions/setup-tailscale
         with:

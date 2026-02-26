@@ -22,14 +22,12 @@ on:
 jobs:
   # Deploy simple nginx-based services in parallel
   deploy-shared-assets:
-    name: deploy shared-assets
     if: inputs.shared-assets
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       - name: Setup Tailscale
         uses: ./.github/actions/setup-tailscale
         with:
@@ -50,14 +48,12 @@ jobs:
           staging-image-tag: ${{ inputs.staging_image_tag }}
 
   deploy-homepage:
-    name: deploy homepage
     if: inputs.homepage
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       - name: Setup Tailscale
         uses: ./.github/actions/setup-tailscale
         with:
