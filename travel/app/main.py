@@ -18,7 +18,8 @@ from travel.app.photos import routes as photos_routes
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
 
-DOMAIN = os.environ.get('DOMAIN', 'jamesmassucco.com')
+DOMAIN = os.environ.get('DOMAIN', '.jamesmassucco.com')
+HOME_URL = 'https://' + DOMAIN[1:]
 
 
 class HealthCheckFilter(logging.Filter):
@@ -62,6 +63,7 @@ if os.path.exists(uploads_dir):
 # Templates
 templates = fastapi.templating.Jinja2Templates(directory=str(APP_DIR / 'templates'))
 templates.env.globals['domain'] = DOMAIN  # type: ignore[reportUnknownMemberType]
+templates.env.globals['home_url'] = HOME_URL  # type: ignore[reportUnknownMemberType]
 
 # Include sub-app routers with path prefixes
 app.include_router(photos_routes.admin_router, prefix='/photos')
