@@ -7,7 +7,6 @@ import fastapi.responses
 import fastapi.staticfiles
 
 import common.app
-import common.templates
 
 from . import blog
 
@@ -21,7 +20,7 @@ app.mount(
     name='assets',
 )
 
-templates = common.templates.make_templates(APP_DIR / 'templates')
+templates = common.app.make_templates(APP_DIR / 'templates')
 templates.env.filters['datefmt'] = lambda value, fmt='%B %d, %Y': value.strftime(fmt)  # type: ignore[assignment]
 
 

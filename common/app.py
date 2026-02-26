@@ -1,11 +1,69 @@
-"""Factory for creating standard FastAPI applications."""
+"""Core FastAPI application utilities shared across all services."""
 
+import logging
+import os
+import pathlib
 from typing import Any
 
 import fastapi
+import fastapi.templating
 
-import common.health
-import common.log
+# ---------------------------------------------------------------------------
+# Settings
+# ---------------------------------------------------------------------------
+
+DOMAIN: str = os.environ.get('DOMAIN', '.jamesmassucco.com')
+HOME_URL: str = 'https://' + DOMAIN[1:]
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+
+
+class HealthCheckFilter(logging.Filter):
+    """Filter out health check requests from uvicorn access logs."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        """Return False to suppress health check log entries."""
+        return '/health' not in record.getMessage()
+
+
+def configure_logging() -> None:
+    """Configure uvicorn access logging to suppress health check entries."""
+    logging.getLogger('uvicorn.access').addFilter(HealthCheckFilter())
+
+
+# ---------------------------------------------------------------------------
+# Health router
+# ---------------------------------------------------------------------------
+
+_health_router = fastapi.APIRouter()
+
+
+@_health_router.api_route('/health', methods=['GET', 'HEAD'])
+async def health() -> dict[str, str]:
+    """Health check endpoint."""
+    return {'status': 'healthy'}
+
+
+# ---------------------------------------------------------------------------
+# Templates
+# ---------------------------------------------------------------------------
+
+
+def make_templates(
+    directory: pathlib.Path | str,
+) -> fastapi.templating.Jinja2Templates:
+    """Create a Jinja2Templates instance with domain and home_url globals pre-set."""
+    templates = fastapi.templating.Jinja2Templates(directory=str(directory))
+    templates.env.globals['domain'] = DOMAIN  # type: ignore[reportUnknownMemberType]
+    templates.env.globals['home_url'] = HOME_URL  # type: ignore[reportUnknownMemberType]
+    return templates
+
+
+# ---------------------------------------------------------------------------
+# App factory
+# ---------------------------------------------------------------------------
 
 
 def create_app(title: str, **kwargs: Any) -> fastapi.FastAPI:
@@ -14,6 +72,6 @@ def create_app(title: str, **kwargs: Any) -> fastapi.FastAPI:
     Additional keyword arguments are forwarded to FastAPI.__init__ (e.g. lifespan).
     """
     app = fastapi.FastAPI(title=title, **kwargs)
-    common.log.configure_logging()
-    app.include_router(common.health.router)
+    configure_logging()
+    app.include_router(_health_router)
     return app

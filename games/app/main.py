@@ -9,7 +9,6 @@ import fastapi.staticfiles
 
 import common.app
 
-from . import templates as tmpl
 from .routers import catan, pong, snake
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
@@ -27,7 +26,7 @@ app.mount(
     name='static',
 )
 
-templates = tmpl.templates
+templates = common.app.make_templates(APP_DIR / 'templates')
 
 app.include_router(snake.router)
 app.include_router(pong.router)

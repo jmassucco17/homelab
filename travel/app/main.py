@@ -10,7 +10,6 @@ import fastapi.responses
 import fastapi.staticfiles
 
 import common.app
-import common.templates
 from travel.app.maps import database as maps_db
 from travel.app.maps import routes as maps_routes
 from travel.app.photos import database as photos_db
@@ -47,7 +46,7 @@ if os.path.exists(uploads_dir):
     )
 
 # Templates
-templates = common.templates.make_templates(APP_DIR / 'templates')
+templates = common.app.make_templates(APP_DIR / 'templates')
 
 # Include sub-app routers with path prefixes
 app.include_router(photos_routes.admin_router, prefix='/photos')

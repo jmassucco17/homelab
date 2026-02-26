@@ -7,7 +7,6 @@ import fastapi.responses
 import fastapi.staticfiles
 
 import common.app
-import common.templates
 
 from .routers import movie_picker
 
@@ -21,7 +20,7 @@ app.mount(
     name='static',
 )
 
-templates = common.templates.make_templates(APP_DIR / 'templates')
+templates = common.app.make_templates(APP_DIR / 'templates')
 
 app.include_router(movie_picker.router)
 
