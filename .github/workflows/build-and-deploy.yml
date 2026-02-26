@@ -65,6 +65,8 @@ jobs:
       networking_changed: ${{ steps.check-changes.outputs.networking }}
       portainer_changed: ${{ steps.check-changes.outputs.portainer }}
       monitoring_changed: ${{ steps.check-changes.outputs.monitoring }}
+      homepage_changed: ${{ steps.check-changes.outputs.homepage }}
+      shared-assets_changed: ${{ steps.check-changes.outputs.shared-assets }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -98,7 +100,7 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
             echo "=== Checking for module changes ==="
-            for module in networking portainer monitoring; do
+            for module in networking portainer monitoring homepage shared-assets; do
               changed_files=$(git diff --name-only HEAD^ HEAD | grep "^${module}/" || true)
               if [ -n "$changed_files" ]; then
                 echo "✓ ${module}: CHANGED"
@@ -115,7 +117,7 @@ jobs:
           else
             echo "=== Manual workflow trigger - all modules enabled ==="
             # For manual triggers, respect the input
-            for module in networking portainer monitoring; do
+            for module in networking portainer monitoring homepage shared-assets; do
               echo "✓ ${module}: enabled (manual trigger)"
               echo "${module}=true" >> "$GITHUB_OUTPUT"
             done
@@ -142,8 +144,8 @@ jobs:
     uses: ./.github/workflows/_build-simple.yml
     with:
       environment: ${{ needs.setup.outputs.environment }}
-      shared-assets: ${{ github.event_name == 'push' || inputs['shared-assets'] }}
-      homepage: ${{ github.event_name == 'push' || inputs.homepage }}
+      shared-assets: ${{ (github.event_name == 'push' && needs.setup.outputs.shared_assets_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs['shared-assets']) }}
+      homepage: ${{ (github.event_name == 'push' && needs.setup.outputs.homepage_changed == 'true') || (github.event_name == 'workflow_dispatch' && inputs.homepage) }}
 
   # Build Python images
   build-python:
