@@ -1,4 +1,4 @@
-name: Build Images (Reusable)
+name: Build Python Images (Reusable)
 
 on:
   workflow_call:
@@ -8,14 +8,6 @@ on:
         required: false
         type: string
         default: 'prod'
-      shared-assets:
-        description: 'Build shared-assets'
-        type: boolean
-        default: true
-      homepage:
-        description: 'Build homepage'
-        type: boolean
-        default: true
       blog:
         description: 'Build blog'
         type: boolean
@@ -35,7 +27,6 @@ on:
 
 jobs:
   build-base:
-    name: build python-base
     # Only build python-base if at least one Python service is enabled
     if: inputs.blog || inputs.games || inputs.tools || inputs.travel
     runs-on: ubuntu-latest
@@ -44,10 +35,8 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v6
-
       - name: Setup Docker and login
         uses: ./.github/actions/docker-setup
-
       - name: Build and push python-base
         uses: ./.github/actions/docker-build-push
         with:
@@ -56,54 +45,7 @@ jobs:
           dockerfile: python-base/Dockerfile
           cache-scope: python-base
 
-  build-shared-assets:
-    name: build shared-assets
-    needs: build-base
-    if: |
-      !cancelled() &&
-      (needs.build-base.result == 'success' || needs.build-base.result == 'skipped') &&
-      inputs.shared-assets
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v6
-      - name: Setup Docker and login
-        uses: ./.github/actions/docker-setup
-      - name: Build and push shared-assets
-        uses: ./.github/actions/docker-build-push
-        with:
-          image: ghcr.io/jmassucco17/homelab/shared-assets
-          context: shared-assets
-          dockerfile: shared-assets/Dockerfile
-          cache-scope: shared-assets
-
-  build-homepage:
-    name: build homepage
-    needs: build-base
-    if: |
-      !cancelled() &&
-      (needs.build-base.result == 'success' || needs.build-base.result == 'skipped') &&
-      inputs.homepage
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v6
-      - name: Setup Docker and login
-        uses: ./.github/actions/docker-setup
-      - name: Build and push homepage
-        uses: ./.github/actions/docker-build-push
-        with:
-          image: ghcr.io/jmassucco17/homelab/homepage
-          context: homepage
-          dockerfile: homepage/Dockerfile
-          cache-scope: homepage
-
   build-blog:
-    name: build blog
     needs: build-base
     if: |
       !cancelled() &&
@@ -126,7 +68,6 @@ jobs:
           cache-scope: blog
 
   build-games:
-    name: build games
     needs: build-base
     if: |
       !cancelled() &&
@@ -149,7 +90,6 @@ jobs:
           cache-scope: games
 
   build-tools:
-    name: build tools
     needs: build-base
     if: |
       !cancelled() &&
@@ -172,7 +112,6 @@ jobs:
           cache-scope: tools
 
   build-travel:
-    name: build travel
     needs: build-base
     if: |
       !cancelled() &&
