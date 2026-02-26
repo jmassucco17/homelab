@@ -1,4 +1,4 @@
-# Staging overlay: routes games.staging.jamesmassucco.com to a staging container.
+# Staging overlay: routes games-staging.jamesmassucco.com to a staging container.
 # Merged with docker-compose.yml by scripts/start_service.sh --staging.
 # No bind-mounts: staging tests the baked image at the pinned STAGING_IMAGE_TAG.
 services:
@@ -6,9 +6,9 @@ services:
     container_name: staging-games
     image: ghcr.io/jmassucco17/homelab/games:${STAGING_IMAGE_TAG:-latest}
     environment:
-      - DOMAIN=staging.jamesmassucco.com
+      - DOMAIN=jamesmassucco.com
     labels:
-      - 'traefik.http.routers.games-staging.rule=Host(`games.staging.jamesmassucco.com`)'
+      - 'traefik.http.routers.games-staging.rule=Host(`games-staging.jamesmassucco.com`)'
       - 'traefik.http.routers.games-staging.entrypoints=websecure'
       - 'traefik.http.routers.games-staging.tls=true'
       - 'traefik.http.routers.games-staging.tls.certresolver=cloudflare'

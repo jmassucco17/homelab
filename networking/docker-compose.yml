@@ -146,7 +146,6 @@ services:
       CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN}
       DOMAINS: >
         jamesmassucco.com,
-        staging.jamesmassucco.com,
         dashboard.jamesmassucco.com,
         blog.jamesmassucco.com,
         oauth.jamesmassucco.com,
@@ -157,6 +156,13 @@ services:
         games.jamesmassucco.com,
         portainer.jamesmassucco.com,
         tools.jamesmassucco.com,
+        homepage-staging.jamesmassucco.com,
+        blog-staging.jamesmassucco.com,
+        travel-staging.jamesmassucco.com,
+        games-staging.jamesmassucco.com,
+        tools-staging.jamesmassucco.com,
+        assets-staging.jamesmassucco.com,
+        oauth-staging.jamesmassucco.com,
       PROXIED: true
       TZ: America/Los_Angeles
     restart: unless-stopped

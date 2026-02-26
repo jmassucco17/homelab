@@ -110,7 +110,7 @@ configured before deployment.
 
 ### Purpose
 
-Deploy a specific image tag to `*.staging.jamesmassucco.com` for testing before it reaches
+Deploy a specific image tag to `*-staging.jamesmassucco.com` for testing before it reaches
 production. Staging runs on the same server as production but uses separate container
 names, Traefik routers, and (for `travel`) a separate Docker volume. One-time setup steps
 (DNS, TLS, OAuth app redirect URI) are covered in the checklist at the end of this doc.
@@ -148,22 +148,22 @@ Staging and production share the same set of repository secrets. See
 1. Trigger `build-and-deploy.yml` with `environment=staging`, `image_tag=sha-<old-tag>`, and `seed_from_prod=true`.
    Staging now mirrors the current production state.
 2. Trigger again with `image_tag=sha-<new-tag>`.
-3. Verify staging data survived the upgrade at `travel.staging.jamesmassucco.com`.
+3. Verify staging data survived the upgrade at `travel-staging.jamesmassucco.com`.
 4. If verified, trigger production deploy (push to `main` or `workflow_dispatch` with `environment=prod`).
 
 ---
 
 ## Staging subdomains
 
-| URL                                | Service              |
-| ---------------------------------- | -------------------- |
-| `staging.jamesmassucco.com`        | homepage             |
-| `blog.staging.jamesmassucco.com`   | blog                 |
-| `travel.staging.jamesmassucco.com` | travel               |
-| `games.staging.jamesmassucco.com`  | games                |
-| `tools.staging.jamesmassucco.com`  | tools                |
-| `assets.staging.jamesmassucco.com` | shared-assets        |
-| `oauth.staging.jamesmassucco.com`  | staging OAuth2-proxy |
+| URL                                     | Service              |
+| --------------------------------------- | -------------------- |
+| `homepage-staging.jamesmassucco.com`    | homepage             |
+| `blog-staging.jamesmassucco.com`        | blog                 |
+| `travel-staging.jamesmassucco.com`      | travel               |
+| `games-staging.jamesmassucco.com`       | games                |
+| `tools-staging.jamesmassucco.com`       | tools                |
+| `assets-staging.jamesmassucco.com`      | shared-assets        |
+| `oauth-staging.jamesmassucco.com`       | staging OAuth2-proxy |
 
 ---
 
@@ -193,12 +193,10 @@ Every service directory follows the same layout:
 
 Before staging is usable for the first time, complete these manual steps:
 
-1. Add a `*.staging` wildcard CNAME in Cloudflare DNS (proxied, pointing to
-   `jamesmassucco.com`). This is a one-time static record — it doesn't need DDNS because it
-   chains off the `jamesmassucco.com` A record which cloudflare-ddns already keeps current.
-   The A record for `staging.jamesmassucco.com` is managed automatically by cloudflare-ddns
-   (added to its DOMAINS list in `networking/docker-compose.yml`).
-2. Add `https://oauth.staging.jamesmassucco.com/oauth2/callback` to the Google OAuth
+1. The `*-staging.jamesmassucco.com` subdomains are managed automatically by cloudflare-ddns
+   (added to its DOMAINS list in `networking/docker-compose.yml`). No manual DNS records
+   are needed — each staging subdomain gets its own A record pointing to the server IP.
+2. Add `https://oauth-staging.jamesmassucco.com/oauth2/callback` to the Google OAuth
    app's Authorized Redirect URIs.
 3. Ensure all repository secrets from [`docs/secrets.md`](secrets.md) are configured.
 4. Deploy staging networking once to start `staging-oauth2-proxy`:

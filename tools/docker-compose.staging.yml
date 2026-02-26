@@ -1,4 +1,4 @@
-# Staging overlay: routes tools.staging.jamesmassucco.com to a staging container.
+# Staging overlay: routes tools-staging.jamesmassucco.com to a staging container.
 # Merged with docker-compose.yml by scripts/start_service.sh --staging.
 # No bind-mounts: staging tests the baked image at the pinned STAGING_IMAGE_TAG.
 services:
@@ -6,9 +6,9 @@ services:
     container_name: staging-tools
     image: ghcr.io/jmassucco17/homelab/tools:${STAGING_IMAGE_TAG:-latest}
     environment:
-      - DOMAIN=staging.jamesmassucco.com
+      - DOMAIN=jamesmassucco.com
     labels:
-      - 'traefik.http.routers.tools-staging.rule=Host(`tools.staging.jamesmassucco.com`)'
+      - traefik.http.routers.tools-staging.rule=Host(`tools-staging.jamesmassucco.com`)
       - 'traefik.http.routers.tools-staging.entrypoints=websecure'
       - 'traefik.http.routers.tools-staging.tls=true'
       - 'traefik.http.routers.tools-staging.tls.certresolver=cloudflare'

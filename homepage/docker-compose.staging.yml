@@ -1,13 +1,13 @@
-# Staging overlay: routes staging.jamesmassucco.com to a staging container.
+# Staging overlay: routes homepage-staging.jamesmassucco.com to a staging container.
 # Merged with docker-compose.yml by scripts/start_service.sh --staging.
 services:
   homepage:
     container_name: staging-homepage
     image: ghcr.io/jmassucco17/homelab/homepage:${STAGING_IMAGE_TAG:-latest}
     environment:
-      - DOMAIN=staging.jamesmassucco.com
+      - DOMAIN=jamesmassucco.com
     labels:
-      - 'traefik.http.routers.homepage-staging.rule=Host(`staging.jamesmassucco.com`)'
+      - 'traefik.http.routers.homepage-staging.rule=Host(`homepage-staging.jamesmassucco.com`)'
       - 'traefik.http.routers.homepage-staging.entrypoints=websecure'
       - 'traefik.http.routers.homepage-staging.tls=true'
       - 'traefik.http.routers.homepage-staging.tls.certresolver=cloudflare'
