@@ -20,19 +20,13 @@ on:
         default: true
 
 jobs:
-  # Deploy simple nginx-based services in parallel using matrix strategy
-  deploy:
-    name: deploy ${{ matrix.service }}
-    if: |
-      (matrix.service == 'shared-assets' && inputs.shared-assets) ||
-      (matrix.service == 'homepage' && inputs.homepage)
+  # Deploy simple nginx-based services in parallel
+  deploy-shared-assets:
+    name: deploy shared-assets
+    if: inputs.shared-assets
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    strategy:
-      matrix:
-        service: [shared-assets, homepage]
-      fail-fast: false
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -49,7 +43,35 @@ jobs:
       - name: Deploy
         uses: ./.github/actions/deploy-service
         with:
-          service-name: ${{ matrix.service }}
+          service-name: shared-assets
+          server-user: ${{ vars.SERVER_USER }}
+          server-host: ${{ secrets.SERVER_HOST }}
+          environment: ${{ inputs.environment }}
+          staging-image-tag: ${{ inputs.staging_image_tag }}
+
+  deploy-homepage:
+    name: deploy homepage
+    if: inputs.homepage
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Tailscale
+        uses: ./.github/actions/setup-tailscale
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+      - name: Setup SSH
+        uses: ./.github/actions/setup-ssh
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          server-ssh-host-key: ${{ secrets.SERVER_SSH_HOST_KEY }}
+      - name: Deploy
+        uses: ./.github/actions/deploy-service
+        with:
+          service-name: homepage
           server-user: ${{ vars.SERVER_USER }}
           server-host: ${{ secrets.SERVER_HOST }}
           environment: ${{ inputs.environment }}
