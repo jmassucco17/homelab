@@ -48,13 +48,17 @@
   const startBtn = document.getElementById('start-btn')
 
   // ---------------------------------------------------------------------------
-  // Scale canvas for device pixel ratio
+  // Scale canvas for device pixel ratio + responsive display size
   // ---------------------------------------------------------------------------
   const DPR = window.devicePixelRatio || 1
   canvas.width = CANVAS_CSS_SIZE * DPR
   canvas.height = CANVAS_CSS_SIZE * DPR
-  canvas.style.width = CANVAS_CSS_SIZE + 'px'
-  canvas.style.height = CANVAS_CSS_SIZE + 'px'
+  const container = document.querySelector('.snake-container')
+  // Fallback: window width minus body horizontal padding (2 × 1rem ≈ 32px)
+  const availableWidth = container ? container.clientWidth : window.innerWidth - 32
+  const displaySize = Math.min(CANVAS_CSS_SIZE, availableWidth)
+  canvas.style.width = displaySize + 'px'
+  canvas.style.height = displaySize + 'px'
   ctx.scale(DPR, DPR)
 
   // ---------------------------------------------------------------------------
