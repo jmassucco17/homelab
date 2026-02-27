@@ -25,6 +25,10 @@ jobs:
       contents: read
       packages: write
     steps:
+      - name: Print build configuration
+        run: |
+          echo "=== Build shared-assets ==="
+          echo "  Environment: ${{ inputs.environment }}"
       - uses: actions/checkout@v6
       - name: Setup Docker and login
         uses: ./.github/actions/docker-setup
@@ -43,6 +47,10 @@ jobs:
       contents: read
       packages: write
     steps:
+      - name: Print build configuration
+        run: |
+          echo "=== Build homepage ==="
+          echo "  Environment: ${{ inputs.environment }}"
       - uses: actions/checkout@v6
       - name: Setup Docker and login
         uses: ./.github/actions/docker-setup

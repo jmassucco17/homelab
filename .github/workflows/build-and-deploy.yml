@@ -148,6 +148,70 @@ jobs:
             echo "any_changes=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Print deployment plan
+        env:
+          ENVIRONMENT: ${{ steps.determine-env.outputs.environment }}
+          TAG: ${{ steps.image-tag.outputs.tag }}
+          NETWORKING: ${{ steps.check-changes.outputs.networking }}
+          SHARED_ASSETS: ${{ steps.check-changes.outputs.shared-assets }}
+          HOMEPAGE: ${{ steps.check-changes.outputs.homepage }}
+          BLOG: ${{ steps.check-changes.outputs.blog }}
+          TRAVEL: ${{ steps.check-changes.outputs.travel }}
+          GAMES: ${{ steps.check-changes.outputs.games }}
+          TOOLS: ${{ steps.check-changes.outputs.tools }}
+          MONITORING: ${{ steps.check-changes.outputs.monitoring }}
+          PORTAINER: ${{ steps.check-changes.outputs.portainer }}
+        run: |
+          echo "=== Deployment Plan ==="
+          echo "  Environment : ${ENVIRONMENT}"
+          echo "  Image tag   : ${TAG}"
+          echo "  Trigger     : ${{ github.event_name }}"
+          echo ""
+          printf "  %-20s %s\n" "Module" "Will deploy"
+          printf "  %-20s %s\n" "------" "-----------"
+          for entry in \
+            "networking:${NETWORKING}" \
+            "shared-assets:${SHARED_ASSETS}" \
+            "homepage:${HOMEPAGE}" \
+            "blog:${BLOG}" \
+            "travel:${TRAVEL}" \
+            "games:${GAMES}" \
+            "tools:${TOOLS}" \
+            "monitoring:${MONITORING}" \
+            "portainer:${PORTAINER}"; do
+            printf "  %-20s %s\n" "${entry%%:*}" "${entry##*:}"
+          done
+          {
+            echo "## Deployment Plan"
+            echo ""
+            echo "| Key | Value |"
+            echo "| --- | ----- |"
+            echo "| Environment | \`${ENVIRONMENT}\` |"
+            echo "| Image Tag | \`${TAG}\` |"
+            echo "| Trigger | \`${{ github.event_name }}\` |"
+            echo ""
+            echo "| Module | Will Deploy |"
+            echo "| ------ | :---------: |"
+            for entry in \
+              "networking:${NETWORKING}" \
+              "shared-assets:${SHARED_ASSETS}" \
+              "homepage:${HOMEPAGE}" \
+              "blog:${BLOG}" \
+              "travel:${TRAVEL}" \
+              "games:${GAMES}" \
+              "tools:${TOOLS}" \
+              "monitoring:${MONITORING}" \
+              "portainer:${PORTAINER}"; do
+              module="${entry%%:*}"
+              will_deploy="${entry##*:}"
+              if [ "${will_deploy}" = "true" ]; then
+                echo "| ${module} | ✅ |"
+              else
+                echo "| ${module} | — |"
+              fi
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
   # Prepare server by uploading archive containing the docker-compose files,
   # deployment scripts, and secrets as .env files
   prep-server:

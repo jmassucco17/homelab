@@ -18,6 +18,12 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Print configuration
+        run: |
+          echo "=== Prepare Server ==="
+          echo "  Environment   : ${{ inputs.environment }}"
+          echo "  Seed from prod: ${{ inputs.seed_from_prod }}"
+
       - uses: actions/checkout@v6
 
       - name: Write networking/.env

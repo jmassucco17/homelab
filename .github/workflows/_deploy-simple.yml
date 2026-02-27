@@ -27,6 +27,11 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Print deployment configuration
+        run: |
+          echo "=== Deploy shared-assets ==="
+          echo "  Environment: ${{ inputs.environment }}"
+          echo "  Image tag  : ${{ inputs.staging_image_tag || 'latest' }}"
       - uses: actions/checkout@v4
       - name: Setup Tailscale
         uses: ./.github/actions/setup-tailscale
@@ -53,6 +58,11 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Print deployment configuration
+        run: |
+          echo "=== Deploy homepage ==="
+          echo "  Environment: ${{ inputs.environment }}"
+          echo "  Image tag  : ${{ inputs.staging_image_tag || 'latest' }}"
       - uses: actions/checkout@v4
       - name: Setup Tailscale
         uses: ./.github/actions/setup-tailscale
