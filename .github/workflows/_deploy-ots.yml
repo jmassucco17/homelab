@@ -28,6 +28,10 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Print deployment configuration
+        run: |
+          echo "=== Deploy networking ==="
+          echo "  Environment: ${{ inputs.environment }}"
       - uses: actions/checkout@v4
       - name: Setup Tailscale
         uses: ./.github/actions/setup-tailscale
@@ -55,6 +59,10 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Print deployment configuration
+        run: |
+          echo "=== Deploy monitoring ==="
+          echo "  Environment: ${{ inputs.environment }}"
       - uses: actions/checkout@v4
       - name: Setup Tailscale
         uses: ./.github/actions/setup-tailscale
@@ -82,6 +90,10 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Print deployment configuration
+        run: |
+          echo "=== Deploy portainer ==="
+          echo "  Environment: ${{ inputs.environment }}"
       - uses: actions/checkout@v4
       - name: Setup Tailscale
         uses: ./.github/actions/setup-tailscale
