@@ -116,6 +116,15 @@ services:
       - traefik.http.routers.oauth.entrypoints=websecure
       - traefik.http.routers.oauth.tls.certresolver=cloudflare
       - traefik.http.services.oauth.loadbalancer.server.port=4180
+    healthcheck:
+      # oauth2-proxy image is minimal (no wget/curl); --version exits 0 immediately,
+      # confirming the binary is functional. The HTTP /ping endpoint cannot be
+      # reached from within the container without shell HTTP tools.
+      test: ['CMD', '/bin/oauth2-proxy', '--version']
+      interval: 5s
+      timeout: 1s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
   # Basic whoami service, useful for debugging network configuration
@@ -132,6 +141,14 @@ services:
       - traefik.http.routers.whoami.tls.certresolver=cloudflare
       # Use rate-limiting and OAuth
       - traefik.http.routers.whoami.middlewares=oauth-auth,ratelimit
+    healthcheck:
+      # whoami is a scratch-based image (no wget/curl/shell); -h exits 0 immediately,
+      # confirming the binary is functional. HTTP endpoint cannot be checked internally.
+      test: ['CMD', '/whoami', '-h']
+      interval: 5s
+      timeout: 1s
+      retries: 3
+      start_period: 2s
     restart: unless-stopped
 
   # Automatically updates public IP DNS in Cloudflare
