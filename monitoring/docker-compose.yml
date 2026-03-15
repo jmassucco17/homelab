@@ -10,6 +10,12 @@ services:
       - /:/host:ro,rslave
     networks:
       - internal_metrics
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:9100/']
+      interval: 5s
+      timeout: 1s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
   # Export Docker container metrics
@@ -24,6 +30,12 @@ services:
       - /dev/disk/:/dev/disk:ro
     networks:
       - internal_metrics
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:8080/healthz']
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   # Unified collection agent: scrapes metrics and ships logs to Grafana Cloud
@@ -44,6 +56,14 @@ services:
     depends_on:
       - node-exporter
       - cadvisor
+    healthcheck:
+      # alloy image has no wget/curl/nc; uses bash's /dev/tcp to check port 12345
+      # (alloy's built-in UI/API port), which is the only available TCP check method.
+      test: ['CMD', 'bash', '-c', 'exec 3<>/dev/tcp/127.0.0.1/12345']
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 15s
     restart: unless-stopped
 
 networks:
