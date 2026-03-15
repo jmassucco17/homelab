@@ -42,6 +42,12 @@ services:
       - traefik.http.middlewares.staging-oauth-auth.forwardauth.authResponseHeaders=X-Auth-Request-User,X-Auth-Request-Email
     env_file:
       - .env
+    healthcheck:
+      test: ['CMD', '/bin/oauth2-proxy', '--version']
+      interval: 5s
+      timeout: 1s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
 networks:
