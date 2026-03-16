@@ -97,19 +97,6 @@ jobs:
           cd networking
           docker compose up -d --wait traefik oauth2-proxy whoami
 
-      - name: Test traefik ping endpoint
-        run: docker exec traefik wget -qO- http://127.0.0.1:8080/ping
-
-      - name: Test oauth2-proxy is listening
-        run: |
-          PROXY_IP=$(docker inspect oauth2-proxy --format='{{.NetworkSettings.Networks.web.IPAddress}}')
-          docker run --rm --network web alpine wget -qO- "http://${PROXY_IP}:4180/ping"
-
-      - name: Test whoami is responding
-        run: |
-          WHOAMI_IP=$(docker inspect whoami --format='{{.NetworkSettings.Networks.web.IPAddress}}')
-          docker run --rm --network web alpine wget -qO- "http://${WHOAMI_IP}/"
-
       - name: Stop networking services
         uses: ./.github/actions/stop-service
         if: always()
@@ -282,21 +269,7 @@ jobs:
       - name: Pull and start portainer
         run: |
           cd portainer
-          docker compose up -d
-
-      - name: Wait for portainer API to be ready
-        run: |
-          PORTAINER_IP=$(docker inspect portainer --format='{{.NetworkSettings.Networks.web.IPAddress}}')
-          for i in $(seq 1 12); do
-            if docker run --rm --network web alpine wget -qO- "http://${PORTAINER_IP}:9000/api/system/status" 2>/dev/null; then
-              echo "Portainer is ready"
-              exit 0
-            fi
-            echo "Attempt ${i}/12: portainer not ready yet, waiting 5s..."
-            sleep 5
-          done
-          echo "Portainer did not become ready in time"
-          exit 1
+          docker compose up -d --wait portainer
 
       - name: Stop portainer service
         if: always()

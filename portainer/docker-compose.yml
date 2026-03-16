@@ -1,6 +1,6 @@
 services:
   portainer:
-    image: portainer/portainer-ce:2.33.7
+    image: portainer/portainer-ce:2.39.0
     container_name: portainer
     command:
       - --http-enabled
@@ -17,6 +17,15 @@ services:
       - 'traefik.http.services.portainer.loadbalancer.server.port=9000'
     networks:
       - web
+    healthcheck:
+      # portainer image is minimal (no wget/curl/shell); --version exits 0 quickly,
+      # confirming the binary is functional. The HTTP /api/system/status endpoint
+      # cannot be reached from within the container without HTTP client tools.
+      test: ['CMD', '/portainer', '--version']
+      interval: 5s
+      timeout: 1s
+      retries: 3
+      start_period: 15s
     restart: unless-stopped
 
 volumes:

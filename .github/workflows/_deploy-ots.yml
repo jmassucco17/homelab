@@ -32,7 +32,7 @@ jobs:
         run: |
           echo "=== Deploy networking ==="
           echo "  Environment: ${{ inputs.environment }}"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Tailscale
         uses: ./.github/actions/setup-tailscale
         with:
@@ -63,7 +63,7 @@ jobs:
         run: |
           echo "=== Deploy monitoring ==="
           echo "  Environment: ${{ inputs.environment }}"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Tailscale
         uses: ./.github/actions/setup-tailscale
         with:
@@ -94,7 +94,7 @@ jobs:
         run: |
           echo "=== Deploy portainer ==="
           echo "  Environment: ${{ inputs.environment }}"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Tailscale
         uses: ./.github/actions/setup-tailscale
         with:

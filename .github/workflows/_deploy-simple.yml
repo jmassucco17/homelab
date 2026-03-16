@@ -32,7 +32,7 @@ jobs:
           echo "=== Deploy shared-assets ==="
           echo "  Environment: ${{ inputs.environment }}"
           echo "  Image tag  : ${{ inputs.staging_image_tag || 'latest' }}"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Tailscale
         uses: ./.github/actions/setup-tailscale
         with:
@@ -63,7 +63,7 @@ jobs:
           echo "=== Deploy homepage ==="
           echo "  Environment: ${{ inputs.environment }}"
           echo "  Image tag  : ${{ inputs.staging_image_tag || 'latest' }}"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Tailscale
         uses: ./.github/actions/setup-tailscale
         with:
