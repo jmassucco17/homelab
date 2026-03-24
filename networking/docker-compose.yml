@@ -182,6 +182,15 @@ services:
         oauth-staging.jamesmassucco.com,
       PROXIED: true
       TZ: America/Los_Angeles
+    healthcheck:
+      # cloudflare-ddns uses a scratch-based image containing only /bin/ddns with no
+      # shell or additional tools. The binary does not support a quick-exit flag (unlike
+      # /whoami -h or oauth2-proxy --version), and when run with the container's env
+      # vars it enters an indefinite cron loop — making any CMD-based healthcheck always
+      # time out and permanently mark the container unhealthy.
+      # The upstream maintainer has confirmed this limitation (github.com/favonia/cloudflare-ddns#706).
+      # Use the HEALTHCHECKS or UPTIMEKUMA env vars for external monitoring instead.
+      disable: true
     restart: unless-stopped
 
 networks:
