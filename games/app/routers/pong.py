@@ -1,11 +1,14 @@
 """Pong game router."""
 
+import pathlib
+
 import fastapi
 import fastapi.responses
 
-from .. import templates as tmpl
+import common.app
 
-templates = tmpl.templates
+_APP_DIR = pathlib.Path(__file__).resolve().parent.parent
+templates = common.app.make_templates(_APP_DIR / 'templates')
 
 router = fastapi.APIRouter()
 
