@@ -1,33 +1,18 @@
 """FastAPI application for the tools sub-site."""
 
-import logging
-import os
 import pathlib
 
 import fastapi
 import fastapi.responses
 import fastapi.staticfiles
-import fastapi.templating
+
+import common.app
 
 from .routers import movie_picker
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
 
-DOMAIN = os.environ.get('DOMAIN', '.jamesmassucco.com')
-HOME_URL = 'https://' + DOMAIN[1:]
-
-app = fastapi.FastAPI(title='Tools')
-
-
-class HealthCheckFilter(logging.Filter):
-    """Filter out health check requests from uvicorn access logs."""
-
-    def filter(self, record: logging.LogRecord) -> bool:
-        """Return False to suppress health check log entries."""
-        return '/health' not in record.getMessage()
-
-
-logging.getLogger('uvicorn.access').addFilter(HealthCheckFilter())
+app = common.app.create_app('Tools')
 
 app.mount(
     '/static',
@@ -35,9 +20,7 @@ app.mount(
     name='static',
 )
 
-templates = fastapi.templating.Jinja2Templates(directory=APP_DIR / 'templates')
-templates.env.globals['domain'] = DOMAIN  # type: ignore[reportUnknownMemberType]
-templates.env.globals['home_url'] = HOME_URL  # type: ignore[reportUnknownMemberType]
+templates = common.app.make_templates(APP_DIR / 'templates')
 
 app.include_router(movie_picker.router)
 
@@ -46,9 +29,3 @@ app.include_router(movie_picker.router)
 async def index(request: fastapi.Request) -> fastapi.responses.HTMLResponse:
     """Render the tools landing page."""
     return templates.TemplateResponse(request=request, name='index.html')
-
-
-@app.api_route('/health', methods=['GET', 'HEAD'])
-async def health() -> dict[str, str]:
-    """Health check endpoint."""
-    return {'status': 'healthy'}
