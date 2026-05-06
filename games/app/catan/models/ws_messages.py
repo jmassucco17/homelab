@@ -11,7 +11,7 @@ from typing import Annotated, Any, Literal
 
 import pydantic
 
-from .actions import Action
+from games.app.catan.models.actions import Action
 
 
 class ClientMessageType(enum.StrEnum):

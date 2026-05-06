@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import asyncio
 
-from ..engine import processor, rules
-from ..models import actions, game_state
-from . import base
+from games.app.catan.ai import base
+from games.app.catan.engine import processor, rules
+from games.app.catan.models import actions, game_state
 
 # Simulated thinking delay between AI actions (seconds).
 AI_DELAY_SECONDS: float = 1.5

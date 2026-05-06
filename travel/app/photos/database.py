@@ -19,7 +19,9 @@ engine = sqlmodel.create_engine(
 def create_db_and_tables() -> None:
     """Create database tables."""
     # Import models to ensure they're registered with SQLModel
-    from . import models  # noqa: F401 # pyright: ignore[reportUnusedImport]
+    from travel.app.photos import (
+        models,  # noqa: F401 # pyright: ignore[reportUnusedImport]
+    )
 
     sqlmodel.SQLModel.metadata.create_all(engine)
 

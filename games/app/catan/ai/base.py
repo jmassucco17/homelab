@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import abc
 
-from ..engine import trade as trade_module
-from ..models import actions, game_state
+from games.app.catan.engine import trade as trade_module
+from games.app.catan.models import actions, game_state
 
 
 class CatanAI(abc.ABC):
