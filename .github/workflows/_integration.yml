@@ -88,11 +88,16 @@ jobs:
         run: docker network create internal_metrics 2>/dev/null || true
 
       - name: Pull cloudflare-ddns image (validates tag exists)
+        # cloudflare-ddns has healthcheck: disable because no viable in-container check
+        # exists (scratch-based image, binary loops forever with prod env vars).
+        # Pulling the image here validates the tag is correct without starting the service.
         run: |
           cd networking
           docker compose pull cloudflare-ddns
 
       - name: Start networking services (excluding cloudflare-ddns)
+        # cloudflare-ddns requires a real Cloudflare API token and host networking,
+        # so it cannot be started in CI. It is tested via image pull above.
         run: |
           cd networking
           docker compose up -d --wait traefik oauth2-proxy whoami
