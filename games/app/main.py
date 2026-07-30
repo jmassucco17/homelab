@@ -7,7 +7,8 @@ import fastapi
 import fastapi.responses
 import fastapi.staticfiles
 
-from . import templates as tmpl
+import common.app
+
 from .routers import catan, pong, snake
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
@@ -17,18 +18,7 @@ logging.basicConfig(level=logging.INFO)
 # Enable debug-level audit logging for the Catan engine
 logging.getLogger('games.app.catan').setLevel(logging.DEBUG)
 
-app = fastapi.FastAPI(title='Games')
-
-
-class HealthCheckFilter(logging.Filter):
-    """Filter out health check requests from uvicorn access logs."""
-
-    def filter(self, record: logging.LogRecord) -> bool:
-        """Return False to suppress health check log entries."""
-        return '/health' not in record.getMessage()
-
-
-logging.getLogger('uvicorn.access').addFilter(HealthCheckFilter())
+app = common.app.create_app('Games')
 
 app.mount(
     '/static',
@@ -36,7 +26,7 @@ app.mount(
     name='static',
 )
 
-templates = tmpl.templates
+templates = common.app.make_templates(APP_DIR / 'templates')
 
 app.include_router(snake.router)
 app.include_router(pong.router)
@@ -47,9 +37,3 @@ app.include_router(catan.router)
 async def index(request: fastapi.Request) -> fastapi.responses.HTMLResponse:
     """Render the games landing page."""
     return templates.TemplateResponse(request=request, name='index.html.jinja2')
-
-
-@app.api_route('/health', methods=['GET', 'HEAD'])
-async def health() -> dict[str, str]:
-    """Health check endpoint."""
-    return {'status': 'healthy'}
