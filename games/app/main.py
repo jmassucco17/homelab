@@ -8,7 +8,7 @@ import fastapi.responses
 import fastapi.staticfiles
 
 from . import templates as tmpl
-from .routers import catan, pong, snake
+from .routers import catan, pong, snake, wordle
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
 
@@ -41,6 +41,7 @@ templates = tmpl.templates
 app.include_router(snake.router)
 app.include_router(pong.router)
 app.include_router(catan.router)
+app.include_router(wordle.router)
 
 
 @app.get('/', response_class=fastapi.responses.HTMLResponse)
