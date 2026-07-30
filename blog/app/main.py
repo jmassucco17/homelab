@@ -9,7 +9,7 @@ import fastapi.responses
 import fastapi.staticfiles
 import fastapi.templating
 
-from . import blog
+from blog.app import blog
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
 

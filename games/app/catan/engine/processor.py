@@ -9,8 +9,8 @@ from __future__ import annotations
 import logging
 import random
 
-from ..models import actions, board, game_state, player
-from . import rules, turn_manager
+from games.app.catan.engine import rules, turn_manager
+from games.app.catan.models import actions, board, game_state, player
 
 logger = logging.getLogger(__name__)
 

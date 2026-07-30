@@ -12,9 +12,9 @@ import typing
 
 import pydantic
 
-from .board import Board
-from .game_state import GameState
-from .player import Player
+from games.app.catan.models.board import Board
+from games.app.catan.models.game_state import GameState
+from games.app.catan.models.player import Player
 
 
 def serialize_model(model: pydantic.BaseModel) -> dict[str, typing.Any]:
@@ -29,21 +29,21 @@ def serialize_to_json(model: pydantic.BaseModel) -> str:
 
 def deserialize_board(data: dict[str, typing.Any]) -> Board:
     """Deserialize a plain dict into a Board instance."""
-    from .board import Board
+    from games.app.catan.models.board import Board
 
     return Board.model_validate(data)
 
 
 def deserialize_game_state(data: dict[str, typing.Any]) -> GameState:
     """Deserialize a plain dict into a GameState instance."""
-    from .game_state import GameState
+    from games.app.catan.models.game_state import GameState
 
     return GameState.model_validate(data)
 
 
 def deserialize_player(data: dict[str, typing.Any]) -> Player:
     """Deserialize a plain dict into a Player instance."""
-    from .player import Player
+    from games.app.catan.models.player import Player
 
     return Player.model_validate(data)
 
@@ -55,6 +55,6 @@ def game_state_to_json(game_state: GameState) -> str:
 
 def game_state_from_json(json_str: str) -> GameState:
     """Parse a JSON string back into a GameState instance."""
-    from .game_state import GameState
+    from games.app.catan.models.game_state import GameState
 
     return GameState.model_validate(json.loads(json_str))

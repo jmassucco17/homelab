@@ -3,7 +3,7 @@
 import fastapi
 import fastapi.responses
 
-from .. import templates as tmpl
+from games.app import templates as tmpl
 
 templates = tmpl.templates
 
