@@ -91,6 +91,7 @@
 
 #canvas-wrapper {
   position: relative;
+  max-width: 100%;
 }
 
 /* ---- Touch controls ---- */
