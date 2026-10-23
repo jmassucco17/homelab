@@ -38,7 +38,7 @@ jobs:
         run: |
           echo "=== Build python-base ==="
           echo "  Environment: ${{ inputs.environment }}"
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Docker and login
         uses: ./.github/actions/docker-setup
       - name: Build and push python-base
@@ -64,7 +64,7 @@ jobs:
         run: |
           echo "=== Build blog ==="
           echo "  Environment: ${{ inputs.environment }}"
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Docker and login
         uses: ./.github/actions/docker-setup
       - name: Build and push blog
@@ -90,7 +90,7 @@ jobs:
         run: |
           echo "=== Build games ==="
           echo "  Environment: ${{ inputs.environment }}"
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Docker and login
         uses: ./.github/actions/docker-setup
       - name: Build and push games
@@ -116,7 +116,7 @@ jobs:
         run: |
           echo "=== Build tools ==="
           echo "  Environment: ${{ inputs.environment }}"
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Docker and login
         uses: ./.github/actions/docker-setup
       - name: Build and push tools
@@ -142,7 +142,7 @@ jobs:
         run: |
           echo "=== Build travel ==="
           echo "  Environment: ${{ inputs.environment }}"
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Docker and login
         uses: ./.github/actions/docker-setup
       - name: Build and push travel
