@@ -110,12 +110,12 @@ jobs:
             fi
             sleep 2
           done
-          echo "$routers" | grep -q '"whoami@docker"' && echo "$routers" | grep -q '"oauth@docker"' || {
+          if ! { echo "$routers" | grep -q '"whoami@docker"' && echo "$routers" | grep -q '"oauth@docker"'; }; then
             echo "Routers: $routers"
             docker logs traefik 2>&1 | tail -40
             docker logs socket-proxy 2>&1 | tail -40
             exit 1
-          }
+          fi
           curl -sf http://127.0.0.1:8080/api/http/middlewares | grep -q '"security-headers@file"'
 
       - name: Test socket proxy rejects write requests
