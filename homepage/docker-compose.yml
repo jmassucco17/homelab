@@ -1,6 +1,8 @@
 services:
   homepage:
     container_name: homepage
+    security_opt:
+      - no-new-privileges:true
     # Use custom dockerfile (imports from nginx:alpine)
     image: ghcr.io/jmassucco17/homelab/homepage:latest
     build:

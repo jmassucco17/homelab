@@ -45,7 +45,7 @@ prometheus.remote_write "grafana_cloud" {
 // ──────────────────────────────────────────────
 
 discovery.docker "containers" {
-  host = "unix:///var/run/docker.sock"
+  host = "tcp://socket-proxy:2375"
 }
 
 discovery.relabel "containers" {
@@ -59,7 +59,7 @@ discovery.relabel "containers" {
 }
 
 loki.source.docker "containers" {
-  host       = "unix:///var/run/docker.sock"
+  host       = "tcp://socket-proxy:2375"
   targets    = discovery.relabel.containers.output
   forward_to = [loki.write.grafana_cloud.receiver]
 }

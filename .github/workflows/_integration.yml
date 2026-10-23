@@ -87,6 +87,9 @@ jobs:
       - name: Create docker internal_metrics network
         run: docker network create internal_metrics 2>/dev/null || true
 
+      - name: Create docker socket_proxy network
+        run: docker network create --internal socket_proxy 2>/dev/null || true
+
       - name: Pull cloudflare-ddns image (validates tag exists)
         run: |
           cd networking
@@ -95,7 +98,32 @@ jobs:
       - name: Start networking services (excluding cloudflare-ddns)
         run: |
           cd networking
-          docker compose up -d --wait traefik oauth2-proxy whoami
+          docker compose up -d --wait socket-proxy traefik oauth2-proxy whoami
+
+      - name: Test Traefik discovers services via the socket proxy
+        run: |
+          # Docker discovery is asynchronous, so allow a few seconds after startup
+          for _ in $(seq 1 15); do
+            routers=$(curl -sf http://127.0.0.1:8080/api/http/routers || true)
+            if echo "$routers" | grep -q '"whoami@docker"' && echo "$routers" | grep -q '"oauth@docker"'; then
+              break
+            fi
+            sleep 2
+          done
+          if ! { echo "$routers" | grep -q '"whoami@docker"' && echo "$routers" | grep -q '"oauth@docker"'; }; then
+            echo "Routers: $routers"
+            docker logs traefik 2>&1 | tail -40
+            docker logs socket-proxy 2>&1 | tail -40
+            exit 1
+          fi
+          curl -sf http://127.0.0.1:8080/api/http/middlewares | grep -q '"security-headers@file"'
+
+      - name: Test socket proxy rejects write requests
+        run: |
+          code=$(docker run --rm --network socket_proxy curlimages/curl:8.17.0 \
+            -s -o /dev/null -w '%{http_code}' -X POST http://socket-proxy:2375/containers/create)
+          echo "POST /containers/create -> $code"
+          [ "$code" = "403" ]
 
       - name: Stop networking services
         uses: ./.github/actions/stop-service
@@ -296,6 +324,9 @@ jobs:
 
       - name: Create internal_metrics Docker network
         run: docker network create internal_metrics 2>/dev/null || true
+
+      - name: Create socket_proxy Docker network
+        run: docker network create --internal socket_proxy 2>/dev/null || true
 
       - name: Start node-exporter and cadvisor
         run: |

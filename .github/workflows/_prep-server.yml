@@ -73,13 +73,15 @@ jobs:
         run: |
           grep -v '^#' .gitignore | grep -v '^$' > /tmp/exclude_list
           printf '*.tar.gz\n*.tar\n' >> /tmp/exclude_list
-          tar --exclude-from=/tmp/exclude_list --exclude='.git' -cf /tmp/homelab-deploy.tar .
+          tar --exclude-from=/tmp/exclude_list --exclude='.git' --exclude='.claude' --exclude='._*' -cf /tmp/homelab-deploy.tar .
           if [ "${{ inputs.environment }}" = "prod" ]; then
             tar --append -f /tmp/homelab-deploy.tar tools/.env networking/.env monitoring/.env
           else
             tar --append -f /tmp/homelab-deploy.tar networking/.env
           fi
           gzip /tmp/homelab-deploy.tar
+          # The archive contains .env secrets; scp keeps this mode on the server
+          chmod 600 /tmp/homelab-deploy.tar.gz
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v4
@@ -122,10 +124,13 @@ jobs:
           cd /opt/homelab
           echo "Extracting deployment archive..."
           tar --overwrite -xzf /tmp/homelab-deploy.tar.gz
+          rm -f /tmp/homelab-deploy.tar.gz
+          chmod 600 ./*/.env
           touch networking/acme.json
           chmod 600 networking/acme.json
           docker network create web 2>/dev/null || true
           docker network create internal_metrics 2>/dev/null || true
+          docker network create --internal socket_proxy 2>/dev/null || true
 
           # Optionally seed staging travel data from production before deploying
           if [ "${ENVIRONMENT}" = "staging" ] && [ "${SEED_FROM_PROD}" = "true" ]; then

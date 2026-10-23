@@ -1,6 +1,8 @@
 services:
   travel:
     container_name: travel
+    security_opt:
+      - no-new-privileges:true
     image: ghcr.io/jmassucco17/homelab/travel:latest
     build:
       context: ..

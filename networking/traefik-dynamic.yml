@@ -1,0 +1,11 @@
+# Traefik dynamic configuration loaded by the file provider.
+# Applied to every router on the websecure entrypoint (see networking/docker-compose.yml).
+http:
+  middlewares:
+    security-headers:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        contentTypeNosniff: true
+        customFrameOptionsValue: SAMEORIGIN
+        referrerPolicy: strict-origin-when-cross-origin

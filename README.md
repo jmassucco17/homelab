@@ -10,8 +10,9 @@ Welcome to my homelab project!
 
 ## Service Dashboards
 
-- Traefik: [traefik.jamesmassucco.com](https://traefik.jamesmassucco.com)
 - Whoami: [whoami.jamesmassucco.com](https://whoami.jamesmassucco.com)
+- Traefik and Portainer are not public. They listen on the server's loopback interface
+  (`127.0.0.1:8080` and `127.0.0.1:9000`) and are reached over Tailscale via `tailscale serve`.
 
 ## Local Development
 

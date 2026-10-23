@@ -1,6 +1,8 @@
 services:
   games:
     container_name: games
+    security_opt:
+      - no-new-privileges:true
     image: ghcr.io/jmassucco17/homelab/games:latest
     build:
       context: ..

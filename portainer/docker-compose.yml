@@ -4,19 +4,16 @@ services:
     container_name: portainer
     command:
       - --http-enabled
+    # Portainer needs read-write Docker API access (root-equivalent on the host), so it is
+    # not routed through Traefik. It is only published on the host's loopback interface;
+    # reach it over the tailnet with `tailscale serve` on the server.
+    ports:
+      - '127.0.0.1:9000:9000'
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
-    labels:
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.portainer.rule=Host(`portainer.jamesmassucco.com`)'
-      - 'traefik.http.routers.portainer.entrypoints=websecure'
-      - 'traefik.http.routers.portainer.tls=true'
-      - 'traefik.http.routers.portainer.tls.certresolver=cloudflare'
-      - 'traefik.http.routers.portainer.middlewares=oauth-auth,ratelimit'
-      - 'traefik.http.services.portainer.loadbalancer.server.port=9000'
-    networks:
-      - web
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
       # portainer image is minimal (no wget/curl/shell); --version exits 0 quickly,
       # confirming the binary is functional. The HTTP /api/system/status endpoint
@@ -30,7 +27,3 @@ services:
 
 volumes:
   portainer_data:
-
-networks:
-  web:
-    external: true
