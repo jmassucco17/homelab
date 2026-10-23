@@ -24,7 +24,7 @@ jobs:
           echo "  Environment   : ${{ inputs.environment }}"
           echo "  Seed from prod: ${{ inputs.seed_from_prod }}"
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Write networking/.env
         env:
