@@ -10,6 +10,7 @@
  * Dark = default (matches Vercel's dark-first aesthetic).
  * Toggle is handled by html[data-theme] set in the inline script.
  */
+
 :root {
   /* Fallback: pure-black dark theme */
   --color-page-bg: #000;
@@ -35,6 +36,7 @@
   --radius-lg: 12px;
   --shadow-card: 0 0 0 1px var(--color-card-border);
 }
+
 /* ==== DARK THEME ==== */
 html[data-theme='dark'] {
   --color-page-bg: #000;
@@ -51,6 +53,7 @@ html[data-theme='dark'] {
   --color-green: #50e3c2;
   --shadow-card: 0 0 0 1px var(--color-card-border);
 }
+
 /* ==== LIGHT THEME ==== */
 html[data-theme='light'] {
   --color-page-bg: #fff;
@@ -71,37 +74,45 @@ html[data-theme='light'] {
  * Removes browser default margins, enforces box-sizing,
  * and smooths rendering. No opinionated normalization.
  */
+
 *,
 *::before,
 *::after {
   box-sizing: border-box;
 }
+
 html {
   scroll-behavior: smooth;
 }
+
 /* Also remove default body margin here to avoid a duplicate body rule in the compiled output. */
 body {
   margin: 0;
 }
+
 img,
 svg {
   display: block;
   max-width: 100%;
 }
+
 button {
   cursor: pointer;
   font-family: inherit;
 }
+
 /* ===== TYPOGRAPHY =====
  * Inter for UI text; Fira Code for monospace / code.
  * Both available from Google Fonts.
  */
+
 body {
   font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.6;
   color: var(--color-text);
 }
+
 h1,
 h2,
 h3,
@@ -114,34 +125,43 @@ h6 {
   margin-top: 0;
   margin-bottom: 0.75rem;
 }
+
 h1 {
   font-size: 2rem;
 }
+
 h2 {
   font-size: 1.5rem;
 }
+
 h3 {
   font-size: 1.125rem;
 }
+
 p {
   margin-top: 0;
   margin-bottom: 1rem;
 }
+
 a {
   color: var(--color-accent);
   text-decoration: none;
 }
+
 a:hover {
   text-decoration: underline;
 }
+
 code,
 pre,
 kbd {
   font-family: var(--font-mono);
 }
+
 /* ===== LAYOUT =====
  * Page wrapper, section containers, grid, and footer.
  */
+
 body {
   background-color: var(--color-page-bg);
   display: flex;
@@ -150,6 +170,7 @@ body {
   padding: 2rem 1rem;
   min-height: 100vh;
 }
+
 /* ---- Section ---- */
 section {
   background: var(--color-section-bg);
@@ -161,6 +182,7 @@ section {
   max-width: 800px;
   box-shadow: var(--shadow-card);
 }
+
 /* ---- Section title row ---- */
 .section-title {
   display: flex;
@@ -171,12 +193,14 @@ section {
   margin-bottom: 1rem;
   color: var(--color-title-text);
 }
+
 /* ---- Responsive card grid ---- */
 .grid {
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 }
+
 /* ---- Footer ---- */
 footer {
   margin-top: auto;
@@ -188,6 +212,7 @@ footer {
 /* ===== COMPONENTS =====
  * Reusable UI pieces: cards, nav, theme toggle.
  */
+
 /* ---- Card ---- */
 .card {
   background: var(--color-card-bg);
@@ -198,27 +223,33 @@ footer {
     border-color 0.15s ease,
     box-shadow 0.15s ease;
 }
+
 .card:hover {
   border-color: var(--color-accent);
   box-shadow: 0 0 0 1px var(--color-accent);
 }
+
 a.card {
   color: inherit;
   text-decoration: none;
   display: block;
 }
+
 a.card h3 {
     color: var(--color-title-text);
     margin-bottom: 0.5rem;
   }
+
 a.card p {
     color: var(--color-text);
     margin-bottom: 0;
   }
+
 a.card .date {
     color: var(--color-yellow);
     font-size: 0.85rem;
   }
+
 /* ---- Site home link (top-left fixed) ---- */
 .site-home-link {
   position: fixed;
@@ -237,11 +268,13 @@ a.card .date {
     color: var(--color-accent);
     text-decoration: none;
   }
+
 .site-logo {
   width: 22px;
   height: 22px;
   border-radius: var(--radius-sm);
 }
+
 /* ---- Theme toggle (top-right fixed) ---- */
 #theme-toggle-container {
   position: fixed;
@@ -249,6 +282,7 @@ a.card .date {
   right: 1rem;
   z-index: 1000;
 }
+
 .theme-toggle {
   background: transparent;
   border: 1px solid var(--color-card-border);
@@ -260,6 +294,7 @@ a.card .date {
     background 0.15s ease,
     border-color 0.15s ease;
 }
+
 .theme-toggle:hover {
     background: var(--color-section-bg);
     border-color: var(--color-accent);

@@ -136,20 +136,45 @@ setup_pre_commit() {
     echo "$current_hash" > "$hash_file"
 }
 
-install_node_deps() {
-    echo "🎨 Installing npm and Node.js dependencies..."
-    if ! command -v npm &>/dev/null; then
-        if [ "$MACHINE" = "Linux" ]; then
-            sudo apt-get install -y npm
-        elif [ "$MACHINE" = "Mac" ]; then
-            brew install node
-        fi
+NVM_VERSION="v0.40.8"
+
+install_node() {
+    # Required major version is pinned in .nvmrc (shared with CI's setup-node)
+    local required_major
+    required_major=$(tr -d '[:space:]v' < .nvmrc)
+    local current_major=""
+    if command -v node &>/dev/null; then
+        current_major=$(node -p 'process.versions.node.split(".")[0]')
+    fi
+    if [ "$current_major" = "$required_major" ]; then
+        return
     fi
 
-    local package_file="package.json"
+    echo "📦 Node.js ${required_major} required (found: ${current_major:-none}); installing via nvm..."
+    export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+    if [ ! -s "$NVM_DIR/nvm.sh" ]; then
+        curl -fsSL "https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_VERSION}/install.sh" | bash
+    fi
+    # nvm.sh is not compatible with `set -eu`
+    set +eu
+    # shellcheck disable=SC1091
+    source "$NVM_DIR/nvm.sh" --no-use
+    nvm install && nvm alias default "$required_major"
+    local status=$?
+    set -eu
+    if [ "$status" -ne 0 ]; then
+        echo "❌ Failed to install Node.js ${required_major} via nvm"
+        exit 1
+    fi
+}
+
+install_node_deps() {
+    echo "🎨 Installing npm and Node.js dependencies..."
+    install_node
+
     local hash_file=".package.hash"
     local current_hash
-    current_hash=$(sha256sum "$package_file" | awk '{print $1}')
+    current_hash=$({ cat package.json package-lock.json; node --version; } | sha256sum | awk '{print $1}')
 
     if [ -f "$hash_file" ] && grep -q "$current_hash" "$hash_file"; then
         echo "📦 Node.js dependencies already up-to-date"
@@ -157,7 +182,7 @@ install_node_deps() {
     fi
 
     echo "📦 Installing Node.js dev dependencies..."
-    npm install --silent
+    npm ci --silent
 
     echo "$current_hash" > "$hash_file"
 }

@@ -22,7 +22,10 @@ updates:
 
   # GitHub Actions
   - package-ecosystem: 'github-actions'
-    directory: '/'
+    # Composite actions under .github/actions aren't scanned unless listed explicitly
+    directories:
+      - '/'
+      - '/.github/actions/*'
     schedule:
       interval: 'weekly'
       day: 'monday'
@@ -30,8 +33,10 @@ updates:
       github-actions:
         patterns: ['*']
 
-  # Docker images - one entry per directory containing a Dockerfile or docker-compose.yml
-  - package-ecosystem: 'docker'
+  # Docker images - one entry per module directory. Use 'docker' for directories with a
+  # Dockerfile and 'docker-compose' for directories with only compose files (the 'docker'
+  # ecosystem does not read image tags from docker-compose.yml)
+  - package-ecosystem: 'docker-compose'
     directory: '/networking'
     schedule:
       interval: 'weekly'
@@ -40,7 +45,7 @@ updates:
       docker-images:
         patterns: ['*']
 
-  - package-ecosystem: 'docker'
+  - package-ecosystem: 'docker-compose'
     directory: '/monitoring'
     schedule:
       interval: 'weekly'
@@ -80,7 +85,7 @@ updates:
       docker-images:
         patterns: ['*']
 
-  - package-ecosystem: 'docker'
+  - package-ecosystem: 'docker-compose'
     directory: '/portainer'
     schedule:
       interval: 'weekly'
