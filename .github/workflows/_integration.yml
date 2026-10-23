@@ -102,9 +102,20 @@ jobs:
 
       - name: Test Traefik discovers services via the socket proxy
         run: |
-          routers=$(curl -sf http://127.0.0.1:8080/api/http/routers)
-          echo "$routers" | grep -q '"whoami@docker"'
-          echo "$routers" | grep -q '"oauth@docker"'
+          # Docker discovery is asynchronous, so allow a few seconds after startup
+          for _ in $(seq 1 15); do
+            routers=$(curl -sf http://127.0.0.1:8080/api/http/routers || true)
+            if echo "$routers" | grep -q '"whoami@docker"' && echo "$routers" | grep -q '"oauth@docker"'; then
+              break
+            fi
+            sleep 2
+          done
+          echo "$routers" | grep -q '"whoami@docker"' && echo "$routers" | grep -q '"oauth@docker"' || {
+            echo "Routers: $routers"
+            docker logs traefik 2>&1 | tail -40
+            docker logs socket-proxy 2>&1 | tail -40
+            exit 1
+          }
           curl -sf http://127.0.0.1:8080/api/http/middlewares | grep -q '"security-headers@file"'
 
       - name: Test socket proxy rejects write requests
