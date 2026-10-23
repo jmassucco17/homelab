@@ -2,11 +2,16 @@
 
 ## Traefik
 
-Traefik provides reverse proxying. It also has a dashboard ([traefik.jamesmassucco.com](https://traefik.jamesmassucco.com/dashboard/#/)).
+Traefik provides reverse proxying. Its dashboard is not public: it is served on the internal
+`traefik` entrypoint, published only on the server's loopback interface (`127.0.0.1:8080`), and
+reached over Tailscale via `tailscale serve`.
+
+Traefik reads the Docker API through `socket-proxy` (read-only, no POST) rather than mounting
+`/var/run/docker.sock`. Security headers for every response are defined in `traefik-dynamic.yml`.
 
 ## OAuth2-Proxy
 
-OAuth2-Proxy is configured as an authentication middleware for traefik. Multiple services (including the traefik dashboard) utilize Google OAuth using this method. The primary purpose is to enable some manner of user traffic and maintain the ability to ban any detected abusers.
+OAuth2-Proxy is configured as an authentication middleware for traefik. Multiple services utilize Google OAuth using this method. The primary purpose is to enable some manner of user traffic and maintain the ability to ban any detected abusers.
 
 ## Cloudflare DDNS
 

@@ -3,6 +3,8 @@ services:
     build: .
     image: ghcr.io/jmassucco17/homelab/shared-assets:latest
     container_name: shared-assets
+    security_opt:
+      - no-new-privileges:true
     environment:
       - DOMAIN=${DOMAIN:-.jamesmassucco.com}
     # Substitute DOMAIN in theme-toggle.js, then start nginx

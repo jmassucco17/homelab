@@ -4,6 +4,8 @@ services:
     image: prom/node-exporter:v1.8.2
     container_name: node-exporter
     pid: host
+    security_opt:
+      - no-new-privileges:true
     command:
       - '--path.rootfs=/host'
     volumes:
@@ -22,14 +24,20 @@ services:
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.49.1
     container_name: cadvisor
+    # Container metadata comes from the read-only socket proxy instead of mounting
+    # /var/run (which contains the root-equivalent docker.sock)
+    command:
+      - '--docker=tcp://socket-proxy:2375'
     volumes:
       - /:/rootfs:ro
-      - /var/run:/var/run:ro
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
     networks:
       - internal_metrics
+      - socket_proxy
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
       test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:8080/healthz']
       interval: 5s
@@ -44,7 +52,6 @@ services:
     container_name: alloy
     volumes:
       - ./alloy-config.alloy:/etc/alloy/config.alloy:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
     command:
       - run
       - /etc/alloy/config.alloy
@@ -53,6 +60,9 @@ services:
       - .env
     networks:
       - internal_metrics
+      - socket_proxy
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       - node-exporter
       - cadvisor
@@ -68,4 +78,6 @@ services:
 
 networks:
   internal_metrics:
+    external: true
+  socket_proxy:
     external: true

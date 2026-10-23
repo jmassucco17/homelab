@@ -1,6 +1,8 @@
 services:
   tools:
     container_name: tools
+    security_opt:
+      - no-new-privileges:true
     image: ghcr.io/jmassucco17/homelab/tools:latest
     build:
       context: ..
