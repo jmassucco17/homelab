@@ -25,10 +25,10 @@ from typing import cast
 import fastapi
 import pydantic
 
-from ..ai import driver
-from ..engine import processor, rules, trade
-from ..models import actions, game_state, serializers, ws_messages
-from . import room_manager
+from games.app.catan.ai import driver
+from games.app.catan.engine import processor, rules, trade
+from games.app.catan.models import actions, game_state, serializers, ws_messages
+from games.app.catan.server import room_manager
 
 logger = logging.getLogger(__name__)
 

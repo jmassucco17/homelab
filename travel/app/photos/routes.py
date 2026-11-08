@@ -7,7 +7,7 @@ import fastapi
 import fastapi.responses
 import sqlmodel
 
-from . import database, models, services
+from travel.app.photos import database, models, services
 
 # Create routers
 admin_router = fastapi.APIRouter(prefix='/admin')

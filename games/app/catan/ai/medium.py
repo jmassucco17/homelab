@@ -15,9 +15,9 @@ Uses a set of hand-crafted heuristics to make reasonable decisions:
 
 from __future__ import annotations
 
-from ..engine import trade as trade_module
-from ..models import actions, board, game_state, player
-from . import base
+from games.app.catan.ai import base
+from games.app.catan.engine import trade as trade_module
+from games.app.catan.models import actions, board, game_state, player
 
 # Pip probability count per number token (proportional to dice probability).
 _PIP_COUNT: dict[int, int] = {

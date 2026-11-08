@@ -9,7 +9,7 @@ import fastapi.responses
 import fastapi.staticfiles
 import fastapi.templating
 
-from .routers import movie_picker
+from tools.app.routers import movie_picker
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
 

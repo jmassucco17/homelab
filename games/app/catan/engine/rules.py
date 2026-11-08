@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 
-from ..models import actions, board, game_state, player
+from games.app.catan.models import actions, board, game_state, player
 
 logger = logging.getLogger(__name__)
 

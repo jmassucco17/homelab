@@ -30,10 +30,10 @@ from typing import Any
 
 import fastapi
 
-from ..ai import base
-from ..engine import trade, turn_manager
-from ..models import game_state as gs
-from ..models import serializers
+from games.app.catan.ai import base
+from games.app.catan.engine import trade, turn_manager
+from games.app.catan.models import game_state as gs
+from games.app.catan.models import serializers
 
 # Path for persisted room state.  Override via CATAN_STATE_FILE env var.
 _STATE_FILE = pathlib.Path(os.environ.get('CATAN_STATE_FILE', '/data/catan_state.json'))
@@ -267,7 +267,7 @@ class RoomManager:
         )
 
         # Create and store the AI instance
-        from ..ai import easy, hard, medium
+        from games.app.catan.ai import easy, hard, medium
 
         ai_classes = {
             'easy': easy.EasyAI,
@@ -426,7 +426,7 @@ class RoomManager:
                     )
                     room.players.append(slot)
                     if slot.is_ai and slot.ai_type is not None:
-                        from ..ai import easy, hard, medium
+                        from games.app.catan.ai import easy, hard, medium
 
                         ai_classes = {
                             'easy': easy.EasyAI,

@@ -14,7 +14,7 @@ import sqlalchemy.orm
 import sqlmodel
 from geopy import geocoders  # pyright: ignore[reportMissingTypeStubs]
 
-from . import models
+from travel.app.photos import models
 
 # Register HEIF opener for PIL
 pillow_heif.register_heif_opener()  # type: ignore

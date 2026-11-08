@@ -10,8 +10,8 @@ import enum
 
 import pydantic
 
-from .board import Board
-from .player import DevCardType, Player
+from games.app.catan.models.board import Board
+from games.app.catan.models.player import DevCardType, Player
 
 
 class GamePhase(enum.StrEnum):

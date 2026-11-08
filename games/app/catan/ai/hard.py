@@ -15,10 +15,10 @@ Applies more sophisticated heuristics:
 
 from __future__ import annotations
 
-from ..engine import rules
-from ..engine import trade as trade_module
-from ..models import actions, board, game_state, player
-from . import base
+from games.app.catan.ai import base
+from games.app.catan.engine import rules
+from games.app.catan.engine import trade as trade_module
+from games.app.catan.models import actions, board, game_state, player
 
 # Pip probability count per number token.
 _PIP_COUNT: dict[int, int] = {

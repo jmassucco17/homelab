@@ -24,9 +24,9 @@ import fastapi
 import fastapi.responses
 import pydantic
 
-from .. import templates as tmpl
-from ..catan.models import ws_messages
-from ..catan.server import room_manager, ws_handler
+from games.app import templates as tmpl
+from games.app.catan.models import ws_messages
+from games.app.catan.server import room_manager, ws_handler
 
 APP_DIR = pathlib.Path(__file__).resolve().parent.parent
 templates = tmpl.templates

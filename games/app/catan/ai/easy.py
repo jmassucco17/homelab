@@ -8,9 +8,9 @@ from __future__ import annotations
 
 import random
 
-from ..engine import trade as trade_module
-from ..models import actions, game_state
-from . import base
+from games.app.catan.ai import base
+from games.app.catan.engine import trade as trade_module
+from games.app.catan.models import actions, game_state
 
 
 class EasyAI(base.CatanAI):

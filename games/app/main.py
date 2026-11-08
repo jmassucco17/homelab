@@ -7,8 +7,8 @@ import fastapi
 import fastapi.responses
 import fastapi.staticfiles
 
-from . import templates as tmpl
-from .routers import catan, pong, snake
+from games.app import templates as tmpl
+from games.app.routers import catan, pong, snake
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
 

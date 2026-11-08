@@ -1,16 +1,12 @@
 """Unit tests for check_xxx_comments.py."""
 
 import pathlib
-import sys
 import tempfile
 import unittest
 
 import click.testing
 
-# scripts/ is not a package, so add its directory to sys.path
-sys.path.insert(0, str(pathlib.Path(__file__).parent))
-
-import check_xxx_comments  # noqa: E402
+from scripts import check_xxx_comments
 
 # Construct the marker string dynamically to avoid triggering the XXX comment checker
 # on this file itself.

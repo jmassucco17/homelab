@@ -11,7 +11,7 @@ from typing import Annotated, Any, Literal
 
 import pydantic
 
-from .board import ResourceType
+from games.app.catan.models.board import ResourceType
 
 
 class ActionType(enum.StrEnum):

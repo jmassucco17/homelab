@@ -77,7 +77,7 @@ from __future__ import annotations
 import collections
 import random
 
-from .models.board import (
+from games.app.catan.models.board import (
     Board,
     CubeCoord,
     Edge,

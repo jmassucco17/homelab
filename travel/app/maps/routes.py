@@ -10,7 +10,7 @@ import fastapi.templating
 import pydantic
 import sqlmodel
 
-from . import database, services
+from travel.app.maps import database, services
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
 

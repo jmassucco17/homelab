@@ -10,7 +10,7 @@ import enum
 
 import pydantic
 
-from .board import PortType, ResourceType
+from games.app.catan.models.board import PortType, ResourceType
 
 
 class DevCardType(enum.StrEnum):

@@ -5,7 +5,7 @@ import datetime
 import httpx
 import sqlmodel
 
-from . import models
+from travel.app.maps import models
 
 
 async def geocode_location(query: str) -> list[dict[str, str | float]]:
