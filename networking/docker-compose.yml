@@ -1,7 +1,7 @@
 services:
   # Reverse-proxy service
   traefik:
-    image: traefik:v3.7.16
+    image: traefik:v3.7.17
     container_name: traefik
     command:
       # Debug logging
@@ -77,7 +77,7 @@ services:
 
   # Provide Google OAuth services for other containers
   oauth2-proxy:
-    image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.5
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.6
     container_name: oauth2-proxy
     command:
       - --cookie-domain=.jamesmassucco.com
@@ -184,7 +184,7 @@ services:
 
   # Automatically updates public IP DNS in Cloudflare
   cloudflare-ddns:
-    image: favonia/cloudflare-ddns:1.17.1
+    image: favonia/cloudflare-ddns:1.18.0
     container_name: cloudflare-ddns
     network_mode: host
     read_only: true
