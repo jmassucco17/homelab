@@ -1,0 +1,55 @@
+{% extends "base.html.jinja2" %}
+
+{% block title %}Wordle Starter{% endblock %}
+
+{% block content %}
+  <h1>🟩 Wordle Starting Word Suggester</h1>
+
+  <p>
+    Based on the {{ remaining_count }} answers still possible as of <strong>{{ today }}</strong>
+    ({{ used_count }} already used), here are the top 10 starting words ranked by
+    <strong>letter-frequency coverage</strong> — each word is scored by how many
+    remaining answers share at least one of its letters.
+  </p>
+
+  <section>
+    <table class="wordle-table">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Word</th>
+          <th>Score</th>
+          <th>Letters</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for word, score in suggestions %}
+        <tr class="wordle-row{% if loop.index == 1 %} wordle-row--top{% endif %}">
+          <td class="wordle-rank">#{{ loop.index }}</td>
+          <td class="wordle-word">
+            {% for letter in word %}
+              <span class="wordle-tile wordle-tile--{{ loop.index0 }}">{{ letter | upper }}</span>
+            {% endfor %}
+          </td>
+          <td class="wordle-score">{{ score }}</td>
+          <td class="wordle-letters">{{ word | upper | list | join(', ') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="wordle-info">
+    <h2>How it works</h2>
+    <p>
+      For each letter in the alphabet, we count how many of the
+      <strong>{{ remaining_count }} remaining possible answers</strong> contain that letter.
+      A candidate starting word's score is the sum of those per-letter counts
+      (each letter counted only once, so repeated letters don't inflate the score).
+    </p>
+    <p>
+      Words with a higher score cover more of the remaining answer space, giving you
+      the most information from your very first guess.
+    </p>
+  </section>
+{% endblock %}
