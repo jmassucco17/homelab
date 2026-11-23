@@ -1,7 +1,7 @@
 services:
   # Export host system metrics (CPU, RAM, disk, network)
   node-exporter:
-    image: prom/node-exporter:v1.12.1
+    image: prom/node-exporter:v1.13.1
     container_name: node-exporter
     pid: host
     security_opt:
@@ -48,7 +48,7 @@ services:
 
   # Unified collection agent: scrapes metrics and ships logs to Grafana Cloud
   alloy:
-    image: grafana/alloy:v1.21.0
+    image: grafana/alloy:v1.22.0
     container_name: alloy
     volumes:
       - ./alloy-config.alloy:/etc/alloy/config.alloy:ro
