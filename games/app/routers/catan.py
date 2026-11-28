@@ -24,12 +24,13 @@ import fastapi
 import fastapi.responses
 import pydantic
 
-from .. import templates as tmpl
+import common.app
+
 from ..catan.models import ws_messages
 from ..catan.server import room_manager, ws_handler
 
 APP_DIR = pathlib.Path(__file__).resolve().parent.parent
-templates = tmpl.templates
+templates = common.app.make_templates(APP_DIR / 'templates')
 
 
 def _compute_catan_version() -> str:

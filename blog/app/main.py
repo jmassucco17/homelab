@@ -1,33 +1,18 @@
 """FastAPI application for the blog site."""
 
-import logging
-import os
 import pathlib
 
 import fastapi
 import fastapi.responses
 import fastapi.staticfiles
-import fastapi.templating
+
+import common.app
 
 from . import blog
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
 
-DOMAIN = os.environ.get('DOMAIN', '.jamesmassucco.com')
-HOME_URL = 'https://' + DOMAIN[1:]
-
-app = fastapi.FastAPI(title='Blog')
-
-
-class HealthCheckFilter(logging.Filter):
-    """Filter out health check requests from uvicorn access logs."""
-
-    def filter(self, record: logging.LogRecord) -> bool:
-        """Return False to suppress health check log entries."""
-        return '/health' not in record.getMessage()
-
-
-logging.getLogger('uvicorn.access').addFilter(HealthCheckFilter())
+app = common.app.create_app('Blog')
 
 app.mount(
     '/assets',
@@ -35,10 +20,8 @@ app.mount(
     name='assets',
 )
 
-templates = fastapi.templating.Jinja2Templates(directory=APP_DIR / 'templates')
+templates = common.app.make_templates(APP_DIR / 'templates')
 templates.env.filters['datefmt'] = lambda value, fmt='%B %d, %Y': value.strftime(fmt)  # type: ignore[assignment]
-templates.env.globals['domain'] = DOMAIN  # type: ignore[reportUnknownMemberType]
-templates.env.globals['home_url'] = HOME_URL  # type: ignore[reportUnknownMemberType]
 
 
 @app.get('/', response_class=fastapi.responses.HTMLResponse)
@@ -68,9 +51,3 @@ async def rss(request: fastapi.Request) -> fastapi.responses.Response:
     posts = blog.load_posts()
     xml = templates.get_template('rss.xml.jinja2').render(posts=posts)  # type: ignore
     return fastapi.responses.Response(content=xml, media_type='application/rss+xml')
-
-
-@app.api_route('/health', methods=['GET', 'HEAD'])
-async def health() -> dict[str, str]:
-    """Health check endpoint."""
-    return {'status': 'healthy'}

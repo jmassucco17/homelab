@@ -1,7 +1,6 @@
 """Combined travel application - landing, photos, and maps."""
 
 import contextlib
-import logging
 import os
 import pathlib
 from collections.abc import AsyncGenerator
@@ -9,28 +8,14 @@ from collections.abc import AsyncGenerator
 import fastapi
 import fastapi.responses
 import fastapi.staticfiles
-import fastapi.templating
 
+import common.app
 from travel.app.maps import database as maps_db
 from travel.app.maps import routes as maps_routes
 from travel.app.photos import database as photos_db
 from travel.app.photos import routes as photos_routes
 
 APP_DIR = pathlib.Path(__file__).resolve().parent
-
-DOMAIN = os.environ.get('DOMAIN', '.jamesmassucco.com')
-HOME_URL = 'https://' + DOMAIN[1:]
-
-
-class HealthCheckFilter(logging.Filter):
-    """Filter out health check requests from uvicorn access logs."""
-
-    def filter(self, record: logging.LogRecord) -> bool:
-        """Return False to suppress health check log entries."""
-        return '/health' not in record.getMessage()
-
-
-logging.getLogger('uvicorn.access').addFilter(HealthCheckFilter())
 
 
 @contextlib.asynccontextmanager
@@ -41,7 +26,7 @@ async def lifespan(app: fastapi.FastAPI) -> AsyncGenerator[None, None]:
     yield
 
 
-app = fastapi.FastAPI(title='Travel', lifespan=lifespan)
+app = common.app.create_app('Travel', lifespan=lifespan)
 
 # Static files - single mount covering all CSS and JS
 app.mount(
@@ -61,9 +46,7 @@ if os.path.exists(uploads_dir):
     )
 
 # Templates
-templates = fastapi.templating.Jinja2Templates(directory=str(APP_DIR / 'templates'))
-templates.env.globals['domain'] = DOMAIN  # type: ignore[reportUnknownMemberType]
-templates.env.globals['home_url'] = HOME_URL  # type: ignore[reportUnknownMemberType]
+templates = common.app.make_templates(APP_DIR / 'templates')
 
 # Include sub-app routers with path prefixes
 app.include_router(photos_routes.admin_router, prefix='/photos')
@@ -95,9 +78,3 @@ async def photos_gallery(request: fastapi.Request) -> fastapi.responses.Response
 async def photos_admin_view(request: fastapi.Request) -> fastapi.responses.Response:
     """Photos admin interface."""
     return templates.TemplateResponse(request=request, name='admin/upload.html.jinja2')
-
-
-@app.api_route('/health', methods=['GET', 'HEAD'])
-async def health_check() -> dict[str, str]:
-    """Health check endpoint."""
-    return {'status': 'healthy'}
